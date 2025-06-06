@@ -1,0 +1,969 @@
+# ==========================================================
+# ==   Shuwari Africa Money - Curated Currency Usage Data  ==
+# ==========================================================
+#
+# This file contains supplementary data defining the geographical usage
+# for each ISO 4217 currency, separated by active and historic status.
+# It is manually curated and should be updated periodically by consulting
+# the official sources listed below.
+#
+---
+# Metadata for this data file.
+lastUpdated: "2025-06-06"
+sources:
+  - description: "De Jure Exchange Rate Arrangements - International Monetary Fund (IMF)"
+    url: "https://data.imf.org/?sk=E6A5467B-4675-438A-862A-05A490D65A40"
+  - description: "Eurozone Members & Agreements - European Central Bank (ECB)"
+    url: "https://www.ecb.europa.eu/euro/intro/html/index.en.html"
+  - description: "East Caribbean Currency Union (ECCU) Members - Eastern Caribbean Central Bank"
+    url: "https://www.eccb-centralbank.org/p/member-countries"
+  - description: "West African Economic and Monetary Union (UEMOA) Members - Central Bank of West African States (BCEAO)"
+    url: "https://www.bceao.int/en/states/presentation"
+  - description: "Central African Economic and Monetary Community (CEMAC) Members - Bank of Central African States (BEAC)"
+    url: "https://www.beac.int/nos-missions/integration-sous-regionale/"
+  - description: "ISO 4217 Standard Lists for primary country-currency linkage."
+    url: "https://www.six-group.com/en/products-services/financial-information/data-standards.html#iso-4217"
+
+# Defines the geographical usage for each ACTIVE currency.
+activeUsageMappings:
+  - code: "AED"
+    source: "Primary currency of the United Arab Emirates, as per ISO 4217 standard."
+    countries: ["AE"]
+  - code: "AFN"
+    source: "Primary currency of Afghanistan, as per ISO 4217 standard."
+    countries: ["AF"]
+  - code: "ALL"
+    source: "Primary currency of Albania, as per ISO 4217 standard."
+    countries: ["AL"]
+  - code: "AMD"
+    source: "Primary currency of Armenia, as per ISO 4217 standard."
+    countries: ["AM"]
+  - code: "AOA"
+    source: "Primary currency of Angola, as per ISO 4217 standard."
+    countries: ["AO"]
+  - code: "ARS"
+    source: "Primary currency of Argentina, as per ISO 4217 standard."
+    countries: ["AR"]
+  - code: "AUD"
+    source: "Primary currency of Australia. Also used in other territories as per ISO 4217 standard."
+    countries: ["AU", "CC", "CX", "HM", "KI", "NF", "NR", "TV"]
+  - code: "AWG"
+    source: "Primary currency of Aruba, as per ISO 4217 standard."
+    countries: ["AW"]
+  - code: "AZN"
+    source: "Primary currency of Azerbaijan, as per ISO 4217 standard."
+    countries: ["AZ"]
+  - code: "BAM"
+    source: "Primary currency of Bosnia and Herzegovina, as per ISO 4217 standard."
+    countries: ["BA"]
+  - code: "BBD"
+    source: "Primary currency of Barbados, as per ISO 4217 standard."
+    countries: ["BB"]
+  - code: "BDT"
+    source: "Primary currency of Bangladesh, as per ISO 4217 standard."
+    countries: ["BD"]
+  - code: "BGN"
+    source: "Primary currency of Bulgaria, as per ISO 4217 standard."
+    countries: ["BG"]
+  - code: "BHD"
+    source: "Primary currency of Bahrain, as per ISO 4217 standard."
+    countries: ["BH"]
+  - code: "BIF"
+    source: "Primary currency of Burundi, as per ISO 4217 standard."
+    countries: ["BI"]
+  - code: "BMD"
+    source: "Primary currency of Bermuda, as per ISO 4217 standard."
+    countries: ["BM"]
+  - code: "BND"
+    source: "Primary currency of Brunei Darussalam, as per ISO 4217 standard."
+    countries: ["BN"]
+  - code: "BOB"
+    source: "Primary currency of Bolivia, as per ISO 4217 standard."
+    countries: ["BO"]
+  - code: "BOV"
+    source: "Fund code used in Bolivia, as per ISO 4217 standard."
+    countries: ["BO"]
+  - code: "BRL"
+    source: "Primary currency of Brazil, as per ISO 4217 standard."
+    countries: ["BR"]
+  - code: "BSD"
+    source: "Primary currency of The Bahamas, as per ISO 4217 standard."
+    countries: ["BS"]
+  - code: "BTN"
+    source: "Primary currency of Bhutan, as per ISO 4217 standard."
+    countries: ["BT"]
+  - code: "BWP"
+    source: "Primary currency of Botswana, as per ISO 4217 standard."
+    countries: ["BW"]
+  - code: "BYN"
+    source: "Primary currency of Belarus, as per ISO 4217 standard."
+    countries: ["BY"]
+  - code: "BZD"
+    source: "Primary currency of Belize, as per ISO 4217 standard."
+    countries: ["BZ"]
+  - code: "CAD"
+    source: "Primary currency of Canada, as per ISO 4217 standard."
+    countries: ["CA"]
+  - code: "CDF"
+    source: "Primary currency of the Democratic Republic of the Congo, as per ISO 4217 standard."
+    countries: ["CD"]
+  - code: "CHE"
+    source: "Fund code used in Switzerland, as per ISO 4217 standard."
+    countries: ["CH"]
+  - code: "CHF"
+    source: "Primary currency of Switzerland, and also used in Liechtenstein. Source: ISO 4217."
+    countries: ["CH", "LI"]
+  - code: "CHW"
+    source: "Fund code used in Switzerland, as per ISO 4217 standard."
+    countries: ["CH"]
+  - code: "CLF"
+    source: "Fund code used in Chile, as per ISO 4217 standard."
+    countries: ["CL"]
+  - code: "CLP"
+    source: "Primary currency of Chile, as per ISO 4217 standard."
+    countries: ["CL"]
+  - code: "CNY"
+    source: "Primary currency of China, as per ISO 4217 standard."
+    countries: ["CN"]
+  - code: "COP"
+    source: "Primary currency of Colombia, as per ISO 4217 standard."
+    countries: ["CO"]
+  - code: "COU"
+    source: "Fund code used in Colombia, as per ISO 4217 standard."
+    countries: ["CO"]
+  - code: "CRC"
+    source: "Primary currency of Costa Rica, as per ISO 4217 standard."
+    countries: ["CR"]
+  - code: "CUP"
+    source: "Primary currency of Cuba, as per ISO 4217 standard."
+    countries: ["CU"]
+  - code: "CVE"
+    source: "Primary currency of Cabo Verde, as per ISO 4217 standard."
+    countries: ["CV"]
+  - code: "CZK"
+    source: "Primary currency of Czechia, as per ISO 4217 standard."
+    countries: ["CZ"]
+  - code: "DJF"
+    source: "Primary currency of Djibouti, as per ISO 4217 standard."
+    countries: ["DJ"]
+  - code: "DKK"
+    source: "Primary currency of Denmark. Also used in other territories as per ISO 4217 standard."
+    countries: ["DK", "FO", "GL"]
+  - code: "DOP"
+    source: "Primary currency of the Dominican Republic, as per ISO 4217 standard."
+    countries: ["DO"]
+  - code: "DZD"
+    source: "Primary currency of Algeria, as per ISO 4217 standard."
+    countries: ["DZ"]
+  - code: "EGP"
+    source: "Primary currency of Egypt, as per ISO 4217 standard."
+    countries: ["EG"]
+  - code: "ERN"
+    source: "Primary currency of Eritrea, as per ISO 4217 standard."
+    countries: ["ER"]
+  - code: "ETB"
+    source: "Primary currency of Ethiopia, as per ISO 4217 standard."
+    countries: ["ET"]
+  - code: "EUR"
+    source: "Official currency of the Eurozone (per ECB) and other territories by formal monetary agreement or unilateral adoption (per IMF)."
+    countries: ["AD", "AT", "AX", "BE", "BL", "CY", "DE", "EE", "ES", "FI", "FR", "GF", "GP", "GR", "HR", "IE", "IT", "LT", "LU", "LV", "MC", "ME", "MF", "MQ", "MT", "NL", "PM", "PT", "RE", "SI", "SK", "SM", "TF", "VA", "XK", "YT"]
+  - code: "FJD"
+    source: "Primary currency of Fiji, as per ISO 4217 standard."
+    countries: ["FJ"]
+  - code: "FKP"
+    source: "Primary currency of the Falkland Islands (Malvinas), as per ISO 4217 standard."
+    countries: ["FK"]
+  - code: "GBP"
+    source: "Primary currency of the United Kingdom. Also used in Crown dependencies as per ISO 4217."
+    countries: ["GB", "GG", "IM", "JE"]
+  - code: "GEL"
+    source: "Primary currency of Georgia, as per ISO 4217 standard."
+    countries: ["GE"]
+  - code: "GHS"
+    source: "Primary currency of Ghana, as per ISO 4217 standard."
+    countries: ["GH"]
+  - code: "GIP"
+    source: "Primary currency of Gibraltar, as per ISO 4217 standard."
+    countries: ["GI"]
+  - code: "GMD"
+    source: "Primary currency of The Gambia, as per ISO 4217 standard."
+    countries: ["GM"]
+  - code: "GNF"
+    source: "Primary currency of Guinea, as per ISO 4217 standard."
+    countries: ["GN"]
+  - code: "GTQ"
+    source: "Primary currency of Guatemala, as per ISO 4217 standard."
+    countries: ["GT"]
+  - code: "GYD"
+    source: "Primary currency of Guyana, as per ISO 4217 standard."
+    countries: ["GY"]
+  - code: "HKD"
+    source: "Primary currency of Hong Kong, as per ISO 4217 standard."
+    countries: ["HK"]
+  - code: "HNL"
+    source: "Primary currency of Honduras, as per ISO 4217 standard."
+    countries: ["HN"]
+  - code: "HTG"
+    source: "Primary currency of Haiti, as per ISO 4217 standard."
+    countries: ["HT"]
+  - code: "HUF"
+    source: "Primary currency of Hungary, as per ISO 4217 standard."
+    countries: ["HU"]
+  - code: "IDR"
+    source: "Primary currency of Indonesia, as per ISO 4217 standard."
+    countries: ["ID"]
+  - code: "ILS"
+    source: "Primary currency of Israel, as per ISO 4217 standard."
+    countries: ["IL"]
+  - code: "INR"
+    source: "Primary currency of India. Also used in Bhutan as per ISO 4217."
+    countries: ["BT", "IN"]
+  - code: "IQD"
+    source: "Primary currency of Iraq, as per ISO 4217 standard."
+    countries: ["IQ"]
+  - code: "IRR"
+    source: "Primary currency of the Islamic Republic of Iran, as per ISO 4217 standard."
+    countries: ["IR"]
+  - code: "ISK"
+    source: "Primary currency of Iceland, as per ISO 4217 standard."
+    countries: ["IS"]
+  - code: "JMD"
+    source: "Primary currency of Jamaica, as per ISO 4217 standard."
+    countries: ["JM"]
+  - code: "JOD"
+    source: "Primary currency of Jordan, as per ISO 4217 standard."
+    countries: ["JO"]
+  - code: "JPY"
+    source: "Primary currency of Japan, as per ISO 4217 standard."
+    countries: ["JP"]
+  - code: "KES"
+    source: "Primary currency of Kenya, as per ISO 4217 standard."
+    countries: ["KE"]
+  - code: "KGS"
+    source: "Primary currency of Kyrgyzstan, as per ISO 4217 standard."
+    countries: ["KG"]
+  - code: "KHR"
+    source: "Primary currency of Cambodia, as per ISO 4217 standard."
+    countries: ["KH"]
+  - code: "KMF"
+    source: "Primary currency of The Comoros, as per ISO 4217 standard."
+    countries: ["KM"]
+  - code: "KPW"
+    source: "Primary currency of the Democratic People's Republic of Korea, as per ISO 4217 standard."
+    countries: ["KP"]
+  - code: "KRW"
+    source: "Primary currency of the Republic of Korea, as per ISO 4217 standard."
+    countries: ["KR"]
+  - code: "KWD"
+    source: "Primary currency of Kuwait, as per ISO 4217 standard."
+    countries: ["KW"]
+  - code: "KYD"
+    source: "Primary currency of The Cayman Islands, as per ISO 4217 standard."
+    countries: ["KY"]
+  - code: "KZT"
+    source: "Primary currency of Kazakhstan, as per ISO 4217 standard."
+    countries: ["KZ"]
+  - code: "LAK"
+    source: "Primary currency of the Lao People's Democratic Republic, as per ISO 4217 standard."
+    countries: ["LA"]
+  - code: "LBP"
+    source: "Primary currency of Lebanon, as per ISO 4217 standard."
+    countries: ["LB"]
+  - code: "LKR"
+    source: "Primary currency of Sri Lanka, as per ISO 4217 standard."
+    countries: ["LK"]
+  - code: "LRD"
+    source: "Primary currency of Liberia, as per ISO 4217 standard."
+    countries: ["LR"]
+  - code: "LSL"
+    source: "Primary currency of Lesotho, as per ISO 4217 standard."
+    countries: ["LS"]
+  - code: "LYD"
+    source: "Primary currency of Libya, as per ISO 4217 standard."
+    countries: ["LY"]
+  - code: "MAD"
+    source: "Primary currency of Morocco, also used in Western Sahara. Source: ISO 4217."
+    countries: ["EH", "MA"]
+  - code: "MDL"
+    source: "Primary currency of the Republic of Moldova, as per ISO 4217 standard."
+    countries: ["MD"]
+  - code: "MGA"
+    source: "Primary currency of Madagascar, as per ISO 4217 standard."
+    countries: ["MG"]
+  - code: "MKD"
+    source: "Primary currency of North Macedonia, as per ISO 4217 standard."
+    countries: ["MK"]
+  - code: "MMK"
+    source: "Primary currency of Myanmar, as per ISO 4217 standard."
+    countries: ["MM"]
+  - code: "MNT"
+    source: "Primary currency of Mongolia, as per ISO 4217 standard."
+    countries: ["MN"]
+  - code: "MOP"
+    source: "Primary currency of Macao, as per ISO 4217 standard."
+    countries: ["MO"]
+  - code: "MRU"
+    source: "Primary currency of Mauritania, as per ISO 4217 standard."
+    countries: ["MR"]
+  - code: "MUR"
+    source: "Primary currency of Mauritius, as per ISO 4217 standard."
+    countries: ["MU"]
+  - code: "MVR"
+    source: "Primary currency of Maldives, as per ISO 4217 standard."
+    countries: ["MV"]
+  - code: "MWK"
+    source: "Primary currency of Malawi, as per ISO 4217 standard."
+    countries: ["MW"]
+  - code: "MXN"
+    source: "Primary currency of Mexico, as per ISO 4217 standard."
+    countries: ["MX"]
+  - code: "MXV"
+    source: "Fund code used in Mexico, as per ISO 4217 standard."
+    countries: ["MX"]
+  - code: "MYR"
+    source: "Primary currency of Malaysia, as per ISO 4217 standard."
+    countries: ["MY"]
+  - code: "MZN"
+    source: "Primary currency of Mozambique, as per ISO 4217 standard."
+    countries: ["MZ"]
+  - code: "NAD"
+    source: "Primary currency of Namibia, as per ISO 4217 standard."
+    countries: ["NA"]
+  - code: "NGN"
+    source: "Primary currency of Nigeria, as per ISO 4217 standard."
+    countries: ["NG"]
+  - code: "NIO"
+    source: "Primary currency of Nicaragua, as per ISO 4217 standard."
+    countries: ["NI"]
+  - code: "NOK"
+    source: "Primary currency of Norway. Also used in other territories as per ISO 4217 standard."
+    countries: ["BV", "NO", "SJ"]
+  - code: "NPR"
+    source: "Primary currency of Nepal, as per ISO 4217 standard."
+    countries: ["NP"]
+  - code: "NZD"
+    source: "Primary currency of New Zealand. Also used in other territories as per ISO 4217."
+    countries: ["CK", "NU", "NZ", "PN", "TK"]
+  - code: "OMR"
+    source: "Primary currency of Oman, as per ISO 4217 standard."
+    countries: ["OM"]
+  - code: "PAB"
+    source: "Primary currency of Panama, as per ISO 4217 standard."
+    countries: ["PA"]
+  - code: "PEN"
+    source: "Primary currency of Peru, as per ISO 4217 standard."
+    countries: ["PE"]
+  - code: "PGK"
+    source: "Primary currency of Papua New Guinea, as per ISO 4217 standard."
+    countries: ["PG"]
+  - code: "PHP"
+    source: "Primary currency of The Philippines, as per ISO 4217 standard."
+    countries: ["PH"]
+  - code: "PKR"
+    source: "Primary currency of Pakistan, as per ISO 4217 standard."
+    countries: ["PK"]
+  - code: "PLN"
+    source: "Primary currency of Poland, as per ISO 4217 standard."
+    countries: ["PL"]
+  - code: "PYG"
+    source: "Primary currency of Paraguay, as per ISO 4217 standard."
+    countries: ["PY"]
+  - code: "QAR"
+    source: "Primary currency of Qatar, as per ISO 4217 standard."
+    countries: ["QA"]
+  - code: "RON"
+    source: "Primary currency of Romania, as per ISO 4217 standard."
+    countries: ["RO"]
+  - code: "RSD"
+    source: "Primary currency of Serbia, as per ISO 4217 standard."
+    countries: ["RS"]
+  - code: "RUB"
+    source: "Primary currency of The Russian Federation, as per ISO 4217 standard."
+    countries: ["RU"]
+  - code: "RWF"
+    source: "Primary currency of Rwanda, as per ISO 4217 standard."
+    countries: ["RW"]
+  - code: "SAR"
+    source: "Primary currency of Saudi Arabia, as per ISO 4217 standard."
+    countries: ["SA"]
+  - code: "SBD"
+    source: "Primary currency of Solomon Islands, as per ISO 4217 standard."
+    countries: ["SB"]
+  - code: "SCR"
+    source: "Primary currency of Seychelles, as per ISO 4217 standard."
+    countries: ["SC"]
+  - code: "SDG"
+    source: "Primary currency of The Sudan, as per ISO 4217 standard."
+    countries: ["SD"]
+  - code: "SEK"
+    source: "Primary currency of Sweden, as per ISO 4217 standard."
+    countries: ["SE"]
+  - code: "SGD"
+    source: "Primary currency of Singapore, as per ISO 4217 standard."
+    countries: ["SG"]
+  - code: "SHP"
+    source: "Primary currency of Saint Helena, Ascension and Tristan da Cunha, as per ISO 4217 standard."
+    countries: ["SH"]
+  - code: "SLE"
+    source: "Primary currency of Sierra Leone, as per ISO 4217 standard."
+    countries: ["SL"]
+  - code: "SOS"
+    source: "Primary currency of Somalia, as per ISO 4217 standard."
+    countries: ["SO"]
+  - code: "SRD"
+    source: "Primary currency of Suriname, as per ISO 4217 standard."
+    countries: ["SR"]
+  - code: "SSP"
+    source: "Primary currency of South Sudan, as per ISO 4217 standard."
+    countries: ["SS"]
+  - code: "STN"
+    source: "Primary currency of Sao Tome and Principe, as per ISO 4217 standard."
+    countries: ["ST"]
+  - code: "SVC"
+    source: "Primary currency of El Salvador, as per ISO 4217 standard."
+    countries: ["SV"]
+  - code: "SYP"
+    source: "Primary currency of the Syrian Arab Republic, as per ISO 4217 standard."
+    countries: ["SY"]
+  - code: "SZL"
+    source: "Primary currency of Eswatini, as per ISO 4217 standard."
+    countries: ["SZ"]
+  - code: "THB"
+    source: "Primary currency of Thailand, as per ISO 4217 standard."
+    countries: ["TH"]
+  - code: "TJS"
+    source: "Primary currency of Tajikistan, as per ISO 4217 standard."
+    countries: ["TJ"]
+  - code: "TMT"
+    source: "Primary currency of Turkmenistan, as per ISO 4217 standard."
+    countries: ["TM"]
+  - code: "TND"
+    source: "Primary currency of Tunisia, as per ISO 4217 standard."
+    countries: ["TN"]
+  - code: "TOP"
+    source: "Primary currency of Tonga, as per ISO 4217 standard."
+    countries: ["TO"]
+  - code: "TRY"
+    source: "Primary currency of Türkiye, as per ISO 4217 standard."
+    countries: ["TR"]
+  - code: "TTD"
+    source: "Primary currency of Trinidad and Tobago, as per ISO 4217 standard."
+    countries: ["TT"]
+  - code: "TWD"
+    source: "Primary currency of Taiwan (Province of China), as per ISO 4217 standard."
+    countries: ["TW"]
+  - code: "TZS"
+    source: "Primary currency of the United Republic of Tanzania, as per ISO 4217 standard."
+    countries: ["TZ"]
+  - code: "UAH"
+    source: "Primary currency of Ukraine, as per ISO 4217 standard."
+    countries: ["UA"]
+  - code: "UGX"
+    source: "Primary currency of Uganda, as per ISO 4217 standard."
+    countries: ["UG"]
+  - code: "USD"
+    source: "Primary currency of the United States. Also used in other territories as per ISO 4217 and adopted by several countries per IMF data."
+    countries: ["AS", "BQ", "EC", "FM", "GU", "HT", "IO", "MH", "MP", "PA", "PR", "PW", "SV", "TC", "TL", "UM", "US", "VG", "VI"]
+  - code: "USN"
+    source: "Fund code used in the United States, as per ISO 4217 standard."
+    countries: ["US"]
+  - code: "UYI"
+    source: "Fund code used in Uruguay, as per ISO 4217 standard."
+    countries: ["UY"]
+  - code: "UYU"
+    source: "Primary currency of Uruguay, as per ISO 4217 standard."
+    countries: ["UY"]
+  - code: "UYW"
+    source: "Fund code used in Uruguay, as per ISO 4217 standard."
+    countries: ["UY"]
+  - code: "UZS"
+    source: "Primary currency of Uzbekistan, as per ISO 4217 standard."
+    countries: ["UZ"]
+  - code: "VED"
+    source: "A digital representation of the Bolívar Soberano in Venezuela, as per ISO 4217."
+    countries: ["VE"]
+  - code: "VES"
+    source: "Primary currency of Venezuela, as per ISO 4217 standard."
+    countries: ["VE"]
+  - code: "VND"
+    source: "Primary currency of Viet Nam, as per ISO 4217 standard."
+    countries: ["VN"]
+  - code: "VUV"
+    source: "Primary currency of Vanuatu, as per ISO 4217 standard."
+    countries: ["VU"]
+  - code: "WST"
+    source: "Primary currency of Samoa, as per ISO 4217 standard."
+    countries: ["WS"]
+  - code: "YER"
+    source: "Primary currency of Yemen, as per ISO 4217 standard."
+    countries: ["YE"]
+  - code: "ZAR"
+    source: "Primary currency of South Africa. Also used in other countries of the Common Monetary Area as per ISO 4217."
+    countries: ["LS", "NA", "ZA"]
+  - code: "ZMW"
+    source: "Primary currency of Zambia, as per ISO 4217 standard."
+    countries: ["ZM"]
+  - code: "ZWG"
+    source: "Primary currency of Zimbabwe, as per ISO 4217 standard."
+    countries: ["ZW"]
+  # --- 'X' Currencies ---
+  - code: "XAF"
+    source: "Official currency of the Central African Economic and Monetary Community (CEMAC), per BEAC."
+    countries: ["CF", "CG", "CM", "GA", "GQ", "TD"]
+  - code: "XAG"
+    source: "Precious metal code for Silver, not country-specific. Source: ISO 4217."
+    countries: []
+  - code: "XAU"
+    source: "Precious metal code for Gold, not country-specific. Source: ISO 4217."
+    countries: []
+  - code: "XBA"
+    source: "Procedural code for Bond Markets Unit European Composite Unit (EURCO). Source: ISO 4217."
+    countries: []
+  - code: "XBB"
+    source: "Procedural code for Bond Markets Unit European Monetary Unit (E.M.U.-6). Source: ISO 4217."
+    countries: []
+  - code: "XBC"
+    source: "Procedural code for Bond Markets Unit European Unit of Account 9 (E.U.A.-9). Source: ISO 4217."
+    countries: []
+  - code: "XBD"
+    source: "Procedural code for Bond Markets Unit European Unit of Account 17 (E.U.A.-17). Source: ISO 4217."
+    countries: []
+  - code: "XCD"
+    source: "Official currency of the East Caribbean Currency Union (ECCU), per ECCB."
+    countries: ["AG", "AI", "DM", "GD", "KN", "LC", "MS", "VC"]
+  - code: "XCG"
+    source: "Future currency intended to replace the Netherlands Antillean Guilder for Curaçao and Sint Maarten. Source: ISO 4217."
+    countries: ["CW", "SX"]
+  - code: "XDR"
+    source: "Unit of account for the International Monetary Fund (IMF). Source: ISO 4217."
+    countries: []
+  - code: "XOF"
+    source: "Official currency of the West African Economic and Monetary Union (UEMOA), per BCEAO."
+    countries: ["BF", "BJ", "CI", "GW", "ML", "NE", "SN", "TG"]
+  - code: "XPD"
+    source: "Precious metal code for Palladium, not country-specific. Source: ISO 4217."
+    countries: []
+  - code: "XPF"
+    source: "Primary currency of French territories in the Pacific, as per ISO 4217 standard."
+    countries: ["NC", "PF", "WF"]
+  - code: "XPT"
+    source: "Precious metal code for Platinum, not country-specific. Source: ISO 4217."
+    countries: []
+  - code: "XSU"
+    source: "Unit of account for the SUCRE payment system. Source: ISO 4217."
+    countries: []
+  - code: "XTS"
+    source: "Procedural code reserved for testing purposes. Source: ISO 4217."
+    countries: []
+  - code: "XUA"
+    source: "Unit of account for the African Development Bank Group. Source: ISO 4217."
+    countries: []
+  - code: "XXX"
+    source: "Procedural code for transactions where no currency is involved. Source: ISO 4217."
+    countries: []
+
+# Defines the geographical usage for each HISTORIC currency.
+historicUsageMappings:
+  - code: "ADP"
+    source: "Historic currency of Andorra, as per ISO 4217 data."
+    countries: ["AD"]
+  - code: "AFA"
+    source: "Historic currency of Afghanistan, as per ISO 4217 data."
+    countries: ["AF"]
+  - code: "ALK"
+    source: "Historic currency of Albania, as per ISO 4217 data."
+    countries: ["AL"]
+  - code: "ANG"
+    source: "Historic record for Netherlands Antillean Guilder relating to the entity Netherlands Antilles, as per ISO 4217."
+    countries: [] # Historic entity no longer exists
+  - code: "AOK"
+    source: "Historic currency of Angola, as per ISO 4217 data."
+    countries: ["AO"]
+  - code: "AON"
+    source: "Historic currency of Angola, as per ISO 4217 data."
+    countries: ["AO"]
+  - code: "AOR"
+    source: "Historic currency of Angola, as per ISO 4217 data."
+    countries: ["AO"]
+  - code: "ARA"
+    source: "Historic currency of Argentina, as per ISO 4217 data."
+    countries: ["AR"]
+  - code: "ARP"
+    source: "Historic currency of Argentina, as per ISO 4217 data."
+    countries: ["AR"]
+  - code: "ARY"
+    source: "Historic currency of Argentina, as per ISO 4217 data."
+    countries: ["AR"]
+  - code: "ATS"
+    source: "Historic currency of Austria, as per ISO 4217 data."
+    countries: ["AT"]
+  - code: "AYM"
+    source: "Historic currency of Azerbaijan, as per ISO 4217 data."
+    countries: ["AZ"]
+  - code: "AZM"
+    source: "Historic currency of Azerbaijan, as per ISO 4217 data."
+    countries: ["AZ"]
+  - code: "BAD"
+    source: "Historic currency of Bosnia and Herzegovina, as per ISO 4217 data."
+    countries: ["BA"]
+  - code: "BEC"
+    source: "Historic currency of Belgium, as per ISO 4217 data."
+    countries: ["BE"]
+  - code: "BEF"
+    source: "Historic currency of Belgium, as per ISO 4217 data."
+    countries: ["BE"]
+  - code: "BEL"
+    source: "Historic currency of Belgium, as per ISO 4217 data."
+    countries: ["BE"]
+  - code: "BGL"
+    source: "Historic currency of Bulgaria, as per ISO 4217 data."
+    countries: ["BG"]
+  - code: "BGJ"
+    source: "Historic currency of Bulgaria, as per ISO 4217 data."
+    countries: ["BG"]
+  - code: "BGK"
+    source: "Historic currency of Bulgaria, as per ISO 4217 data."
+    countries: ["BG"]
+  - code: "BOP"
+    source: "Historic currency of Bolivia, as per ISO 4217 data."
+    countries: ["BO"]
+  - code: "BRB"
+    source: "Historic currency of Brazil, as per ISO 4217 data."
+    countries: ["BR"]
+  - code: "BRC"
+    source: "Historic currency of Brazil, as per ISO 4217 data."
+    countries: ["BR"]
+  - code: "BRE"
+    source: "Historic currency of Brazil, as per ISO 4217 data."
+    countries: ["BR"]
+  - code: "BRN"
+    source: "Historic currency of Brazil, as per ISO 4217 data."
+    countries: ["BR"]
+  - code: "BRR"
+    source: "Historic currency of Brazil, as per ISO 4217 data."
+    countries: ["BR"]
+  - code: "BUK"
+    source: "Historic currency of Burma (now Myanmar), as per ISO 4217 data."
+    countries: ["MM"]
+  - code: "BYB"
+    source: "Historic currency of Belarus, as per ISO 4217 data."
+    countries: ["BY"]
+  - code: "BYR"
+    source: "Historic currency of Belarus, as per ISO 4217 data."
+    countries: ["BY"]
+  - code: "CHC"
+    source: "Historic fund code used in Switzerland, as per ISO 4217 data."
+    countries: ["CH"]
+  - code: "CSD"
+    source: "Historic currency of Serbia and Montenegro, as per ISO 4217 data."
+    countries: ["ME", "RS"]
+  - code: "CSJ"
+    source: "Historic currency of Czechoslovakia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "CSK"
+    source: "Historic currency of Czechoslovakia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "CUC"
+    source: "Historic currency of Cuba, as per ISO 4217 data."
+    countries: ["CU"]
+  - code: "CYP"
+    source: "Historic currency of Cyprus, as per ISO 4217 data."
+    countries: ["CY"]
+  - code: "DDM"
+    source: "Historic currency of the German Democratic Republic, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "DEM"
+    source: "Historic currency of Germany, as per ISO 4217 data."
+    countries: ["DE"]
+  - code: "ECS"
+    source: "Historic currency of Ecuador, as per ISO 4217 data."
+    countries: ["EC"]
+  - code: "ECV"
+    source: "Historic fund code used in Ecuador, as per ISO 4217 data."
+    countries: ["EC"]
+  - code: "EEK"
+    source: "Historic currency of Estonia, as per ISO 4217 data."
+    countries: ["EE"]
+  - code: "ESA"
+    source: "Historic currency of Spain, as per ISO 4217 data."
+    countries: ["ES"]
+  - code: "ESB"
+    source: "Historic fund code used in Spain, as per ISO 4217 data."
+    countries: ["ES"]
+  - code: "ESP"
+    source: "Historic currency of Spain, as per ISO 4217 data."
+    countries: ["AD", "ES"]
+  - code: "FIM"
+    source: "Historic currency of Finland, as per ISO 4217 data."
+    countries: ["AX", "FI"]
+  - code: "FRF"
+    source: "Historic currency of France, as per ISO 4217 data."
+    countries: ["AD", "FR", "GF", "GP", "MC", "MF", "MQ", "PM", "RE", "TF", "YT"]
+  - code: "GEK"
+    source: "Historic currency of Georgia, as per ISO 4217 data."
+    countries: ["GE"]
+  - code: "GHC"
+    source: "Historic currency of Ghana, as per ISO 4217 data."
+    countries: ["GH"]
+  - code: "GHP"
+    source: "Historic currency of Ghana, as per ISO 4217 data."
+    countries: ["GH"]
+  - code: "GNE"
+    source: "Historic currency of Guinea, as per ISO 4217 data."
+    countries: ["GN"]
+  - code: "GNS"
+    source: "Historic currency of Guinea, as per ISO 4217 data."
+    countries: ["GN"]
+  - code: "GQE"
+    source: "Historic currency of Equatorial Guinea, as per ISO 4217 data."
+    countries: ["GQ"]
+  - code: "GRD"
+    source: "Historic currency of Greece, as per ISO 4217 data."
+    countries: ["GR"]
+  - code: "GWE"
+    source: "Historic currency of Guinea-Bissau, as per ISO 4217 data."
+    countries: ["GW"]
+  - code: "GWP"
+    source: "Historic currency of Guinea-Bissau, as per ISO 4217 data."
+    countries: ["GW"]
+  - code: "HRD"
+    source: "Historic currency of Croatia, as per ISO 4217 data."
+    countries: ["HR"]
+  - code: "HRK"
+    source: "Historic currency of Croatia, as per ISO 4217 data."
+    countries: ["HR"]
+  - code: "IEP"
+    source: "Historic currency of Ireland, as per ISO 4217 data."
+    countries: ["IE"]
+  - code: "ILP"
+    source: "Historic currency of Israel, as per ISO 4217 data."
+    countries: ["IL"]
+  - code: "ILR"
+    source: "Historic currency of Israel, as per ISO 4217 data."
+    countries: ["IL"]
+  - code: "ISJ"
+    source: "Historic currency of Iceland, as per ISO 4217 data."
+    countries: ["IS"]
+  - code: "ITL"
+    source: "Historic currency of Italy, as per ISO 4217 data."
+    countries: ["IT", "SM", "VA"]
+  - code: "LAJ"
+    source: "Historic currency of Lao, as per ISO 4217 data."
+    countries: ["LA"]
+  - code: "LSM"
+    source: "Historic currency of Lesotho, as per ISO 4217 data."
+    countries: ["LS"]
+  - code: "LTL"
+    source: "Historic currency of Lithuania, as per ISO 4217 data."
+    countries: ["LT"]
+  - code: "LTT"
+    source: "Historic currency of Lithuania, as per ISO 4217 data."
+    countries: ["LT"]
+  - code: "LUC"
+    source: "Historic currency of Luxembourg, as per ISO 4217 data."
+    countries: ["LU"]
+  - code: "LUF"
+    source: "Historic currency of Luxembourg, as per ISO 4217 data."
+    countries: ["LU"]
+  - code: "LUL"
+    source: "Historic currency of Luxembourg, as per ISO 4217 data."
+    countries: ["LU"]
+  - code: "LVL"
+    source: "Historic currency of Latvia, as per ISO 4217 data."
+    countries: ["LV"]
+  - code: "LVR"
+    source: "Historic currency of Latvia, as per ISO 4217 data."
+    countries: ["LV"]
+  - code: "MGF"
+    source: "Historic currency of Madagascar, as per ISO 4217 data."
+    countries: ["MG"]
+  - code: "MLF"
+    source: "Historic currency of Mali, as per ISO 4217 data."
+    countries: ["ML"]
+  - code: "MRO"
+    source: "Historic currency of Mauritania, as per ISO 4217 data."
+    countries: ["MR"]
+  - code: "MTL"
+    source: "Historic currency of Malta, as per ISO 4217 data."
+    countries: ["MT"]
+  - code: "MTP"
+    source: "Historic currency of Malta, as per ISO 4217 data."
+    countries: ["MT"]
+  - code: "MVQ"
+    source: "Historic currency of Maldives, as per ISO 4217 data."
+    countries: ["MV"]
+  - code: "MWK"
+    source: "Historic record for Malawi Kwacha, as per ISO 4217 data."
+    countries: ["MW"]
+  - code: "MXP"
+    source: "Historic currency of Mexico, as per ISO 4217 data."
+    countries: ["MX"]
+  - code: "MZE"
+    source: "Historic currency of Mozambique, as per ISO 4217 data."
+    countries: ["MZ"]
+  - code: "MZM"
+    source: "Historic currency of Mozambique, as per ISO 4217 data."
+    countries: ["MZ"]
+  - code: "NIC"
+    source: "Historic currency of Nicaragua, as per ISO 4217 data."
+    countries: ["NI"]
+  - code: "NLG"
+    source: "Historic currency of the Netherlands, as per ISO 4217 data."
+    countries: ["NL"]
+  - code: "PEH"
+    source: "Historic currency of Peru, as per ISO 4217 data."
+    countries: ["PE"]
+  - code: "PEI"
+    source: "Historic currency of Peru, as per ISO 4217 data."
+    countries: ["PE"]
+  - code: "PEN"
+    source: "Historic record for Peruvian Sol, as per ISO 4217 data."
+    countries: ["PE"]
+  - code: "PES"
+    source: "Historic currency of Peru, as per ISO 4217 data."
+    countries: ["PE"]
+  - code: "PLZ"
+    source: "Historic currency of Poland, as per ISO 4217 data."
+    countries: ["PL"]
+  - code: "PTE"
+    source: "Historic currency of Portugal, as per ISO 4217 data."
+    countries: ["PT"]
+  - code: "RHD"
+    source: "Historic currency of Southern Rhodesia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "ROK"
+    source: "Historic currency of Romania, as per ISO 4217 data."
+    countries: ["RO"]
+  - code: "ROL"
+    source: "Historic currency of Romania, as per ISO 4217 data."
+    countries: ["RO"]
+  - code: "RON"
+    source: "Historic record for Romanian Leu, as per ISO 4217 data."
+    countries: ["RO"]
+  - code: "RUR"
+    source: "Historic currency of The Russian Federation and others, as per ISO 4217 data."
+    countries: ["AM", "AZ", "BY", "GE", "KZ", "KG", "MD", "RU", "TJ", "TM", "UZ"]
+  - code: "SDD"
+    source: "Historic currency of Sudan, as per ISO 4217 data."
+    countries: ["SD"]
+  - code: "SDG"
+    source: "Historic record for Sudanese Pound relating to its use in South Sudan, as per ISO 4217 data."
+    countries: ["SS"]
+  - code: "SDP"
+    source: "Historic currency of Sudan, as per ISO 4217 data."
+    countries: ["SD"]
+  - code: "SIT"
+    source: "Historic currency of Slovenia, as per ISO 4217 data."
+    countries: ["SI"]
+  - code: "SKK"
+    source: "Historic currency of Slovakia, as per ISO 4217 data."
+    countries: ["SK"]
+  - code: "SLL"
+    source: "Historic currency of Sierra Leone, as per ISO 4217 data."
+    countries: ["SL"]
+  - code: "SRG"
+    source: "Historic currency of Suriname, as per ISO 4217 data."
+    countries: ["SR"]
+  - code: "STD"
+    source: "Historic currency of Sao Tome and Principe, as per ISO 4217 data."
+    countries: ["ST"]
+  - code: "SUR"
+    source: "Historic currency of the USSR, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "SZL"
+    source: "Historic record for Lilangeni, as per ISO 4217 data."
+    countries: ["SZ"]
+  - code: "TJR"
+    source: "Historic currency of Tajikistan, as per ISO 4217 data."
+    countries: ["TJ"]
+  - code: "TMM"
+    source: "Historic currency of Turkmenistan, as per ISO 4217 data."
+    countries: ["TM"]
+  - code: "TPE"
+    source: "Historic currency of Timor-Leste, as per ISO 4217 data."
+    countries: ["TL"]
+  - code: "TRL"
+    source: "Historic currency of Turkey, as per ISO 4217 data."
+    countries: ["TR"]
+  - code: "TRY"
+    source: "Historic record for Turkish Lira, as per ISO 4217 data."
+    countries: ["TR"]
+  - code: "UAK"
+    source: "Historic currency of Ukraine, as per ISO 4217 data."
+    countries: ["UA"]
+  - code: "UGS"
+    source: "Historic currency of Uganda, as per ISO 4217 data."
+    countries: ["UG"]
+  - code: "UGW"
+    source: "Historic currency of Uganda, as per ISO 4217 data."
+    countries: ["UG"]
+  - code: "USS"
+    source: "Historic fund code used in the United States, as per ISO 4217 data."
+    countries: ["US"]
+  - code: "UYN"
+    source: "Historic currency of Uruguay, as per ISO 4217 data."
+    countries: ["UY"]
+  - code: "UYP"
+    source: "Historic currency of Uruguay, as per ISO 4217 data."
+    countries: ["UY"]
+  - code: "VEB"
+    source: "Historic currency of Venezuela, as per ISO 4217 data."
+    countries: ["VE"]
+  - code: "VEF"
+    source: "Historic currency of Venezuela, as per ISO 4217 data. This code had multiple redenominations."
+    countries: ["VE"]
+  - code: "VNC"
+    source: "Historic currency of Vietnam, as per ISO 4217 data."
+    countries: ["VN"]
+  - code: "YDD"
+    source: "Historic currency of Democratic Yemen, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "YUD"
+    source: "Historic currency of Yugoslavia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "YUM"
+    source: "Historic currency of Yugoslavia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "YUN"
+    source: "Historic currency of Yugoslavia, as per ISO 4217 data."
+    countries: [] # Historic entity
+  - code: "ZAL"
+    source: "Historic fund code (Financial Rand) used in South Africa, as per ISO 4217 data."
+    countries: ["LS", "NA", "ZA"]
+  - code: "ZMK"
+    source: "Historic currency of Zambia, as per ISO 4217 data."
+    countries: ["ZM"]
+  - code: "ZRN"
+    source: "Historic currency of Zaire, as per ISO 4217 data."
+    countries: ["CD"]
+  - code: "ZRZ"
+    source: "Historic currency of Zaire, as per ISO 4217 data."
+    countries: ["CD"]
+  - code: "ZWC"
+    source: "Historic currency of Zimbabwe, as per ISO 4217 data."
+    countries: ["ZW"]
+  - code: "ZWD"
+    source: "Historic currency of Zimbabwe, as per ISO 4217 data."
+    countries: ["ZW"]
+  - code: "ZWL"
+    source: "Historic currency of Zimbabwe, as per ISO 4217 data."
+    countries: ["ZW"]
+  - code: "ZWN"
+    source: "Historic currency of Zimbabwe, as per ISO 4217 data."
+    countries: ["ZW"]
+  - code: "ZWR"
+    source: "Historic currency of Zimbabwe, as per ISO 4217 data."
+    countries: ["ZW"]
+  # --- 'X' Currencies ---
+  - code: "XEU"
+    source: "Historic unit of account for the European Monetary Co-operation Fund, a predecessor to the Euro. Source: ISO 4217."
+    countries: []
+  - code: "XFO"
+    source: "Historic procedural code for Gold-Franc. Source: ISO 4217."
+    countries: []
+  - code: "XFU"
+    source: "Historic procedural code for UIC-Franc. Source: ISO 4217."
+    countries: []
+  - code: "XRE"
+    source: "Historic procedural code for RINET Funds. Source: ISO 4217."
+    countries: []

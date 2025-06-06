@@ -1,0 +1,1271 @@
+# ==========================================================
+# ==      Shuwari Africa Money - Curated Currency Data    ==
+# ==========================================================
+#
+# This file is the single source of truth for generating currency types.
+# It is curated based on the official ISO 4217 XML lists.
+#
+---
+# Metadata for this data file.
+lastUpdated: "2025-06-06"
+sources:
+  - description: "ISO 4217 Active Currency List (Table A.1), Pblshd=2025-03-31"
+    url: "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml"
+  - description: "ISO 4217 Historic Currency List (Table A.3), Pblshd=2025-03-31"
+    url: "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml"
+
+# List of all active currencies.
+activeCurrencies:
+  - code: "AED"
+    numericCode: 784
+    name: "UAE Dirham"
+    minorUnit: 2
+  - code: "AFN"
+    numericCode: 971
+    name: "Afghani"
+    minorUnit: 2
+  - code: "ALL"
+    numericCode: 8
+    name: "Lek"
+    minorUnit: 2
+  - code: "AMD"
+    numericCode: 51
+    name: "Armenian Dram"
+    minorUnit: 2
+  - code: "AOA"
+    numericCode: 973
+    name: "Kwanza"
+    minorUnit: 2
+  - code: "ARS"
+    numericCode: 32
+    name: "Argentine Peso"
+    minorUnit: 2
+  - code: "AUD"
+    numericCode: 36
+    name: "Australian Dollar"
+    minorUnit: 2
+  - code: "AWG"
+    numericCode: 533
+    name: "Aruban Florin"
+    minorUnit: 2
+  - code: "AZN"
+    numericCode: 944
+    name: "Azerbaijan Manat"
+    minorUnit: 2
+  - code: "BAM"
+    numericCode: 977
+    name: "Convertible Mark"
+    minorUnit: 2
+  - code: "BBD"
+    numericCode: 52
+    name: "Barbados Dollar"
+    minorUnit: 2
+  - code: "BDT"
+    numericCode: 50
+    name: "Taka"
+    minorUnit: 2
+  - code: "BGN"
+    numericCode: 975
+    name: "Bulgarian Lev"
+    minorUnit: 2
+  - code: "BHD"
+    numericCode: 48
+    name: "Bahraini Dinar"
+    minorUnit: 3
+  - code: "BIF"
+    numericCode: 108
+    name: "Burundi Franc"
+    minorUnit: 0
+  - code: "BMD"
+    numericCode: 60
+    name: "Bermudian Dollar"
+    minorUnit: 2
+  - code: "BND"
+    numericCode: 96
+    name: "Brunei Dollar"
+    minorUnit: 2
+  - code: "BOB"
+    numericCode: 68
+    name: "Boliviano"
+    minorUnit: 2
+  - code: "BOV"
+    numericCode: 984
+    name: "Mvdol"
+    minorUnit: 2
+  - code: "BRL"
+    numericCode: 986
+    name: "Brazilian Real"
+    minorUnit: 2
+  - code: "BSD"
+    numericCode: 44
+    name: "Bahamian Dollar"
+    minorUnit: 2
+  - code: "BTN"
+    numericCode: 64
+    name: "Ngultrum"
+    minorUnit: 2
+  - code: "BWP"
+    numericCode: 72
+    name: "Pula"
+    minorUnit: 2
+  - code: "BYN"
+    numericCode: 933
+    name: "Belarusian Ruble"
+    minorUnit: 2
+  - code: "BZD"
+    numericCode: 84
+    name: "Belize Dollar"
+    minorUnit: 2
+  - code: "CAD"
+    numericCode: 124
+    name: "Canadian Dollar"
+    minorUnit: 2
+  - code: "CDF"
+    numericCode: 976
+    name: "Congolese Franc"
+    minorUnit: 2
+  - code: "CHE"
+    numericCode: 947
+    name: "WIR Euro"
+    minorUnit: 2
+  - code: "CHF"
+    numericCode: 756
+    name: "Swiss Franc"
+    minorUnit: 2
+  - code: "CHW"
+    numericCode: 948
+    name: "WIR Franc"
+    minorUnit: 2
+  - code: "CLF"
+    numericCode: 990
+    name: "Unidad de Fomento"
+    minorUnit: 4
+  - code: "CLP"
+    numericCode: 152
+    name: "Chilean Peso"
+    minorUnit: 0
+  - code: "CNY"
+    numericCode: 156
+    name: "Yuan Renminbi"
+    minorUnit: 2
+  - code: "COP"
+    numericCode: 170
+    name: "Colombian Peso"
+    minorUnit: 2
+  - code: "COU"
+    numericCode: 970
+    name: "Unidad de Valor Real"
+    minorUnit: 2
+  - code: "CRC"
+    numericCode: 188
+    name: "Costa Rican Colon"
+    minorUnit: 2
+  - code: "CUP"
+    numericCode: 192
+    name: "Cuban Peso"
+    minorUnit: 2
+  - code: "CVE"
+    numericCode: 132
+    name: "Cabo Verde Escudo"
+    minorUnit: 2
+  - code: "CZK"
+    numericCode: 203
+    name: "Czech Koruna"
+    minorUnit: 2
+  - code: "DJF"
+    numericCode: 262
+    name: "Djibouti Franc"
+    minorUnit: 0
+  - code: "DKK"
+    numericCode: 208
+    name: "Danish Krone"
+    minorUnit: 2
+  - code: "DOP"
+    numericCode: 214
+    name: "Dominican Peso"
+    minorUnit: 2
+  - code: "DZD"
+    numericCode: 12
+    name: "Algerian Dinar"
+    minorUnit: 2
+  - code: "EGP"
+    numericCode: 818
+    name: "Egyptian Pound"
+    minorUnit: 2
+  - code: "ERN"
+    numericCode: 232
+    name: "Nakfa"
+    minorUnit: 2
+  - code: "ETB"
+    numericCode: 230
+    name: "Ethiopian Birr"
+    minorUnit: 2
+  - code: "EUR"
+    numericCode: 978
+    name: "Euro"
+    minorUnit: 2
+  - code: "FJD"
+    numericCode: 242
+    name: "Fiji Dollar"
+    minorUnit: 2
+  - code: "FKP"
+    numericCode: 238
+    name: "Falkland Islands Pound"
+    minorUnit: 2
+  - code: "GBP"
+    numericCode: 826
+    name: "Pound Sterling"
+    minorUnit: 2
+  - code: "GEL"
+    numericCode: 981
+    name: "Lari"
+    minorUnit: 2
+  - code: "GHS"
+    numericCode: 936
+    name: "Ghana Cedi"
+    minorUnit: 2
+  - code: "GIP"
+    numericCode: 292
+    name: "Gibraltar Pound"
+    minorUnit: 2
+  - code: "GMD"
+    numericCode: 270
+    name: "Dalasi"
+    minorUnit: 2
+  - code: "GNF"
+    numericCode: 324
+    name: "Guinean Franc"
+    minorUnit: 0
+  - code: "GTQ"
+    numericCode: 320
+    name: "Quetzal"
+    minorUnit: 2
+  - code: "GYD"
+    numericCode: 328
+    name: "Guyana Dollar"
+    minorUnit: 2
+  - code: "HKD"
+    numericCode: 344
+    name: "Hong Kong Dollar"
+    minorUnit: 2
+  - code: "HNL"
+    numericCode: 340
+    name: "Lempira"
+    minorUnit: 2
+  - code: "HTG"
+    numericCode: 332
+    name: "Gourde"
+    minorUnit: 2
+  - code: "HUF"
+    numericCode: 348
+    name: "Forint"
+    minorUnit: 2
+  - code: "IDR"
+    numericCode: 360
+    name: "Rupiah"
+    minorUnit: 2
+  - code: "ILS"
+    numericCode: 376
+    name: "New Israeli Sheqel"
+    minorUnit: 2
+  - code: "INR"
+    numericCode: 356
+    name: "Indian Rupee"
+    minorUnit: 2
+  - code: "IQD"
+    numericCode: 368
+    name: "Iraqi Dinar"
+    minorUnit: 3
+  - code: "IRR"
+    numericCode: 364
+    name: "Iranian Rial"
+    minorUnit: 2
+  - code: "ISK"
+    numericCode: 352
+    name: "Iceland Krona"
+    minorUnit: 0
+  - code: "JMD"
+    numericCode: 388
+    name: "Jamaican Dollar"
+    minorUnit: 2
+  - code: "JOD"
+    numericCode: 400
+    name: "Jordanian Dinar"
+    minorUnit: 3
+  - code: "JPY"
+    numericCode: 392
+    name: "Yen"
+    minorUnit: 0
+  - code: "KES"
+    numericCode: 404
+    name: "Kenyan Shilling"
+    minorUnit: 2
+  - code: "KGS"
+    numericCode: 417
+    name: "Som"
+    minorUnit: 2
+  - code: "KHR"
+    numericCode: 116
+    name: "Riel"
+    minorUnit: 2
+  - code: "KMF"
+    numericCode: 174
+    name: "Comorian Franc "
+    minorUnit: 0
+  - code: "KPW"
+    numericCode: 408
+    name: "North Korean Won"
+    minorUnit: 2
+  - code: "KRW"
+    numericCode: 410
+    name: "Won"
+    minorUnit: 0
+  - code: "KWD"
+    numericCode: 414
+    name: "Kuwaiti Dinar"
+    minorUnit: 3
+  - code: "KYD"
+    numericCode: 136
+    name: "Cayman Islands Dollar"
+    minorUnit: 2
+  - code: "KZT"
+    numericCode: 398
+    name: "Tenge"
+    minorUnit: 2
+  - code: "LAK"
+    numericCode: 418
+    name: "Lao Kip"
+    minorUnit: 2
+  - code: "LBP"
+    numericCode: 422
+    name: "Lebanese Pound"
+    minorUnit: 2
+  - code: "LKR"
+    numericCode: 144
+    name: "Sri Lanka Rupee"
+    minorUnit: 2
+  - code: "LRD"
+    numericCode: 430
+    name: "Liberian Dollar"
+    minorUnit: 2
+  - code: "LSL"
+    numericCode: 426
+    name: "Loti"
+    minorUnit: 2
+  - code: "LYD"
+    numericCode: 434
+    name: "Libyan Dinar"
+    minorUnit: 3
+  - code: "MAD"
+    numericCode: 504
+    name: "Moroccan Dirham"
+    minorUnit: 2
+  - code: "MDL"
+    numericCode: 498
+    name: "Moldovan Leu"
+    minorUnit: 2
+  - code: "MGA"
+    numericCode: 969
+    name: "Malagasy Ariary"
+    minorUnit: 2
+  - code: "MKD"
+    numericCode: 807
+    name: "Denar"
+    minorUnit: 2
+  - code: "MMK"
+    numericCode: 104
+    name: "Kyat"
+    minorUnit: 2
+  - code: "MNT"
+    numericCode: 496
+    name: "Tugrik"
+    minorUnit: 2
+  - code: "MOP"
+    numericCode: 446
+    name: "Pataca"
+    minorUnit: 2
+  - code: "MRU"
+    numericCode: 929
+    name: "Ouguiya"
+    minorUnit: 2
+  - code: "MUR"
+    numericCode: 480
+    name: "Mauritius Rupee"
+    minorUnit: 2
+  - code: "MVR"
+    numericCode: 462
+    name: "Rufiyaa"
+    minorUnit: 2
+  - code: "MWK"
+    numericCode: 454
+    name: "Malawi Kwacha"
+    minorUnit: 2
+  - code: "MXN"
+    numericCode: 484
+    name: "Mexican Peso"
+    minorUnit: 2
+  - code: "MXV"
+    numericCode: 979
+    name: "Mexican Unidad de Inversion (UDI)"
+    minorUnit: 2
+  - code: "MYR"
+    numericCode: 458
+    name: "Malaysian Ringgit"
+    minorUnit: 2
+  - code: "MZN"
+    numericCode: 943
+    name: "Mozambique Metical"
+    minorUnit: 2
+  - code: "NAD"
+    numericCode: 516
+    name: "Namibia Dollar"
+    minorUnit: 2
+  - code: "NGN"
+    numericCode: 566
+    name: "Naira"
+    minorUnit: 2
+  - code: "NIO"
+    numericCode: 558
+    name: "Cordoba Oro"
+    minorUnit: 2
+  - code: "NOK"
+    numericCode: 578
+    name: "Norwegian Krone"
+    minorUnit: 2
+  - code: "NPR"
+    numericCode: 524
+    name: "Nepalese Rupee"
+    minorUnit: 2
+  - code: "NZD"
+    numericCode: 554
+    name: "New Zealand Dollar"
+    minorUnit: 2
+  - code: "OMR"
+    numericCode: 512
+    name: "Rial Omani"
+    minorUnit: 3
+  - code: "PAB"
+    numericCode: 590
+    name: "Balboa"
+    minorUnit: 2
+  - code: "PEN"
+    numericCode: 604
+    name: "Sol"
+    minorUnit: 2
+  - code: "PGK"
+    numericCode: 598
+    name: "Kina"
+    minorUnit: 2
+  - code: "PHP"
+    numericCode: 608
+    name: "Philippine Peso"
+    minorUnit: 2
+  - code: "PKR"
+    numericCode: 586
+    name: "Pakistan Rupee"
+    minorUnit: 2
+  - code: "PLN"
+    numericCode: 985
+    name: "Zloty"
+    minorUnit: 2
+  - code: "PYG"
+    numericCode: 600
+    name: "Guarani"
+    minorUnit: 0
+  - code: "QAR"
+    numericCode: 634
+    name: "Qatari Rial"
+    minorUnit: 2
+  - code: "RON"
+    numericCode: 946
+    name: "Romanian Leu"
+    minorUnit: 2
+  - code: "RSD"
+    numericCode: 941
+    name: "Serbian Dinar"
+    minorUnit: 2
+  - code: "RUB"
+    numericCode: 643
+    name: "Russian Ruble"
+    minorUnit: 2
+  - code: "RWF"
+    numericCode: 646
+    name: "Rwanda Franc"
+    minorUnit: 0
+  - code: "SAR"
+    numericCode: 682
+    name: "Saudi Riyal"
+    minorUnit: 2
+  - code: "SBD"
+    numericCode: 90
+    name: "Solomon Islands Dollar"
+    minorUnit: 2
+  - code: "SCR"
+    numericCode: 690
+    name: "Seychelles Rupee"
+    minorUnit: 2
+  - code: "SDG"
+    numericCode: 938
+    name: "Sudanese Pound"
+    minorUnit: 2
+  - code: "SEK"
+    numericCode: 752
+    name: "Swedish Krona"
+    minorUnit: 2
+  - code: "SGD"
+    numericCode: 702
+    name: "Singapore Dollar"
+    minorUnit: 2
+  - code: "SHP"
+    numericCode: 654
+    name: "Saint Helena Pound"
+    minorUnit: 2
+  - code: "SLE"
+    numericCode: 925
+    name: "Leone"
+    minorUnit: 2
+  - code: "SOS"
+    numericCode: 706
+    name: "Somali Shilling"
+    minorUnit: 2
+  - code: "SRD"
+    numericCode: 968
+    name: "Surinam Dollar"
+    minorUnit: 2
+  - code: "SSP"
+    numericCode: 728
+    name: "South Sudanese Pound"
+    minorUnit: 2
+  - code: "STN"
+    numericCode: 930
+    name: "Dobra"
+    minorUnit: 2
+  - code: "SVC"
+    numericCode: 222
+    name: "El Salvador Colon"
+    minorUnit: 2
+  - code: "SYP"
+    numericCode: 760
+    name: "Syrian Pound"
+    minorUnit: 2
+  - code: "SZL"
+    numericCode: 748
+    name: "Lilangeni"
+    minorUnit: 2
+  - code: "THB"
+    numericCode: 764
+    name: "Baht"
+    minorUnit: 2
+  - code: "TJS"
+    numericCode: 972
+    name: "Somoni"
+    minorUnit: 2
+  - code: "TMT"
+    numericCode: 934
+    name: "Turkmenistan New Manat"
+    minorUnit: 2
+  - code: "TND"
+    numericCode: 788
+    name: "Tunisian Dinar"
+    minorUnit: 3
+  - code: "TOP"
+    numericCode: 776
+    name: "Pa’anga"
+    minorUnit: 2
+  - code: "TRY"
+    numericCode: 949
+    name: "Turkish Lira"
+    minorUnit: 2
+  - code: "TTD"
+    numericCode: 780
+    name: "Trinidad and Tobago Dollar"
+    minorUnit: 2
+  - code: "TWD"
+    numericCode: 901
+    name: "New Taiwan Dollar"
+    minorUnit: 2
+  - code: "TZS"
+    numericCode: 834
+    name: "Tanzanian Shilling"
+    minorUnit: 2
+  - code: "UAH"
+    numericCode: 980
+    name: "Hryvnia"
+    minorUnit: 2
+  - code: "UGX"
+    numericCode: 800
+    name: "Uganda Shilling"
+    minorUnit: 0
+  - code: "USD"
+    numericCode: 840
+    name: "US Dollar"
+    minorUnit: 2
+  - code: "USN"
+    numericCode: 997
+    name: "US Dollar (Next day)"
+    minorUnit: 2
+  - code: "UYI"
+    numericCode: 940
+    name: "Uruguay Peso en Unidades Indexadas (UI)"
+    minorUnit: 0
+  - code: "UYU"
+    numericCode: 858
+    name: "Peso Uruguayo"
+    minorUnit: 2
+  - code: "UYW"
+    numericCode: 927
+    name: "Unidad Previsional"
+    minorUnit: 4
+  - code: "UZS"
+    numericCode: 860
+    name: "Uzbekistan Sum"
+    minorUnit: 2
+  - code: "VED"
+    numericCode: 926
+    name: "Bolívar Soberano"
+    minorUnit: 2
+  - code: "VES"
+    numericCode: 928
+    name: "Bolívar Soberano"
+    minorUnit: 2
+  - code: "VND"
+    numericCode: 704
+    name: "Dong"
+    minorUnit: 0
+  - code: "VUV"
+    numericCode: 548
+    name: "Vatu"
+    minorUnit: 0
+  - code: "WST"
+    numericCode: 882
+    name: "Tala"
+    minorUnit: 2
+  - code: "YER"
+    numericCode: 886
+    name: "Yemeni Rial"
+    minorUnit: 2
+  - code: "ZAR"
+    numericCode: 710
+    name: "Rand"
+    minorUnit: 2
+  - code: "ZMW"
+    numericCode: 967
+    name: "Zambian Kwacha"
+    minorUnit: 2
+  - code: "ZWG"
+    numericCode: 924
+    name: "Zimbabwe Gold"
+    minorUnit: 2
+  # --- 'X' Currencies ---
+  - code: "XAF"
+    numericCode: 950
+    name: "CFA Franc BEAC"
+    minorUnit: 0
+  - code: "XAG"
+    numericCode: 961
+    name: "Silver"
+    minorUnit: null
+  - code: "XAU"
+    numericCode: 959
+    name: "Gold"
+    minorUnit: null
+  - code: "XBA"
+    numericCode: 955
+    name: "Bond Markets Unit European Composite Unit (EURCO)"
+    minorUnit: null
+  - code: "XBB"
+    numericCode: 956
+    name: "Bond Markets Unit European Monetary Unit (E.M.U.-6)"
+    minorUnit: null
+  - code: "XBC"
+    numericCode: 957
+    name: "Bond Markets Unit European Unit of Account 9 (E.U.A.-9)"
+    minorUnit: null
+  - code: "XBD"
+    numericCode: 958
+    name: "Bond Markets Unit European Unit of Account 17 (E.U.A.-17)"
+    minorUnit: null
+  - code: "XCD"
+    numericCode: 951
+    name: "East Caribbean Dollar"
+    minorUnit: 2
+  - code: "XCG"
+    numericCode: 532
+    name: "Caribbean Guilder"
+    minorUnit: 2
+  - code: "XDR"
+    numericCode: 960
+    name: "SDR (Special Drawing Right)"
+    minorUnit: null
+  - code: "XOF"
+    numericCode: 952
+    name: "CFA Franc BCEAO"
+    minorUnit: 0
+  - code: "XPD"
+    numericCode: 964
+    name: "Palladium"
+    minorUnit: null
+  - code: "XPF"
+    numericCode: 953
+    name: "CFP Franc"
+    minorUnit: 0
+  - code: "XPT"
+    numericCode: 962
+    name: "Platinum"
+    minorUnit: null
+  - code: "XSU"
+    numericCode: 994
+    name: "Sucre"
+    minorUnit: null
+  - code: "XTS"
+    numericCode: 963
+    name: "Codes specifically reserved for testing purposes"
+    minorUnit: null
+  - code: "XUA"
+    numericCode: 965
+    name: "ADB Unit of Account"
+    minorUnit: null
+  - code: "XXX"
+    numericCode: 999
+    name: "The codes assigned for transactions where no currency is involved"
+    minorUnit: null
+
+# List of all historic currencies
+historicCurrencies:
+  - code: "ADP"
+    numericCode: 20
+    name: "Andorran Peseta"
+    withdrawalDate: "2003-07"
+  - code: "AFA"
+    numericCode: 4
+    name: "Afghani"
+    withdrawalDate: "2003-01"
+  - code: "ALK"
+    numericCode: 8
+    name: "Old Lek"
+    withdrawalDate: "1989-12"
+  - code: "ANG"
+    numericCode: 532
+    name: "Netherlands Antillean Guilder"
+    withdrawalDate: "2025-03"
+  - code: "AOK"
+    numericCode: 24
+    name: "Kwanza"
+    withdrawalDate: "1991-03"
+  - code: "AON"
+    numericCode: 24
+    name: "New Kwanza"
+    withdrawalDate: "2000-02"
+  - code: "AOR"
+    numericCode: 982
+    name: "Kwanza Reajustado"
+    withdrawalDate: "2000-02"
+  - code: "ARA"
+    numericCode: 32
+    name: "Austral"
+    withdrawalDate: "1992-01"
+  - code: "ARP"
+    numericCode: 32
+    name: "Peso Argentino"
+    withdrawalDate: "1985-07"
+  - code: "ARY"
+    numericCode: 32
+    name: "Peso"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "ATS"
+    numericCode: 40
+    name: "Schilling"
+    withdrawalDate: "2002-03"
+  - code: "AYM"
+    numericCode: 945
+    name: "Azerbaijan Manat"
+    withdrawalDate: "2005-10"
+  - code: "AZM"
+    numericCode: 31
+    name: "Azerbaijanian Manat"
+    withdrawalDate: "2005-12"
+  - code: "BAD"
+    numericCode: 70
+    name: "Dinar"
+    withdrawalDate: "1998-07"
+  - code: "BEC"
+    numericCode: 993
+    name: "Convertible Franc"
+    withdrawalDate: "1990-03"
+  - code: "BEF"
+    numericCode: 56
+    name: "Belgian Franc"
+    withdrawalDate: "2002-03"
+  - code: "BEL"
+    numericCode: 992
+    name: "Financial Franc"
+    withdrawalDate: "1990-03"
+  - code: "BGL"
+    numericCode: 100
+    name: "Lev"
+    withdrawalDate: "2003-11"
+  - code: "BGJ"
+    numericCode: 100
+    name: "Lev A/52"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "BGK"
+    numericCode: 100
+    name: "Lev A/62"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "BOP"
+    numericCode: 68
+    name: "Peso boliviano"
+    withdrawalDate: "1987-02"
+  - code: "BRB"
+    numericCode: 76
+    name: "Cruzeiro"
+    withdrawalDate: "1986-03"
+  - code: "BRC"
+    numericCode: 76
+    name: "Cruzado"
+    withdrawalDate: "1989-02"
+  - code: "BRE"
+    numericCode: 76
+    name: "Cruzeiro"
+    withdrawalDate: "1993-03"
+  - code: "BRN"
+    numericCode: 76
+    name: "New Cruzado"
+    withdrawalDate: "1990-03"
+  - code: "BRR"
+    numericCode: 987
+    name: "Cruzeiro Real"
+    withdrawalDate: "1994-07"
+  - code: "BUK"
+    numericCode: 104
+    name: "Kyat"
+    withdrawalDate: "1990-02"
+  - code: "BYB"
+    numericCode: 112
+    name: "Belarusian Ruble"
+    withdrawalDate: "2001-01"
+  - code: "BYR"
+    numericCode: 974
+    name: "Belarusian Ruble"
+    withdrawalDate: "2017-01"
+  - code: "CHC"
+    numericCode: 948
+    name: "WIR Franc (for electronic)"
+    withdrawalDate: "2004-11"
+  - code: "CSD"
+    numericCode: 891
+    name: "Serbian Dinar"
+    withdrawalDate: "2006-10"
+  - code: "CSJ"
+    numericCode: 203
+    name: "Krona A/53"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "CSK"
+    numericCode: 200
+    name: "Koruna"
+    withdrawalDate: "1993-03"
+  - code: "CUC"
+    numericCode: 931
+    name: "Peso Convertible"
+    withdrawalDate: "2021-06"
+  - code: "CYP"
+    numericCode: 196
+    name: "Cyprus Pound"
+    withdrawalDate: "2008-01"
+  - code: "DDM"
+    numericCode: 278
+    name: "Mark der DDR"
+    withdrawalDate: "1990-09" # Note: Source XML states '1990-07 to 1990-09'
+  - code: "DEM"
+    numericCode: 276
+    name: "Deutsche Mark"
+    withdrawalDate: "2002-03"
+  - code: "ECS"
+    numericCode: 218
+    name: "Sucre"
+    withdrawalDate: "2000-09"
+  - code: "ECV"
+    numericCode: 983
+    name: "Unidad de Valor Constante (UVC)"
+    withdrawalDate: "2000-09"
+  - code: "EEK"
+    numericCode: 233
+    name: "Kroon"
+    withdrawalDate: "2011-01"
+  - code: "ESA"
+    numericCode: 996
+    name: "Spanish Peseta"
+    withdrawalDate: "1981-12" # Note: Source XML states '1978 to 1981'
+  - code: "ESB"
+    numericCode: 995
+    name: "\"A\" Account (convertible Peseta Account)"
+    withdrawalDate: "1994-12"
+  - code: "ESP"
+    numericCode: 724
+    name: "Spanish Peseta"
+    withdrawalDate: "2002-03"
+  - code: "FIM"
+    numericCode: 246
+    name: "Markka"
+    withdrawalDate: "2002-03"
+  - code: "FRF"
+    numericCode: 250
+    name: "French Franc"
+    withdrawalDate: "2002-03"
+  - code: "GEK"
+    numericCode: 268
+    name: "Georgian Coupon"
+    withdrawalDate: "1995-10"
+  - code: "GHC"
+    numericCode: 288
+    name: "Cedi"
+    withdrawalDate: "2008-01"
+  - code: "GHP"
+    numericCode: 939
+    name: "Ghana Cedi"
+    withdrawalDate: "2007-06"
+  - code: "GNE"
+    numericCode: 324
+    name: "Syli"
+    withdrawalDate: "1989-12"
+  - code: "GNS"
+    numericCode: 324
+    name: "Syli"
+    withdrawalDate: "1986-02"
+  - code: "GQE"
+    numericCode: 226
+    name: "Ekwele"
+    withdrawalDate: "1986-06"
+  - code: "GRD"
+    numericCode: 300
+    name: "Drachma"
+    withdrawalDate: "2002-03"
+  - code: "GWE"
+    numericCode: 624
+    name: "Guinea Escudo"
+    withdrawalDate: "1981-12" # Note: Source XML states '1978 to 1981'
+  - code: "GWP"
+    numericCode: 624
+    name: "Guinea-Bissau Peso"
+    withdrawalDate: "1997-05"
+  - code: "HRD"
+    numericCode: 191
+    name: "Croatian Dinar"
+    withdrawalDate: "1995-01"
+  - code: "HRK"
+    numericCode: 191
+    name: "Kuna"
+    withdrawalDate: "2023-01"
+  - code: "IEP"
+    numericCode: 372
+    name: "Irish Pound"
+    withdrawalDate: "2002-03"
+  - code: "ILP"
+    numericCode: 376
+    name: "Pound"
+    withdrawalDate: "1981-12" # Note: Source XML states '1978 to 1981'
+  - code: "ILR"
+    numericCode: 376
+    name: "Old Shekel"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "ISJ"
+    numericCode: 352
+    name: "Old Krona"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "ITL"
+    numericCode: 380
+    name: "Italian Lira"
+    withdrawalDate: "2002-03"
+  - code: "LAJ"
+    numericCode: 418
+    name: "Pathet Lao Kip"
+    withdrawalDate: "1979-12"
+  - code: "LSM"
+    numericCode: 426
+    name: "Loti"
+    withdrawalDate: "1985-05"
+  - code: "LTL"
+    numericCode: 440
+    name: "Lithuanian Litas"
+    withdrawalDate: "2014-12"
+  - code: "LTT"
+    numericCode: 440
+    name: "Talonas"
+    withdrawalDate: "1993-07"
+  - code: "LUC"
+    numericCode: 989
+    name: "Luxembourg Convertible Franc"
+    withdrawalDate: "1990-03"
+  - code: "LUF"
+    numericCode: 442
+    name: "Luxembourg Franc"
+    withdrawalDate: "2002-03"
+  - code: "LUL"
+    numericCode: 988
+    name: "Luxembourg Financial Franc"
+    withdrawalDate: "1990-03"
+  - code: "LVL"
+    numericCode: 428
+    name: "Latvian Lats"
+    withdrawalDate: "2014-01"
+  - code: "LVR"
+    numericCode: 428
+    name: "Latvian Ruble"
+    withdrawalDate: "1994-12"
+  - code: "MGF"
+    numericCode: 450
+    name: "Malagasy Franc"
+    withdrawalDate: "2004-12"
+  - code: "MLF"
+    numericCode: 466
+    name: "Mali Franc"
+    withdrawalDate: "1984-11"
+  - code: "MRO"
+    numericCode: 478
+    name: "Ouguiya"
+    withdrawalDate: "2017-12"
+  - code: "MTL"
+    numericCode: 470
+    name: "Maltese Lira"
+    withdrawalDate: "2008-01"
+  - code: "MTP"
+    numericCode: 470
+    name: "Maltese Pound"
+    withdrawalDate: "1983-06"
+  - code: "MVQ"
+    numericCode: 462
+    name: "Maldive Rupee"
+    withdrawalDate: "1989-12"
+  - code: "MWK"
+    numericCode: 454
+    name: "Kwacha"
+    withdrawalDate: "2016-02"
+  - code: "MXP"
+    numericCode: 484
+    name: "Mexican Peso"
+    withdrawalDate: "1993-01"
+  - code: "MZE"
+    numericCode: 508
+    name: "Mozambique Escudo"
+    withdrawalDate: "1981-12" # Note: Source XML states '1978 to 1981'
+  - code: "MZM"
+    numericCode: 508
+    name: "Mozambique Metical"
+    withdrawalDate: "2006-06"
+  - code: "NIC"
+    numericCode: 558
+    name: "Cordoba"
+    withdrawalDate: "1990-10"
+  - code: "NLG"
+    numericCode: 528
+    name: "Netherlands Guilder"
+    withdrawalDate: "2002-03"
+  - code: "PEH"
+    numericCode: 604
+    name: "Sol"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "PEI"
+    numericCode: 604
+    name: "Inti"
+    withdrawalDate: "1991-07"
+  - code: "PEN"
+    numericCode: 604
+    name: "Nuevo Sol"
+    withdrawalDate: "2015-12"
+  - code: "PES"
+    numericCode: 604
+    name: "Sol"
+    withdrawalDate: "1986-02"
+  - code: "PLZ"
+    numericCode: 616
+    name: "Zloty"
+    withdrawalDate: "1997-01"
+  - code: "PTE"
+    numericCode: 620
+    name: "Portuguese Escudo"
+    withdrawalDate: "2002-03"
+  - code: "RHD"
+    numericCode: 716
+    name: "Rhodesian Dollar"
+    withdrawalDate: "1981-12" # Note: Source XML states '1978 to 1981'
+  - code: "ROK"
+    numericCode: 642
+    name: "Leu A/52"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "ROL"
+    numericCode: 642
+    name: "Old Leu"
+    withdrawalDate: "2005-06"
+  - code: "RON"
+    numericCode: 946
+    name: "New Romanian Leu"
+    withdrawalDate: "2015-06"
+  - code: "RUR"
+    numericCode: 810
+    name: "Russian Ruble"
+    withdrawalDate: "2004-01"
+  - code: "SDD"
+    numericCode: 736
+    name: "Sudanese Dinar"
+    withdrawalDate: "2007-07"
+  - code: "SDG"
+    numericCode: 938
+    name: "Sudanese Pound"
+    withdrawalDate: "2012-09"
+  - code: "SDP"
+    numericCode: 736
+    name: "Sudanese Pound"
+    withdrawalDate: "1998-06"
+  - code: "SIT"
+    numericCode: 705
+    name: "Tolar"
+    withdrawalDate: "2007-01"
+  - code: "SKK"
+    numericCode: 703
+    name: "Slovak Koruna"
+    withdrawalDate: "2009-01"
+  - code: "SLL"
+    numericCode: 694
+    name: "Leone"
+    withdrawalDate: "2023-12"
+  - code: "SRG"
+    numericCode: 740
+    name: "Surinam Guilder"
+    withdrawalDate: "2003-12"
+  - code: "STD"
+    numericCode: 678
+    name: "Dobra"
+    withdrawalDate: "2017-12"
+  - code: "SUR"
+    numericCode: 810
+    name: "Rouble"
+    withdrawalDate: "1990-12"
+  - code: "SZL"
+    numericCode: 748
+    name: "Lilangeni"
+    withdrawalDate: "2018-08"
+  - code: "TJR"
+    numericCode: 762
+    name: "Tajik Ruble"
+    withdrawalDate: "2001-04"
+  - code: "TMM"
+    numericCode: 795
+    name: "Turkmenistan Manat"
+    withdrawalDate: "2009-01"
+  - code: "TPE"
+    numericCode: 626
+    name: "Timor Escudo"
+    withdrawalDate: "2002-11"
+  - code: "TRL"
+    numericCode: 792
+    name: "Old Turkish Lira"
+    withdrawalDate: "2005-12"
+  - code: "TRY"
+    numericCode: 949
+    name: "New Turkish Lira"
+    withdrawalDate: "2009-01"
+  - code: "UAK"
+    numericCode: 804
+    name: "Karbovanet"
+    withdrawalDate: "1996-09"
+  - code: "UGS"
+    numericCode: 800
+    name: "Uganda Shilling"
+    withdrawalDate: "1987-05"
+  - code: "UGW"
+    numericCode: 800
+    name: "Old Shilling"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989 to 1990'
+  - code: "USS"
+    numericCode: 998
+    name: "US Dollar (Same day)"
+    withdrawalDate: "2014-03"
+  - code: "UYN"
+    numericCode: 858
+    name: "Old Uruguay Peso"
+    withdrawalDate: "1989-12"
+  - code: "UYP"
+    numericCode: 858
+    name: "Uruguayan Peso"
+    withdrawalDate: "1993-03"
+  - code: "VEB"
+    numericCode: 862
+    name: "Bolivar"
+    withdrawalDate: "2008-01"
+  - code: "VEF"
+    numericCode: 937
+    name: "Bolívar"
+    withdrawalDate: "2018-08"
+  - code: "VNC"
+    numericCode: 704
+    name: "Old Dong"
+    withdrawalDate: "1990-12" # Note: Source XML states '1989-1990'
+  - code: "YDD"
+    numericCode: 720
+    name: "Yemeni Dinar"
+    withdrawalDate: "1991-09"
+  - code: "YUD"
+    numericCode: 890
+    name: "New Yugoslavian Dinar"
+    withdrawalDate: "1990-01"
+  - code: "YUM"
+    numericCode: 891
+    name: "New Dinar"
+    withdrawalDate: "2003-07"
+  - code: "YUN"
+    numericCode: 890
+    name: "Yugoslavian Dinar"
+    withdrawalDate: "1995-11"
+  - code: "ZAL"
+    numericCode: 991
+    name: "Financial Rand"
+    withdrawalDate: "1995-03"
+  - code: "ZMK"
+    numericCode: 894
+    name: "Zambian Kwacha"
+    withdrawalDate: "2012-12"
+  - code: "ZRN"
+    numericCode: 180
+    name: "New Zaire"
+    withdrawalDate: "1999-06"
+  - code: "ZRZ"
+    numericCode: 180
+    name: "Zaire"
+    withdrawalDate: "1994-02"
+  - code: "ZWC"
+    numericCode: 716
+    name: "Rhodesian Dollar"
+    withdrawalDate: "1989-12"
+  - code: "ZWD"
+    numericCode: 716
+    name: "Zimbabwe Dollar (old)"
+    withdrawalDate: "2008-08"
+  - code: "ZWL"
+    numericCode: 932
+    name: "Zimbabwe Dollar"
+    withdrawalDate: "2024-09"
+  - code: "ZWN"
+    numericCode: 942
+    name: "Zimbabwe Dollar (new)"
+    withdrawalDate: "2006-09"
+  - code: "ZWR"
+    numericCode: 935
+    name: "Zimbabwe Dollar"
+    withdrawalDate: "2009-06"
+  # --- 'X' Currencies ---
+  - code: "XEU"
+    numericCode: 954
+    name: "European Currency Unit (E.C.U)"
+    withdrawalDate: "1999-01"
+  - code: "XFO"
+    numericCode: null
+    name: "Gold-Franc"
+    withdrawalDate: "2006-10"
+  - code: "XFU"
+    numericCode: null
+    name: "UIC-Franc"
+    withdrawalDate: "2013-11"
+  - code: "XRE"
+    numericCode: null
+    name: "RINET Funds Code"
+    withdrawalDate: "1999-11"

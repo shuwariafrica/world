@@ -1,0 +1,14 @@
+# All dotfile directories
+.*/
+!.github/
+
+metals.sbt
+
+# PowerShell specific files
+PowerShell*/
+
+# Build output directories
+target/
+
+# Miscellaneous
+null/
