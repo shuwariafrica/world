@@ -1,20 +1,3 @@
-/****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
- *                                                              *
- * This file is licensed to you under the terms of the Apache   *
- * License Version 2.0 (the "License"); you may not use this    *
- * file except in compliance with the License. You may obtain   *
- * a copy of the License at:                                    *
- *                                                              *
- *     https://www.apache.org/licenses/LICENSE-2.0              *
- *                                                              *
- * Unless required by applicable law or agreed to in writing,   *
- * software distributed under the License is distributed on an  *
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, *
- * either express or implied. See the License for the specific  *
- * language governing permissions and limitations under the     *
- * License.                                                     *
- ****************************************************************/
 import sbt.*
 import sbt.Keys.*
 import com.github.tototoshi.csv.*
@@ -30,16 +13,17 @@ import scala.reflect.runtime.{universe => ru}
 
 object CurrenciesPopulator {
 
-  // --- Case classes to represent the structure of our YAML data files ---
+  // --- Case classes to represent the structures
 
   // For currencies.yml
-  private case class CurrencyEntry(
-    code: String,
-    numericCode: Option[Int],
-    name: String,
-    minorUnit: Option[Int],
-    withdrawalDate: Option[YearMonth]
-  )
+  private case class CurrencyEntry
+    (
+      code: String,
+      numericCode: Option[Int],
+      name: String,
+      minorUnit: Option[Int],
+      withdrawalDate: Option[YearMonth]
+    )
   private case class CurrenciesRoot(activeCurrencies: List[CurrencyEntry], historicCurrencies: List[CurrencyEntry])
 
   // For currency-usage.yml
@@ -60,40 +44,38 @@ object CurrenciesPopulator {
     log.info("Starting CurrenciesPopulator generation...")
 
     val projectRootDir = (ThisBuild / baseDirectory).value
-
-    // --- Define File Paths ---
     val countriesCsvFile = projectRootDir / "countries-iso3166.csv"
     val supplementalCountriesFile = projectRootDir / "supplemental-countries.yml"
     val currenciesYamlFile = projectRootDir / "currencies.yml"
     val usageYamlFile = projectRootDir / "currency-usage.yml"
 
     val sourceManagedDir = (Compile / sourceManaged).value
-    val targetDir = sourceManagedDir / "africa" / "shuwari" / "money" / "currency"
-    val currenciesTargetFile = targetDir / "Currencies.scala"
-    val instancesTargetFile = targetDir / "CurrencyUsageInstances.scala"
-    IO.createDirectory(targetDir)
+    val currencyTargetDir = sourceManagedDir / "africa" / "shuwari" / "money" / "currency"
+    val syntaxTargetDir = sourceManagedDir / "africa" / "shuwari" / "money" // New dir for syntax
+    val currenciesTargetFile = currencyTargetDir / "Currencies.scala"
+    val instancesTargetFile = currencyTargetDir / "CurrencyUsageInstances.scala"
+    val syntaxTargetFile = syntaxTargetDir / "CurrencyFactorySyntax.scala" // New file
+    IO.createDirectory(currencyTargetDir)
+    IO.createDirectory(syntaxTargetDir) // Create new directory
 
     // --- Load Data ---
     log.info("Loading country codes for validation...")
     val baseCountryCodes = loadCountryAlpha2Codes(countriesCsvFile, log)
     val supplementalCountryCodes = loadSupplementalCountryAlpha2Codes(supplementalCountriesFile, log)
-    val validAlpha2Codes = baseCountryCodes ++ supplementalCountryCodes // Merge both sets
+    val validAlpha2Codes = baseCountryCodes ++ supplementalCountryCodes
     log.info(s"Loaded ${validAlpha2Codes.size} total valid country codes for validation.")
-
     log.info(s"Loading curated currency data from ${currenciesYamlFile.getName}...")
     val currenciesRoot = parseYaml[CurrenciesRoot](currenciesYamlFile, log).getOrElse(
       sys.error(s"Required file ${currenciesYamlFile.getName} not found or failed to parse."))
     val activeCurrencies = currenciesRoot.activeCurrencies
     val historicCurrencies = currenciesRoot.historicCurrencies
-    log.info(s"Loaded ${activeCurrencies.size} active and ${historicCurrencies.size} historic currency entries.")
-
+    log.info(s"Loaded ${activeCurrencies.size} active and ${historicCurrencies.size} currency entries.")
     log.info(s"Loading curated currency usage data from ${usageYamlFile.getName}...")
     val usageRoot =
       parseYaml[UsageRoot](usageYamlFile, log).getOrElse(sys.error(s"Required file ${usageYamlFile.getName} not found or failed to parse."))
     val activeUsageMap = usageRoot.activeUsageMappings.map(u => u.code -> u).toMap
     val historicUsageMap = usageRoot.historicUsageMappings.map(u => u.code -> u).toMap
     log.info(s"Loaded ${activeUsageMap.size} active and ${historicUsageMap.size} historic usage mappings.")
-
     val activeCodes = activeCurrencies.map(_.code).toSet
     val historicCodes = historicCurrencies.map(_.code).toSet
     val clashingCodes = activeCodes.intersect(historicCodes)
@@ -119,8 +101,15 @@ object CurrenciesPopulator {
     IO.write(instancesTargetFile, instancesSource, StandardCharsets.UTF_8)
     log.info(s"Wrote ${instancesTargetFile.getAbsolutePath}")
 
+    // --- NEW: Generate Syntax File ---
+    log.info("Generating CurrencyFactorySyntax.scala source code...")
+    val syntaxSource = generateFactorySyntaxSource(activeCurrencies)
+    IO.write(syntaxTargetFile, syntaxSource, StandardCharsets.UTF_8)
+    log.info(s"Wrote ${syntaxTargetFile.getAbsolutePath}")
+
     log.info("CurrenciesPopulator generation finished successfully.")
-    List(currenciesTargetFile, instancesTargetFile)
+    // Return all generated files
+    List(currenciesTargetFile, instancesTargetFile, syntaxTargetFile)
   }
 
   /** Generic YAML parser using Circe. Fails build on error. */
@@ -163,43 +152,57 @@ object CurrenciesPopulator {
     if (raw == null) "null" else ru.Literal(ru.Constant(raw)).toString
 
   /** Generates the content of the main Currencies.scala file. */
-  private def generateCurrenciesFileSource(
-    active: List[CurrencyEntry],
-    historic: List[CurrencyEntry],
-    clashingCodes: Set[String]
-  ): String = {
+  /** UPDATED: Generates the content of the main Currencies.scala file. */
+  private def generateCurrenciesFileSource
+      (
+        active: List[CurrencyEntry],
+        historic: List[CurrencyEntry],
+        clashingCodes: Set[String]
+      ): String = {
 
     def generateObject(objectName: String, entries: List[CurrencyEntry], isHistoric: Boolean): String = {
+      val traitName = if (isHistoric) "HistoricCurrency" else "Currency"
       val objHeader =
         s"""
            |/** Provides predefined instances and lookup methods for ${if (isHistoric) "historic" else "active"} ISO 4217 currencies. */
            |object $objectName:""".stripMargin
 
+      // Generate case objects and type aliases
       val valAndTypeBlocks = entries.sortBy(_.code).map { c =>
-        val valName = if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code
-        val typeName = valName
-        val details = if (isHistoric) {
-          val numericCodeStr = c.numericCode.map(nc => s"Some(NumericCode.unsafeFrom($nc))").getOrElse("None")
-          s"""HistoricCurrency(CcyCode.unsafeFrom("${c.code}"), $numericCodeStr, ${escape(
-              c.name)}, YearMonth.of(${c.withdrawalDate.get.getYear}, ${c.withdrawalDate.get.getMonthValue}).nn)"""
+        val objectName = if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code
+        val typeAlias = objectName
+        val docName = s"${c.name}${if (isHistoric) " (Historic)" else ""}"
+
+        val fields = new StringBuilder
+        fields.append(s"""    def code: CcyCode = CcyCode.unsafeFrom("${c.code}")""")
+        fields.append(s"""\n    def name: String = ${escape(c.name)}""")
+
+        if (isHistoric) {
+          fields.append(s"""\n    def numericCode: Option[NumericCode] = ${c.numericCode
+              .map(nc => s"Some(NumericCode.unsafeFrom($nc))")
+              .getOrElse("None")}""")
+          fields.append(
+            s"""\n    def withdrawalDate: YearMonth = YearMonth.of(${c.withdrawalDate.get.getYear}, ${c.withdrawalDate.get.getMonthValue}).nn""")
         } else {
           val numericCodeVal = c.numericCode.getOrElse(sys.error(s"Active currency ${c.code} is missing a numericCode in currencies.yml."))
-          s"""Currency(CcyCode.unsafeFrom("${c.code}"), NumericCode.unsafeFrom($numericCodeVal), ${escape(c.name)}, ${c.minorUnit
-              .map(mu => s"Some($mu)")
-              .getOrElse("None")})"""
+          fields.append(s"""\n    def numericCode: NumericCode = NumericCode.unsafeFrom($numericCodeVal)""")
+          fields.append(s"""\n    def minorUnit: Option[Int] = ${c.minorUnit}""")
         }
-        val docName = s"${c.name}${if (isHistoric) " (Historic)" else ""}"
+
         s"""
-           |  /** $docName */
-           |  final val $valName = $details
-           |  /** Type alias for the singleton type of the [[$valName]] currency value. */
-           |  type $typeName = $valName.type""".stripMargin
+           |  /** An instance of [[$traitName]] for the '''$docName'''. */
+           |  case object $objectName extends $traitName:
+           |${fields.toString}
+           |
+           |  /** A type alias for the singleton type of the [[$objectName]] currency object. */
+           |  type $typeAlias = $objectName.type""".stripMargin
       }
 
-      val allValNames = entries.map(c => if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code).mkString(", ")
-      val objectType = if (isHistoric) "HistoricCurrency" else "Currency"
+      // Generate 'all' set and lookup methods
+      val allObjectNames = entries.map(c => if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code).mkString(", ")
       val sets =
-        s"\n  /** A `Set` containing all defined ${if (isHistoric) "historic" else "active"} currency instances in this object. */\n  val all: Set[$objectType] = Set($allValNames)"
+        s"\n  /** A `Set` containing all defined ${if (isHistoric) "historic" else "active"} currency instances in this object. */\n  val all: Set[$traitName] = Set($allObjectNames)"
+
       val lookupMaps = if (isHistoric) {
         s"""
            |  private final val codeToCurrencyMap: Map[CcyCode, HistoricCurrency] = all.map(c => c.code -> c).toMap
@@ -212,16 +215,18 @@ object CurrenciesPopulator {
       val functions =
         s"""
            |  /** Finds a currency by its 3-letter ISO 4217 alphabetic code (case-insensitive). */
-           |  def fromCode(code: String): Option[$objectType] =
+           |  def fromCode(code: String): Option[$traitName] =
            |    Option(code).map(_.toUpperCase.nn).flatMap(c => CcyCode.from(c).toOption.flatMap(codeToCurrencyMap.get))
            |
            |  /** Finds a currency by its 3-digit ISO 4217 numeric code. */
-           |  def fromNumericCode(code: Int): Option[$objectType] =
+           |  def fromNumericCode(code: Int): Option[$traitName] =
            |    NumericCode.from(code).toOption.flatMap(numericToCurrencyMap.get)"""
 
       s"$objHeader\n${valAndTypeBlocks.mkString("\n")}\n$sets\n$lookupMaps\n$functions\nend $objectName"
     }
 
+    // ... main string builder for the file content (as before) ...
+    // This part remains unchanged as it just calls generateObject
     s"""// DO NOT EDIT - Generated by CurrenciesPopulator.scala at ${Instant.now()}
        |package africa.shuwari.money.currency
        |
@@ -234,15 +239,16 @@ object CurrenciesPopulator {
   }
 
   /** Generates the CurrencyUsageInstances.scala file content. */
-  private def generateUsageInstancesSource(
-    activeEntries: List[CurrencyEntry],
-    historicEntries: List[CurrencyEntry],
-    activeUsageMap: Map[String, UsageEntry],
-    historicUsageMap: Map[String, UsageEntry],
-    clashingCodes: Set[String],
-    validAlpha2Codes: Set[String],
-    log: Logger
-  ): String = {
+  private def generateUsageInstancesSource
+      (
+        activeEntries: List[CurrencyEntry],
+        historicEntries: List[CurrencyEntry],
+        activeUsageMap: Map[String, UsageEntry],
+        historicUsageMap: Map[String, UsageEntry],
+        clashingCodes: Set[String],
+        validAlpha2Codes: Set[String],
+        log: Logger
+      ): String = {
 
     def generateGivens(entries: List[CurrencyEntry], usageMap: Map[String, UsageEntry], isHistoric: Boolean): String =
       entries
@@ -298,5 +304,45 @@ object CurrenciesPopulator {
        |${generateGivens(historicEntries, historicUsageMap, isHistoric = true)}
        |end CurrencyUsageInstances
        |""".stripMargin
+  }
+
+  private def generateFactorySyntaxSource(active: List[CurrencyEntry]): String = {
+    val sb = new StringBuilder
+    sb ++=
+      s"""// DO NOT EDIT - FILE AUTOMATICALLY GENERATED AT: ${Instant.now()}
+         |package africa.shuwari.money
+         |
+         |import africa.shuwari.money.currency.{CurrencyValue, Currencies}
+         |import scala.annotation.targetName
+         |
+         |/** A trait containing generated extension methods for creating [[Money]] instances
+         | * with a currency-specific, type-safe syntax, such as `100.USD` or `50.50.EUR`.
+         | *
+         | * The result of an expression like `100.USD` is `Money[Currencies.USD.type]`,
+         | * ensuring that currency types are tracked by the compiler.
+         | *
+         | * This trait is intended to be mixed into the `africa.shuwari.money.syntax` object
+         | * to make the syntax available via a single import:
+         | * `import africa.shuwari.money.syntax.*`
+         | *
+         | * @note This file is automatically generated. Do not edit.
+         | */
+         |trait CurrencyFactorySyntax:
+         |""".stripMargin
+
+    active.sortBy(_.code).foreach { currency =>
+      val ccyCode = currency.code
+      sb ++=
+        s"""
+           |  extension (value: CurrencyValue | BigDecimal | Long | Int | Double)
+           |    /** Creates a type-safe [[Money[Currencies.$ccyCode.type]] instance. */
+           |    @targetName("$ccyCode")
+           |    transparent inline def $ccyCode: Money[Currencies.$ccyCode.type] =
+           |      Money(CurrencyValue(value))(using ValueOf(Currencies.$ccyCode))
+           |""".stripMargin
+    }
+
+    sb ++= "\nend CurrencyFactorySyntax\n"
+    sb.toString()
   }
 }

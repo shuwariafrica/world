@@ -15,21 +15,25 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package africa.shuwari.money.currency
+package africa.shuwari.money.conversion
 
-/** Provides the `given` instances for the [[CurrencyUsage]] typeclass.
+import africa.shuwari.money.errors.ConversionError
+
+/** A trait for providing exchange rates.
   *
-  * Importing the contents of this object brings all default `CurrencyUsage`
-  * instances provided by this librar into the implicit scope.
+  * This is the central SPI (Service Provider Interface) for currency
+  * conversion. Users can implement this trait to fetch exchange rates from any
+  * source, such as a web API, a database, or a local file.
   *
-  * @example
-  *   {{{
-  * import africa.shuwari.money.currency.Currencies
-  * import africa.shuwari.money.currency.syntax.*
-  * import africa.shuwari.money.currency.instances.given
-  *
-  * // The `.usage` method is now available because the given instance was imported.
-  * val countriesUsingUSD = Currencies.USD.usage
-  *   }}}
+  * Well-behaved implementations should handle finding direct rates (e.g., EUR
+  * -> USD), inverse rates (if only USD -> EUR is available), and potentially
+  * chained or cross-rates (e.g., KES -> ZAR via USD).
   */
-object instances extends CurrencyUsageInstances
+trait ExchangeRateProvider:
+  /** Retrieves the exchange rate for the given `ConversionQuery`.
+    *
+    * @param query The query specifying the base and term currencies.
+    * @return `Right` with a [[ConversionRate]] if a rate is found, or `Left`
+    *   with a [[ConversionError]] if the rate cannot be determined.
+    */
+  def get(query: ConversionQuery): Either[ConversionError, ConversionRate]

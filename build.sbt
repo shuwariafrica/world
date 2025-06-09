@@ -52,6 +52,7 @@ val `money-root` =
     .apacheLicensed
     .aggregate(jvmProjects, jsProjects, nativeProjects)
     .settings(sonatypeProfileSetting)
+    .dependsOn(money.jvm)
 
 inThisBuild(
   List(
@@ -123,6 +124,7 @@ def pgpSettings = List(
   usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
 )
 
-addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
+addCommandAlias("format", "jvmProjects/scalafixAll; jvmProjects/scalafmtAll; scalafmtSbt; jvmProjects/headerCreateAll")
 
-addCommandAlias("staticCheck", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("staticCheck",
+                "jvmProjects/scalafixAll --check; jvmProjects/scalafmtCheckAll; scalafmtSbtCheck; jvmProjects/headerCheckAll")

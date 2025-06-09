@@ -17,10 +17,11 @@
  ****************************************************************/
 package africa.shuwari.money.currency
 
-/** Provides the `given` instances for the [[CurrencyUsage]] typeclass.
+import africa.shuwari.locale.country.Country
+
+/** Provides syntax extensions related to currency operations and usage.
   *
-  * Importing the contents of this object brings all default `CurrencyUsage`
-  * instances provided by this librar into the implicit scope.
+  * Importing from this object enables convenient extension methods.
   *
   * @example
   *   {{{
@@ -28,8 +29,18 @@ package africa.shuwari.money.currency
   * import africa.shuwari.money.currency.syntax.*
   * import africa.shuwari.money.currency.instances.given
   *
-  * // The `.usage` method is now available because the given instance was imported.
   * val countriesUsingUSD = Currencies.USD.usage
   *   }}}
   */
-object instances extends CurrencyUsageInstances
+object syntax:
+  extension [A <: CurrencyDetails](currency: A)
+    /** Retrieves the set of countries where this specific currency is used.
+      *
+      * This method relies on a `given` [[CurrencyUsage]] instance for this
+      * currency's specific type being available in the current scope.
+      *
+      * @param usage The implicitly provided [[CurrencyUsage]] instance.
+      * @return A `Set` of [[africa.shuwari.locale.country.Country]] instances.
+      */
+    transparent inline def usage(using CurrencyUsage[A]): Set[Country] = CurrencyUsage(currency)
+end syntax

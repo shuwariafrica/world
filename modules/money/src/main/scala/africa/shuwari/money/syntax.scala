@@ -17,31 +17,18 @@
  ****************************************************************/
 package africa.shuwari.money
 
-import scala.annotation.targetName
-
-/** Internal utility extensions, primarily for handling nullable values
-  * gracefully within the `africa.shuwari.money` library.
+/** Provides convenient, importable syntax extensions for creating `Money`
+  * instances.
   *
-  * These utilities are not intended for public API usage.
+  * By importing from this object, you can enable a DSL-like syntax for creating
+  * type-safe `Money` values from standard numeric types.
+  *
+  * @example
+  *   {{{
+  * import africa.shuwari.money.syntax.*
+  *
+  * val tenDollars = 10.USD
+  * val fiftyEuro = 50.0.EUR
+  *   }}}
   */
-private[money] object internal:
-
-  extension [A](v: A | Null)
-    @targetName("any_nopt") transparent inline def nopt: Option[A] = inline v match
-      case valueA: A => Some(valueA) // Type test ensures 'valueA' is not null
-      case _: Null   => None
-
-    @targetName("any_noptm") transparent inline def noptM[B](f: A => B): Option[B] = v.nopt.map(f)
-
-    @targetName("any_noptf") transparent inline def noptF[B](f: A => Option[B]): Option[B] = v.nopt.flatMap(f)
-
-  extension [A](v: Option[A | Null])
-    @targetName("option_nopt") transparent inline def nopt: Option[A] = v.flatMap {
-      case valueA: A => Some(valueA) // Type test ensures 'valueA' is not null
-      case _: Null   => None
-    }
-
-    @targetName("option_noptm") transparent inline def noptM[B](f: A => B): Option[B] = v.nopt.map(f)
-
-    @targetName("option_noptf") transparent inline def noptF[B](f: A => Option[B]): Option[B] = v.nopt.flatMap(f)
-end internal
+object syntax extends CurrencyFactorySyntax

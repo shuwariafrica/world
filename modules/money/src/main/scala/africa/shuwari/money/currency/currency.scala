@@ -21,99 +21,98 @@ import java.time.YearMonth
 
 import africa.shuwari.locale.country.Country
 
-/** Base type for ISO 4217 currency data representations. Defines common
-  * properties shared by all currency entries.
+/** A base trait for all ISO 4217 currency data representations.
+  *
+  * It defines the fundamental properties shared by all currency entries.
+  * Concrete, predefined instances are available in the [[Currencies$]] and
+  * [[HistoricCurrencies$]] objects.
   *
   * @see [[Currency]] for actively circulating currencies.
-  * @see [[HistoricCurrency]] for currencies that have been withdrawn from
-  *   circulation.
+  * @see [[HistoricCurrency]] for withdrawn currencies.
   */
 sealed trait CurrencyDetails extends Product with Serializable derives CanEqual:
-  /** The 3-letter alphabetic code (ISO 4217 Alpha-3). */
+  /** The 3-letter uppercase [[CcyCode]]. */
   def code: CcyCode
-
   /** The common, human-readable name of the currency. */
   def name: String
-
-  /** Provides a standard string representation of the currency details.
-    *
-    * @return A string such as "KES (Kenyan Shilling)".
-    */
+  /** Provides a standard string representation, e.g., "KES (Kenyan Shilling)". */
   override def toString: String = s"${code.value} ($name)"
-end CurrencyDetails
 
-/** Represents an active ISO 4217 currency currently in circulation.
+/** Represents an actively circulating currency.
   *
-  * @param code The [[CcyCode]] representing the 3-letter alphabetic code.
-  * @param numericCode The [[NumericCode]] representing the 3-digit numeric
-  *   code. This is mandatory for active currencies.
-  * @param name The common, human-readable name of the currency.
-  * @param minorUnit The number of decimal places for the currency's minor unit,
-  *   if defined. For KES, this would be `Some(2)` (representing cents). `None`
-  *   indicates no conventional minor unit.
+  * All active currencies known to this library are available as predefined
+  * singleton objects within the [[Currencies$ Currencies]] object.
+  *
+  * @example {{{ import africa.shuwari.money.currency.Currencies
+  *
+  * val kenyanShilling = Currencies.KES assert(kenyanShilling.name == "Kenyan
+  * Shilling") assert(kenyanShilling.numericCode.value == 404)
+  * assert(kenyanShilling.minorUnit == Some(2)) }}}
   */
-final case class Currency(
-  code: CcyCode,
-  numericCode: NumericCode,
-  name: String,
-  minorUnit: Option[Int]
-) extends CurrencyDetails
+trait Currency extends CurrencyDetails derives CanEqual:
+  /** The 3-digit [[NumericCode]]. */
+  def numericCode: NumericCode
+  /** The number of decimal places for the currency's minor unit. */
+  def minorUnit: Option[Int]
 
-/** Represents a historic (withdrawn) ISO 4217 currency that is no longer in
-  * general circulation.
+/** Represents a historic currency that is no longer in circulation.
   *
-  * @param code The [[CcyCode]] of the withdrawn currency.
-  * @param numericCode The [[NumericCode]] of the withdrawn currency. This is
-  *   optional as some historic ISO 4217 entries (e.g., XFO, XRE) do not have a
-  *   numeric code.
-  * @param name The common name of the withdrawn currency.
-  * @param withdrawalDate The month and year when the currency was officially
-  *   withdrawn from circulation.
+  * All historic currencies known to this library are available as predefined
+  * singleton `object`s within the [[HistoricCurrencies$ HistoricCurrencies]]
+  * object.
   */
-final case class HistoricCurrency(
-  code: CcyCode,
-  numericCode: Option[NumericCode],
-  name: String,
-  withdrawalDate: YearMonth
-) extends CurrencyDetails
+trait HistoricCurrency extends CurrencyDetails derives CanEqual:
+  /** The 3-digit [[NumericCode]], if available. */
+  def numericCode: Option[NumericCode]
+  /** The month and year the currency was withdrawn. */
+  def withdrawalDate: YearMonth
 
-/** A type class that provides the geographical usage (set of countries) for a
-  * specific currency type `A`.
+/** A typeclass that defines the geographical usage of a currency, providing a
+  * mechanism to associate a currency with the set of [[Country Countries]]
+  * where it is officially used.
   *
-  * Default `given` instances are included on a best effort basis for all known
-  * currencies. This behaviour may be overridden for any specific currency by
-  * providing an alternative `given` instance for that currency.
+  * Default `given` instances for all currencies known to the library are
+  * generated at build time and can be brought into scope by importing from the
+  * [[africa.shuwari.money.currency.instances]] object.
   *
-  * @tparam A The specific currency type, typically a singleton type like
-  *   `Currencies.KES`.
+  * @tparam A The specific currency singleton type, e.g., `Currencies.KES.type`.
+  * @see [[africa.shuwari.money.currency.instances]] for predefined instances.
   */
 trait CurrencyUsage[A <: CurrencyDetails]:
-  /** The `Set` of countries where the currency is used. */
+  /** The `Set` of countries where the currency `A` is used. */
   def territories: Set[Country]
 
-/** Provides extension methods related to currency usage. */
+/** Provides methods for convenient access to usage territories of any currency
+  * record (e.g., [[Currency]], [[HistoricCurrency]]) via the [[CurrencyUsage]]
+  * typeclass.
+  *
+  * @example
+  *   {{{
+  * import africa.shuwari.money.currency.Currencies
+  * import africa.shuwari.money.currency.instances.given // Import generated givens
+  * import africa.shuwari.money.currency.CurrencyUsage.usageTerritories
+  *
+  * val shillingUsage: Set[Country] = Currencies.KES.usageTerritories
+  * assert(shillingUsage.exists(_.alpha2.value == "KE"))
+  *   }}}
+  */
 object CurrencyUsage:
-  /** An extension method for any currency record (e.g., [[Currency]],
-    * [[HistoricCurrency]]) that enables convenient access to its usage
-    * territories via the [[CurrencyUsage]] type class.
+  /** Retrieves the set of countries where a specific currency is used.
+    *
+    * This method relies on a `given` [[CurrencyUsage]] instance for the
+    * currency's specific type being available in the current scope.
+    *
+    * @example
+    *   {{{
+    * import africa.shuwari.money.currency.{Currencies, CurrencyUsage}
+    * import africa.shuwari.money.currency.instances.given
+    *
+    * val shillingUsage = CurrencyUsage(Currencies.KES)
+    * assert(shillingUsage.nonEmpty)
+    *   }}}
+    * @param currency The currency instance (e.g., `Currencies.KES`).
+    * @return A `Set` of [[africa.shuwari.locale.country.Country]] instances.
     */
-  extension [A <: CurrencyDetails](currency: A)
-    /** Retrieves the set of countries where this specific currency is used,
-      * Requires an available [[CurrencyUsage]] instance for this currency type.
-      *
-      * @example
-      *   {{{
-      * import africa.shuwari.money.currency.Currencies
-      * import africa.shuwari.money.currency.instances.given // To bring default usages into scope
-      *
-      * val kenyanShilling = Currencies.KES
-      * val shillingUsage: Set[Country] = kenyanShilling.usageTerritories // Looks up the given CurrencyUsage[Currencies.KES]
-      *   }}}
-      *
-      * @param usage The implicitly provided `CurrencyUsage` instance for this
-      *   currency's specific type.
-      * @return A `Set` of [[africa.shuwari.locale.country.Country]] instances.
-      */
-    def usageTerritories(using usage: CurrencyUsage[A]): Set[Country] = usage.territories
-  end extension
+  transparent inline def apply[A <: CurrencyDetails](currency: A)(using usage: CurrencyUsage[A]): Set[Country] =
+    usage.territories
 end CurrencyUsage
