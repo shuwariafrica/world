@@ -15,18 +15,28 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package africa.shuwari.money
+package africa.shuwari.locale.country
 
-/** Provides convenient, importable syntax extensions for creating [[Money]]
-  * allowing use of a DSL-like syntax for creating type-safe `Money` values from
-  * standard numeric types.
+/** A trait representing a country or area with its primary identifiers.
   *
-  * @example
-  *   {{{
-  * import africa.shuwari.money.syntax.*
+  * This trait provides a type-safe representation of a country, bundling its
+  * common name with its standardised codes. Concrete instances are not
+  * typically created directly, but are accessed as predefined singleton objects
+  * from the [[Countries$]] object (e.g., `Countries.KE`).
   *
-  * val tenDollars = 10.USD
-  * val fiftyEuro = 50.0.EUR
-  *   }}}
+  * @see [[https://unstats.un.org/unsd/methodology/m49/ UN M49 Standard]]
+  * @see [[https://www.iso.org/iso-3166-country-codes.html ISO 3166-1]]
   */
-object syntax extends CurrencyFactorySyntax
+trait Country extends Product with Serializable derives CanEqual:
+  /** The common English short name of the country or area (e.g., "Kenya"). */
+  def name: String
+  /** The [[Alpha2Code]] (ISO 3166-1 Alpha-2), e.g., "KE". */
+  def alpha2: Alpha2Code
+  /** The [[Alpha3Code]] (ISO 3166-1 Alpha-3), e.g., "KEN". */
+  def alpha3: Alpha3Code
+  /** The [[M49Code]] (UN M49 numeric code), e.g., 404. */
+  def m49: M49Code
+
+  /** The common name of the country, suitable for display purposes. */
+  override def toString: String = name
+end Country

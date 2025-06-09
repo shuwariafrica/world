@@ -3,8 +3,6 @@ val libraries = new {
   val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
 }
 
-val showInfo = taskKey[Unit]("Show info")
-
 val locale =
   crossProject(JVMPlatform, JSPlatform, NativePlatform)
     .crossType(CrossType.Pure)
@@ -13,7 +11,7 @@ val locale =
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
-    .settings(Compile / sourceGenerators += CountriesPopulator.generator)
+    .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
 
 val money =
   crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -24,7 +22,7 @@ val money =
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
-    .settings(Compile / sourceGenerators += CurrenciesPopulator.generator)
+    .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
 
 val jvmProjects =
   project
@@ -124,7 +122,6 @@ def pgpSettings = List(
   usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
 )
 
-addCommandAlias("format", "jvmProjects/scalafixAll; jvmProjects/scalafmtAll; scalafmtSbt; jvmProjects/headerCreateAll")
+addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
-addCommandAlias("staticCheck",
-                "jvmProjects/scalafixAll --check; jvmProjects/scalafmtCheckAll; scalafmtSbtCheck; jvmProjects/headerCheckAll")
+addCommandAlias("staticCheck", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
