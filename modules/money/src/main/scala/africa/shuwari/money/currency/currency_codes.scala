@@ -57,7 +57,7 @@ object CcyCode:
     * @return `Right` with a valid [[CcyCode]] on success, or `Left` with a
     *   [[errors.CurrencyError]] on failure.
     */
-  def from(value: String): Either[CurrencyError, CcyCode] =
+  inline def from(value: String): Either[CurrencyError, CcyCode] =
     value.nopt.fold[Either[CurrencyError, CcyCode]](Left(CurrencyError.InvalidCcyCodeFormat("null")))
       (s =>
         if isValidFormat(s) then Right(s: CcyCode)
@@ -79,7 +79,7 @@ object CcyCode:
 
   extension (code: CcyCode)
     /** The raw 3-character `String` representation of the currency code. */
-    def value: String = code
+    inline def value: String = code
 end CcyCode
 
 /** A type-safe 3-digit ISO 4217 numeric currency code.
@@ -106,7 +106,7 @@ object NumericCode:
     * @return `Right` with a valid `NumericCode` on success, or `Left` with a
     *   [[errors.CurrencyError]] on failure.
     */
-  def from(value: Int): Either[CurrencyError, NumericCode] =
+  inline def from(value: Int): Either[CurrencyError, NumericCode] =
     if (value >= MinValue && value <= MaxValue) Right(value)
     else Left(CurrencyError.InvalidNumericCodeRange(value))
 
@@ -116,7 +116,7 @@ object NumericCode:
     * @throws africa.shuwari.money.errors.InternalError if `value` is outside
     *   the valid range (0-999).
     */
-  private[money] def unsafeFrom(value: Int): NumericCode =
+  private[money] inline def unsafeFrom(value: Int): NumericCode =
     if (value >= MinValue && value <= MaxValue) value
     else throw MoneyInternalError(s"Precondition failed in NumericCode.unsafeFrom: Invalid value $value") // scalafix:ok
 

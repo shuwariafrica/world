@@ -20,6 +20,7 @@ package africa.shuwari.money.conversion
 import java.time.Instant
 
 import africa.shuwari.money.currency.Currency
+import africa.shuwari.money.currency.CurrencyMathContext
 import africa.shuwari.money.currency.CurrencyValue
 
 /** Represents the conversion rate between two currencies.
@@ -33,8 +34,19 @@ import africa.shuwari.money.currency.CurrencyValue
   */
 final case class ConversionRate(base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext] = None)
     derives CanEqual:
-  /** Creates the inverse of this exchange rate (from term to base). */
-  def inverse: ConversionRate = ConversionRate(term, base, CurrencyValue(1) / rate, context)
+
+  /** Creates the inverse of this exchange rate (from term to base).
+    * @note This operation requires a [[CurrencyMathContext]] given instance for
+    *   division.
+    * @throws java.lang.ArithmeticException if the rate is zero.
+    */
+  def inverse(using CurrencyMathContext): ConversionRate =
+    // A rate of zero cannot be inverted. We extract the value assuming valid, non-zero rates.
+    val inverseRate =
+      (CurrencyValue(1) / CurrencyValue(rate))
+        .getOrElse(throw new ArithmeticException("Cannot create an inverse for a zero-rate.")) // scalafix:ok
+    ConversionRate(term, base, inverseRate.unwrap, context)
+end ConversionRate
 
 /** Encapsulates metadata about a currency conversion or exchange rate.
   *

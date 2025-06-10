@@ -70,7 +70,9 @@ import africa.shuwari.money.errors.ConversionError
   * @param currency A `ValueOf` instance that provides the currency object at
   *   runtime.
   */
-final case class Money[C <: Currency] private (value: CurrencyValue)(using currency: ValueOf[C]) extends Ordered[Money[C]] derives CanEqual:
+final case class Money[C <: Currency] private (value: CurrencyValue)(using ValueOf[C]) extends Ordered[Money[C]] derives CanEqual:
+
+  def currency: C = summon[ValueOf[C]].value
 
   /** Adds another value to this `Money` instance. Requires a `given` instance
     * of [[CurrencyMathContext]].
@@ -173,16 +175,15 @@ final case class Money[C <: Currency] private (value: CurrencyValue)(using curre
     * @return An `Either` containing a [[errors.ArithmeticError]] on failure
     *   (e.g., division by zero), or the resulting `Money` instance.
     */
-  transparent inline def divide(divisor: BigDecimal | Long | Int | Double)(using CurrencyMathContext): Either[errors.ArithmeticError,
-                                                                                                              Money[C]] =
+  inline def divide(divisor: BigDecimal | Long | Int | Double)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
     CurrencyValue.divide(this.value, divisor).map(Money.apply)
   /** Compares this `Money` instance to another of the same currency. */
-  def compare(that: Money[C]): Int = this.value.unwrap.compare(that.value.unwrap)
+  transparent inline def compare(that: Money[C]): Int = this.value.unwrap.compare(that.value.unwrap)
 
   /** Returns the absolute value of this amount. */
-  def abs: Money[C] = Money(this.value.abs)
+  transparent inline def abs: Money[C] = Money(this.value.abs)
   /** Returns the sign of this amount's value (-1, 0, or 1). */
-  def signum: Int = this.value.signum
+  transparent inline def signum: Int = this.value.signum
 
   /** Returns a `Money` instance with its value rounded to the currency's
     * conventional number of fractional digits.
@@ -207,10 +208,7 @@ final case class Money[C <: Currency] private (value: CurrencyValue)(using curre
     * // roundedJpy is now 988.JPY
     *   }}}
     */
-  def rounded: Money[C] = currency.value.minorUnit match
-    case Some(scale) =>
-      Money(this.value.withScale(scale, BigDecimal.RoundingMode.HALF_UP))
-    case None => this
+  transparent inline def rounded: Money[C] = rounded(BigDecimal.RoundingMode.HALF_UP)
 
   /** Returns a `Money` instance with its value rounded to the currency's
     * conventional number of fractional digits, using a specified rounding mode.
@@ -241,7 +239,7 @@ final case class Money[C <: Currency] private (value: CurrencyValue)(using curre
     * // roundedUp is now 123.46.KES
     *   }}}
     */
-  def rounded(mode: BigDecimal.RoundingMode.RoundingMode): Money[C] = currency.value.minorUnit match
+  transparent inline def rounded(mode: BigDecimal.RoundingMode.RoundingMode): Money[C] = currency.minorUnit match
     case Some(scale) =>
       Money(this.value.withScale(scale, mode))
     case None => this
@@ -283,15 +281,16 @@ final case class Money[C <: Currency] private (value: CurrencyValue)(using curre
     * }
     *   }}}
     */
-  def convertTo[T <: Currency](using provider: ExchangeRateProvider, target: ValueOf[T]): Either[ConversionError, Money[T]] =
-    if (this.currency.value == target.value) Right(Money(this.value)(using target))
+  transparent inline def convertTo[T <: Currency](using provider: ExchangeRateProvider, target: ValueOf[T]): Either[ConversionError,
+                                                                                                                    Money[T]] =
+    if (this.currency == target.value) Right(Money(this.value)(using target))
     else
-      provider.get(ConversionQuery(this.currency.value, target.value)).map { rate =>
+      provider.get(ConversionQuery(this.currency, target.value)).map { rate =>
         val convertedValue = CurrencyValue.multiply(this.value, rate.rate)
         Money(convertedValue)(using target)
       }
 
-  override def toString: String = s"${currency.value.code.value} ${value.unwrap.toString}"
+  override def toString: String = s"${currency.code.value} ${value.unwrap.toString}"
 end Money
 
 /** Provides factory methods for creating [[Money]] instances */
@@ -309,11 +308,33 @@ object Money:
     * @tparam C The type of the Currency. (e.g `Currencies.KES`)
     * @param value The numeric value of the amount.
     */
-  transparent inline def apply[C <: Currency](value: CurrencyValue | BigDecimal | Long | Int | Double)(using ValueOf[C]): Money[C] =
+  inline def apply[C <: Currency](value: CurrencyValue | BigDecimal | Long | Int | Double)(using ValueOf[C]): Money[C] =
     Money[C](CurrencyValue(value))
 
-  /** Creates a `Money` instance with an amount of zero for the given currency.
-    * @tparam C The singleton type of the currency, provided by the context.
+  /** Creates a `Money` instance from a runtime currency value.
+    *
+    * This factory is useful when the currency is not known at compile time
+    * (e.g., when deserializing data or creating amounts from user input). The
+    * returned type is an existential `Money[? <: Currency]` because the
+    * specific currency type `C` cannot be known by the compiler.
+    *
+    * @param value The numeric amount.
+    * @param currency The runtime currency object.
+    * @return A `Money` instance with an existential currency type.
     */
-  def zero[C <: Currency](using ValueOf[C]): Money[C] = Money(CurrencyValue(0))
+  inline def from(value: CurrencyValue | BigDecimal | Long | Int | Double, currency: Currency): Money[? <: Currency] =
+    // This helper method allows us to capture the specific singleton type of the runtime `currency` value.
+    def helper[C <: Currency](c: C): Money[C] =
+      given ValueOf[C] = ValueOf(c)
+      Money(CurrencyValue(value))
+    helper(currency)
+
+  /** Provides a `given` `Ordering` instance for `Money[C]` instances. */
+  given [C <: Currency]: Ordering[Money[C]] = Ordering.by[Money[C], CurrencyValue](_.value)
+  export scala.math.Ordering.Implicits.infixOrderingOps
+
+  /** Creates a `Money` instance with an amount of zero for the given currency.
+    * @tparam C The type of the currency (e.g `Currencies.KES`).
+    */
+  inline def zero[C <: Currency](using ValueOf[C]): Money[C] = Money(CurrencyValue(0))
 end Money

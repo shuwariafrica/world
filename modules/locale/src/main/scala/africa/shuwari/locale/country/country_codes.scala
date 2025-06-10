@@ -47,7 +47,7 @@ opaque type Alpha2Code = String
 
 /** Provides factory methods for creating instances of [[Alpha2Code]]. */
 object Alpha2Code:
-  private transparent inline def Alpha2Regex: Regex = "^[A-Z]{2}$".r
+  private inline def Alpha2Regex: Regex = "^[A-Z]{2}$".r
 
   /** Returns an [[Alpha2Code]] if the input string matches the Alpha-2 code
     * format.
@@ -59,7 +59,7 @@ object Alpha2Code:
     * @return Either a `Right` with a valid [[Alpha2Code]] or a `Left` with a
     *   [[errors.LocaleError]].
     */
-  def from(value: String): Either[errors.LocaleError, Alpha2Code] =
+  inline def from(value: String): Either[errors.LocaleError, Alpha2Code] =
     Option(value).filter(Alpha2Regex.matches) match
       case Some(validCode) => Right(validCode)
       case None            => Left(errors.InvalidAlpha2CodeFormat(Option(value).getOrElse("null")))
@@ -71,7 +71,7 @@ object Alpha2Code:
     * @throws africa.shuwari.locale.errors.InternalError if `value` is `null` or
     *   not a valid Alpha-2 code format.
     */
-  private[locale] def unsafeFrom(value: String): Alpha2Code =
+  private[locale] inline def unsafeFrom(value: String): Alpha2Code =
     Option(value).filter(Alpha2Regex.matches) match
       case Some(validCode) => validCode
       case None =>
@@ -82,7 +82,7 @@ object Alpha2Code:
 
   extension (code: Alpha2Code)
     /** The raw 2-character `String` representation of the Alpha-2 code. */
-    def value: String = code
+    inline def value: String = code
 end Alpha2Code
 
 /** A type-safe ISO 3166-1 Alpha-3 country code.
@@ -106,7 +106,7 @@ object Alpha3Code:
     * @return Either a `Right` with a valid [[Alpha3Code]] or a `Left` with a
     *   [[errors.LocaleError]].
     */
-  def from(value: String): Either[errors.LocaleError, Alpha3Code] =
+  inline def from(value: String): Either[errors.LocaleError, Alpha3Code] =
     Option(value).filter(Alpha3Regex.matches) match
       case Some(validCode) => Right(validCode)
       case None            => Left(errors.InvalidAlpha3CodeFormat(Option(value).getOrElse("null")))
@@ -118,7 +118,7 @@ object Alpha3Code:
     * @throws africa.shuwari.locale.errors.InternalError if `value` is `null` or
     *   not a valid Alpha-3 code format.
     */
-  private[locale] def unsafeFrom(value: String): Alpha3Code =
+  private[locale] inline def unsafeFrom(value: String): Alpha3Code =
     Option(value).filter(Alpha3Regex.matches) match
       case Some(validCode) => validCode
       case None =>
@@ -129,7 +129,7 @@ object Alpha3Code:
 
   extension (code: Alpha3Code)
     /** The raw 3-character `String` representation of the Alpha-3 code. */
-    def value: String = code
+    inline def value: String = code
 end Alpha3Code
 
 /** A type-safe UN M49 numeric code for a country or area.
@@ -156,7 +156,7 @@ object M49Code:
     * @return Either a `Right` with a valid [[M49Code]] or a `Left` with a
     *   [[errors.LocaleError]].
     */
-  def from(value: Int): Either[errors.LocaleError, M49Code] =
+  inline def from(value: Int): Either[errors.LocaleError, M49Code] =
     if (value >= MinValue && value <= MaxValue) Right(value)
     else Left(errors.InvalidM49Code(value))
 
@@ -167,7 +167,7 @@ object M49Code:
     * @throws africa.shuwari.locale.errors.InternalError if `value` is outside
     *   the valid range.
     */
-  private[locale] def unsafeFrom(value: Int): M49Code =
+  private[locale] inline def unsafeFrom(value: Int): M49Code =
     if (value >= MinValue && value <= MaxValue) value
     else throw LocaleInternalError(s"Precondition failed in M49Code.unsafeFrom: Invalid value $value") // scalafix:ok
 
@@ -176,5 +176,5 @@ object M49Code:
 
   extension (code: M49Code)
     /** The raw `Int` representation of the M49 code. */
-    def value: Int = code
+    inline def value: Int = code
 end M49Code

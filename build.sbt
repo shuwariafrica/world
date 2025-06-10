@@ -1,6 +1,7 @@
 val libraries = new {
   val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
   val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
+  val sjavatime = Def.setting("org.ekrich" %%% "sjavatime" % "1.4.0")
 }
 
 val locale =
@@ -23,6 +24,8 @@ val money =
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
     .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
+    .jsSettings(libraryDependency(libraries.sjavatime))
+    .nativeSettings(libraryDependency(libraries.sjavatime))
 
 val jvmProjects =
   project

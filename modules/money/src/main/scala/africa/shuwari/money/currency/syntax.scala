@@ -68,4 +68,19 @@ object syntax:
     transparent inline def apply(value: CurrencyValue | BigDecimal | Long | Int | Double): Money[c.type] =
       Money[c.type](CurrencyValue(value))
   end extension
+
+  extension (currency: CurrencyDetails)
+    /** Upcasts this currency instance to the general [[CurrencyDetails]] trait.
+      *
+      * This is a utility for situations, particularly in tests, where the
+      * compiler cannot equate a specific singleton type (e.g.,
+      * `Currencies.KES.type`) with an existential one (`? <: Currency`). By
+      * upcasting both sides of a comparison to their common supertype,
+      * type-level comparison issues can be avoided.
+      *
+      * @return The same currency instance, but with its type widened to
+      *   [[CurrencyDetails]].
+      */
+    def asCurrency: CurrencyDetails = currency
+  end extension
 end syntax

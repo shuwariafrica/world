@@ -66,19 +66,19 @@ object CurrencyMathContext:
     */
   val Default: CurrencyMathContext = new MathContext(34, RoundingMode.HALF_EVEN)
 
-  given CurrencyMathContext = Default
+  inline given CurrencyMathContext = Default
 
   /** Creates a [[CurrencyMathContext]] from an implicit `CurrencyMathContext`.
     * @return The summoned `CurrencyMathContext`.
     */
-  transparent inline def apply[A <: CurrencyMathContext](using A): CurrencyMathContext = summon[A]
+  inline def apply[A <: CurrencyMathContext](using A): CurrencyMathContext = summon[A]
 
   /** Creates a [[CurrencyMathContext]] from a standard `java.math.MathContext`.
     *
     * @param context The underlying `MathContext`.
     * @return A new `CurrencyMathContext` instance.
     */
-  transparent inline def apply(context: MathContext): CurrencyMathContext = context
+  inline def apply(context: MathContext): CurrencyMathContext = context
 
   /** Creates a [[CurrencyMathContext]] with a specified precision and
     * `RoundingMode`.
@@ -87,10 +87,10 @@ object CurrencyMathContext:
     *   used for an operation.
     * @param mode The `RoundingMode` to use for operations.
     */
-  transparent inline def apply(precision: Int, mode: RoundingMode): CurrencyMathContext = new MathContext(precision, mode)
+  inline def apply(precision: Int, mode: RoundingMode): CurrencyMathContext = new MathContext(precision, mode)
 
   /** Unwraps a `CurrencyMathContext` to its underlying `java.math.MathContext`. */
-  transparent inline def unwrap(v: CurrencyMathContext): MathContext = v
+  inline def unwrap(v: CurrencyMathContext): MathContext = v
 
   extension (context: CurrencyMathContext)
     /** The precision of the [[CurrencyMathContext]].
@@ -106,10 +106,10 @@ object CurrencyMathContext:
       */
     inline def mode: RoundingMode = context.getRoundingMode.nn
 
-    /** Unwraps the [[CurrencyMathContext]] to its underlying
+    /** Returns this [[CurrencyMathContext, CurrencyMathContext's]] underlying
       * `java.math.MathContext`.
       */
-    @targetName("unwrap_ext") inline def unwrap: MathContext = context
+    inline def value: MathContext = context
   end extension
 
 end CurrencyMathContext
@@ -156,7 +156,7 @@ object CurrencyValue:
     *     val value2: CurrencyValue = CurrencyValue(100L)
     *   }}}
     */
-  transparent inline def apply(value: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
+  inline def apply(value: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
     inline value match
       case v: BigDecimal => v
       case v: Long       => BigDecimal(v, summon[CurrencyMathContext])
@@ -182,32 +182,35 @@ object CurrencyValue:
     *     }
     *   }}}
     */
-  transparent inline def fromString(value: String)(using CurrencyMathContext): Either[NumberFormattingError, CurrencyValue] =
+  inline def fromString(value: String)(using CurrencyMathContext): Either[NumberFormattingError, CurrencyValue] =
     catching(classOf[java.lang.NumberFormatException])
       .either(BigDecimal(value, summon[CurrencyMathContext]))
       .left
       .map(t => NumberFormattingError("Unable to parse string as a CurrencyValue.", Some(t)))
 
+  /** Represents a constant `CurrencyValue` with a value of zero. */
+  def zero: CurrencyValue = BigDecimal(0)
+
   /** Unwraps a [[CurrencyValue]] to its underlying `BigDecimal`. */
-  transparent inline def unwrap(value: CurrencyValue): BigDecimal = value
+  inline def unwrap(value: CurrencyValue): BigDecimal = value
 
   /** Adds `augend` to a [[CurrencyValue]].
     * @note Using `Double` can lead to precision inaccuracies.
     */
-  transparent inline def add(value: CurrencyValue, augend: CurrencyValue | BigDecimal | Long | Int | Double)
+  inline def add(value: CurrencyValue, augend: CurrencyValue | BigDecimal | Long | Int | Double)
       (using CurrencyMathContext): CurrencyValue = BigDecimal(bigDecimal(value).add(bigDecimal(augend), summon[CurrencyMathContext]).nn)
 
   /** Subtracts `subtrahend` from a [[CurrencyValue]].
     * @note Using `Double` can lead to precision inaccuracies.
     */
-  transparent inline def subtract(value: CurrencyValue, subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)
+  inline def subtract(value: CurrencyValue, subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)
       (using CurrencyMathContext): CurrencyValue = BigDecimal
     (bigDecimal(value).subtract(bigDecimal(subtrahend), summon[CurrencyMathContext]).nn)
 
   /** Multiplies a [[CurrencyValue]] by `multiplicand`.
     * @note Using `Double` can lead to precision inaccuracies.
     */
-  transparent inline def multiply(value: CurrencyValue, multiplicand: CurrencyValue | BigDecimal | Long | Int | Double)
+  inline def multiply(value: CurrencyValue, multiplicand: CurrencyValue | BigDecimal | Long | Int | Double)
       (using CurrencyMathContext): CurrencyValue = BigDecimal
     (bigDecimal(value).multiply(bigDecimal(multiplicand), summon[CurrencyMathContext]).nn)
 
@@ -217,7 +220,7 @@ object CurrencyValue:
     * @return `Right` with the result, or `Left` containing an
     *   [[ArithmeticError]] if division fails (e.g. division by zero).
     */
-  transparent inline def divide(value: CurrencyValue, divisor: CurrencyValue | BigDecimal | Long | Int | Double)
+  inline def divide(value: CurrencyValue, divisor: CurrencyValue | BigDecimal | Long | Int | Double)
       (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] = catching(classOf[ArithmeticException])
     .either(BigDecimal(bigDecimal(value).divide(bigDecimal(divisor), summon[CurrencyMathContext]).nn))
     .left
@@ -225,43 +228,50 @@ object CurrencyValue:
 
   given CanEqual[CurrencyValue, CurrencyValue] = CanEqual.derived
 
+  given Ordering[CurrencyValue] = Ordering.BigDecimal
+  export scala.math.Ordering.Implicits.infixOrderingOps
+
   extension (value: CurrencyValue)
     /** The raw `BigDecimal` representation of this value. */
-    @targetName("unwrap_ext") transparent inline def unwrap: BigDecimal = value
+    @targetName("unwrap_ext") inline def unwrap: BigDecimal = value
 
     /** Adds a value to this [[CurrencyValue]].
       * @note Using `Double` can lead to precision inaccuracies.
       */
-    @targetName("plus_number")
-    transparent inline def +(augend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
+    @targetName("plus_ext")
+    inline def +(augend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
       add(value, CurrencyValue(augend))(summon[CurrencyMathContext])
 
     /** Subtracts a value from this [[CurrencyValue]].
       * @note Using `Double` can lead to precision inaccuracies.
       */
-    @targetName("minus")
-    transparent inline def -(subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
+    @targetName("minus_ext")
+    inline def -(subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
       subtract(value, subtrahend)(summon[CurrencyMathContext])
 
     /** Multiplies this [[CurrencyValue]] by a value.
       * @note Using `Double` can lead to precision inaccuracies.
       */
-    @targetName("times")
-    transparent inline def *(multiplicand: BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
+    @targetName("times_ext")
+    inline def *(multiplicand: BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
       multiply(value, multiplicand)(summon[CurrencyMathContext])
+
+    @targetName("divide_ext") inline def /(divisor: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): Either[
+      ArithmeticError,
+      CurrencyValue] = divide(value, divisor)
 
     /** Negates this [[CurrencyValue]]. */
     @targetName("negate")
-    transparent inline def unary_-(using CurrencyMathContext): CurrencyValue = negate(summon[CurrencyMathContext])
+    inline def unary_-(using CurrencyMathContext): CurrencyValue = negate(summon[CurrencyMathContext])
 
     /** Returns the absolute value of this [[CurrencyValue]]. */
-    transparent inline def abs(using CurrencyMathContext): CurrencyValue = value.abs(summon[CurrencyMathContext])
+    inline def abs(using CurrencyMathContext): CurrencyValue = value.abs(summon[CurrencyMathContext])
 
     /** Negates this [[CurrencyValue]].
       *
       * @return A new `CurrencyValue` representing the negation of this value.
       */
-    transparent inline def negate(using CurrencyMathContext): CurrencyValue = value.bigDecimal.negate(summon[CurrencyMathContext]).nn
+    inline def negate(using CurrencyMathContext): CurrencyValue = value.bigDecimal.negate(summon[CurrencyMathContext]).nn
 
     /** Returns the signum of this `CurrencyValue`: -1 (negative), 0 (zero), or
       * 1 (positive).
@@ -280,7 +290,7 @@ object CurrencyValue:
       * @return A `CurrencyValue` whose value is this `CurrencyValue` with the
       *   specified scale.
       */
-    transparent inline def withScale(scale: Int, roundingMode: BigDecimal.RoundingMode.RoundingMode): CurrencyValue =
+    inline def withScale(scale: Int, roundingMode: BigDecimal.RoundingMode.RoundingMode): CurrencyValue =
       value.setScale(scale, roundingMode)
   end extension
 
