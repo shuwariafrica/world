@@ -42,19 +42,19 @@ See [Conversion Guide](conversion.md) for detailed documentation.
 
 ## Key Types
 
-- [[africa.shuwari.money.Currency]] - ISO 4217 currency representation
-- [[africa.shuwari.money.Currencies]] - ISO 4217 default currency instances
-- [[africa.shuwari.money.Money]] - Type-safe monetary value
-- [[africa.shuwari.money.conversion.ExchangeRateProvider]] - Currency conversion interface
-- [[africa.shuwari.money.conversion.ConversionRate]] - Exchange rate representation
-- [[africa.shuwari.money.MoneyError]] - Money-related error types
+- [[world.money.Currency]] - ISO 4217 currency representation
+- [[world.money.Currencies]] - ISO 4217 default currency instances
+- [[world.money.Money]] - Type-safe monetary value
+- [[world.money.conversion.ExchangeRateProvider]] - Currency conversion interface
+- [[world.money.conversion.ConversionRate]] - Exchange rate representation
+- [[world.money.MoneyError]] - Money-related error types
 
 ## Quick Start
 
 ### Creating Money Values
 
 ```scala
-import africa.shuwari.money.{Currency, Money}
+import world.money.{Currency, Money}
 
 // Direct construction
 val price = Money(99.99, Currency.USD)
@@ -66,7 +66,7 @@ val cost = Currency.EUR(50.00)
 ### Arithmetic Operations
 
 ```scala
-import africa.shuwari.money.{Currency, Money}
+import world.money.{Currency, Money}
 
 val base = Money(100, Currency.USD)
 
@@ -77,8 +77,8 @@ val sum = base + Money(50, Currency.USD)  // Money(150, USD)
 ### Currency Conversion
 currency representation
 ```scala
-import africa.shuwari.money.{Currency, Money}
-import africa.shuwari.money.conversion.{ConversionRate, ExchangeRateProvider}
+import world.money.{Currency, Money}
+import world.money.conversion.{ConversionRate, ExchangeRateProvider}
 
 given ExchangeRateProvider with
   def rate(from: Currency, to: Currency) =
@@ -104,8 +104,8 @@ The Money module is designed with these principles:
 Money operations that may fail return `Either[MoneyError, Result]`:
 
 ```scala
-import africa.shuwari.money.{Currency, Money}
-import africa.shuwari.money.MoneyError
+import world.money.{Currency, Money}
+import world.money.MoneyError
 
 // Conversion without rate provider fails
 val result = Money(100, Currency.USD).convert(Currency.EUR)
@@ -121,14 +121,14 @@ Money(100, Currency.USD).convert(Currency.EUR) match
   case Left(error) => println(s"Failed: $error")
 ```
 
-See [[africa.shuwari.money.MoneyError]] for error types.
+See [[world.money.MoneyError]] for error types.
 
 ## Common Use Cases
 
 ### Price Calculations
 
 ```scala
-import africa.shuwari.money.{Currency, Money}
+import world.money.{Currency, Money}
 
 val unitPrice = Money(29.99, Currency.GBP)
 val quantity = 5
@@ -141,8 +141,8 @@ val total = subtotal - discount
 ### Multi-Currency Operations
 
 ```scala
-import africa.shuwari.money.{Currency, Money}
-import africa.shuwari.money.conversion.ExchangeRateProvider
+import world.money.{Currency, Money}
+import world.money.conversion.ExchangeRateProvider
 
 def calculateTotal(amounts: List[Money], targetCurrency: Currency)
                   (using provider: ExchangeRateProvider): Either[String, Money] =

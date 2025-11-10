@@ -128,7 +128,7 @@ object Config:
 
 `-Yexplicit-nulls` is always enabled. Java interop must explicitly handle `null`
 
-Never use `null` in pure Scala code. Use utilities contained in [[africa.shuwari.common.nullable]] for `null` handling.
+Never use `null` in pure Scala code. Use utilities contained in [[world.common.nullable]] for `null` handling.
 
 ### Multiversal Equality
 

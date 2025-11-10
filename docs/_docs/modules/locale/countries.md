@@ -4,7 +4,7 @@ title: Countries
 
 # Countries
 
-The [[africa.shuwari.locale.country.Country]] trait represents ISO 3166-1 country data. Predefined instances are provided via the [[africa.shuwari.locale.country.Countries$]] object.
+The [[world.locale.country.Country]] trait represents ISO 3166-1 country data. Predefined instances are provided via the [[world.locale.country.Countries$]] object.
 
 ## Accessing Countries
 
@@ -13,7 +13,7 @@ The [[africa.shuwari.locale.country.Country]] trait represents ISO 3166-1 countr
 Access countries directly using their ISO 3166-1 Alpha-2 codes:
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 val kenya = Countries.KE
 val uk = Countries.GB
@@ -25,7 +25,7 @@ val oman = Countries.OM
 Each country provides access to its ISO 3166-1 codes:
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 val kenya = Countries.KE
 
@@ -42,7 +42,7 @@ kenya.m49.value       // 404
 The library defines three opaque types for country codes:
 
 ```scala
-import africa.shuwari.locale.country.*
+import world.locale.country.*
 
 opaque type Alpha2Code = String
 opaque type Alpha3Code = String
@@ -61,7 +61,7 @@ val stringValue: String = code.value  // "KE"
 Look up countries using various identifiers:
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 // By alpha-2 code
 Countries.fromAlpha2("KE")  // Some(Countries.KE)
@@ -92,11 +92,11 @@ All lookup methods return `Option[Country]`.
 
 ## Formatting
 
-Countries integrate with [[africa.shuwari.format.Formatter]]:
+Countries integrate with [[world.format.Formatter]]:
 
 ```scala
-import africa.shuwari.locale.country.Countries
-import africa.shuwari.format.Formatter
+import world.locale.country.Countries
+import world.format.Formatter
 
 val kenya = Countries.KE
 val text = kenya.formatted  // Uses Formatter[Country]
@@ -109,7 +109,7 @@ val text = kenya.formatted  // Uses Formatter[Country]
 Access the complete set of countries:
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 val allCountries: Set[Country] = Countries.all
 
@@ -124,7 +124,7 @@ allCountries.contains(Countries.KE)  // true
 Countries use reference equality (singleton objects):
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 val kenya1 = Countries.KE
 val kenya2 = Countries.KE
@@ -138,7 +138,7 @@ kenya1 == kenya2  // true
 Pattern match on specific countries:
 
 ```scala
-import africa.shuwari.locale.country.{Country, Countries}
+import world.locale.country.{Country, Countries}
 
 def continent(country: Country): String = country match
   case Countries.GB => "Europe"
@@ -152,7 +152,7 @@ continent(Countries.KE)  // "Africa"
 ## Working with Collections
 
 ```scala
-import africa.shuwari.locale.country.Countries
+import world.locale.country.Countries
 
 val eastAfrica = Set(
   Countries.KE,  // Kenya
@@ -188,4 +188,4 @@ Country codes are generated at compile-time from authoritative sources, ensuring
 
 ## API Reference
 
-See [[africa.shuwari.locale.country.Country]] and [[africa.shuwari.locale.country.Countries$]] for the complete API.
+See [[world.locale.country.Country]] and [[world.locale.country.Countries$]] for the complete API.

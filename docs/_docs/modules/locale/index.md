@@ -36,15 +36,15 @@ See [Locale Formatting Guide](formatting.md) for detailed documentation.
 
 ## Key Types
 
-- [[africa.shuwari.locale.country.Country]] - ISO 3166-1 country representation
-- [[africa.shuwari.locale.LocaleError]] - Locale-related error types
+- [[world.locale.country.Country]] - ISO 3166-1 country representation
+- [[world.locale.LocaleError]] - Locale-related error types
 
 ## Common Use Cases
 
 ### Country Lookup
 
 ```scala
-import africa.shuwari.locale.country.Country
+import world.locale.country.Country
 
 // Access by code
 val uk = Country.GB
@@ -59,7 +59,7 @@ Country.withNumericCode(276) // Some(Country.DE)
 ### Country Properties
 
 ```scala
-import africa.shuwari.locale.country.Country
+import world.locale.country.Country
 
 val japan = Country.JP
 
@@ -93,7 +93,7 @@ All features work identically across platforms.
 Locale operations that may fail return `Either[LocaleError, Result]`:
 
 ```scala
-import africa.shuwari.locale.LocaleError
+import world.locale.LocaleError
 
 // Example: Handling lookup failures
 Country.withAlpha2("XX") match
@@ -101,7 +101,7 @@ Country.withAlpha2("XX") match
   case None => println("Country not found")
 ```
 
-See [[africa.shuwari.locale.LocaleError]] for error types.
+See [[world.locale.LocaleError]] for error types.
 
 ## Next Steps
 

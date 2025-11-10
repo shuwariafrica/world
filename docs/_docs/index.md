@@ -37,7 +37,7 @@ libraryDependencies += "africa.shuwari" %% "money" % "{{projectVersion}}"
 ### Working with Countries
 
 ```scala sc:nocompile
-import africa.shuwari.locale.country.*
+import world.locale.country.*
 
 // Lookup by code
 val uk: Option[Country] = Countries.findByAlpha2("GB")
@@ -51,7 +51,7 @@ println(kenya.commonName)  // "Kenya"
 ### Working with Currencies
 
 ```scala sc:nocompile
-import africa.shuwari.money.currency.*
+import world.money.currency.*
 
 // Lookup by code
 val eur: Option[Currency] = Currencies.fromCcyCode("EUR")
@@ -66,7 +66,7 @@ println(gbp.defaultFraction) // 2
 ### Creating Money Values
 
 ```scala sc:nocompile
-import africa.shuwari.money.currency.*
+import world.money.currency.*
 
 // Using phantom types
 val price1 = Currencies.GBP(100.5)

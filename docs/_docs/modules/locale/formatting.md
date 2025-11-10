@@ -8,10 +8,10 @@ The `world-locale` provides formatting capabilities for country codes and locale
 
 ## Country Formatting
 
-Countries implement the [[africa.shuwari.format.Formatter]] trait:
+Countries implement the [[world.format.Formatter]] trait:
 
 ```scala
-import africa.shuwari.locale.country.Country
+import world.locale.country.Country
 
 val uk = Country.GB
 uk.format  // "GB"
@@ -24,8 +24,8 @@ The default format uses the ISO 3166-1 alpha-2 code.
 Implement custom formatters for different display requirements:
 
 ```scala
-import africa.shuwari.locale.country.Country
-import africa.shuwari.format.Formatter
+import world.locale.country.Country
+import world.format.Formatter
 
 // Full name formatter
 given Formatter[Country] with
@@ -51,13 +51,13 @@ Note that providing multiple given instances in the same scope will cause ambigu
 For applications requiring locale-specific formatting (numbers, dates, currencies), consider:
 
 1. **Java Interoperability**: Use `java.text.NumberFormat` with locale support (JVM only)
-2. **Custom Implementations**: Implement locale-specific formatters using [[africa.shuwari.format.Formatter]]
+2. **Custom Implementations**: Implement locale-specific formatters using [[world.format.Formatter]]
 3. **External Libraries**: Consider libraries like `scala-java-time` for date/time formatting
 
 ### Example: Locale-Aware Number Formatting
 
 ```scala sc:nocompile
-import africa.shuwari.locale.country.Country
+import world.locale.country.Country
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -86,4 +86,4 @@ Future releases may include:
 
 ## API Reference
 
-See [[africa.shuwari.locale.format]] for formatting-related types and functions.
+See [[world.locale.format]] for formatting-related types and functions.

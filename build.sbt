@@ -101,7 +101,7 @@ inThisBuild(
     scalaVersion := crossScalaVersions.value.head,
     crossScalaVersions := List("3.7.3"),
     organization := "africa.shuwari",
-    description := "Real-world domain concepts in Scala",
+    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
     homepage := Some(url("https://github.com/shuwarifrica/world")),
     startYear := Some(2023),
     semanticdbEnabled := true,

@@ -37,7 +37,7 @@ object WorldUnidocPlugin extends AutoPlugin {
       val rev = sys.env.getOrElse("GIT_REVISION", "main")
       s"github://shuwariafrica/world/$rev"
     },
-    documentationFooter := s"`world` ${version.value} - Real-world domain concepts for Scala",
+    documentationFooter := s"`world` - v${version.value}",
 
     // Configure mdoc to preprocess documentation with version variables
     mdocIn := file("docs") / "_docs",

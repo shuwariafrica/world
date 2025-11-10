@@ -4,7 +4,7 @@ title: Currencies
 
 # Currencies
 
-The [[africa.shuwari.money.currency.Currency]] trait represents ISO 4217 currency data. Predefined instances are provided via the [[africa.shuwari.money.currency.Currencies$]] object.
+The [[world.money.currency.Currency]] trait represents ISO 4217 currency data. Predefined instances are provided via the [[world.money.currency.Currencies$]] object.
 
 ## Accessing Currencies
 
@@ -13,7 +13,7 @@ The [[africa.shuwari.money.currency.Currency]] trait represents ISO 4217 currenc
 Access currencies using their ISO 4217 codes:
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 val kes = Currencies.KES  // Kenyan Shilling
 val gbp = Currencies.GBP  // Pound Sterling
@@ -25,7 +25,7 @@ val omr = Currencies.OMR  // Omani Riyal
 Each currency provides access to its ISO 4217 data:
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 val kes = Currencies.KES
 
@@ -42,7 +42,7 @@ kes.minorUnit          // Some(2)
 The library defines opaque types for currency codes:
 
 ```scala
-import africa.shuwari.money.currency.*
+import world.money.currency.*
 
 opaque type CcyCode = String
 opaque type NumericCode = Int
@@ -60,7 +60,7 @@ val stringValue: String = code.value  // "KES"
 Look up currencies using various identifiers:
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 // By currency code
 Currencies.fromCode("KES")       // Some(Currencies.KES)
@@ -80,7 +80,7 @@ All lookup methods return `Option[Currency]`.
 The `minorUnit` property indicates decimal places for the currency's minor unit:
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 Currencies.KES.minorUnit  // Some(2) - cents
 Currencies.GBP.minorUnit  // Some(2) - pence
@@ -90,11 +90,11 @@ Currencies.JPY.minorUnit  // Some(0) - no subunits
 
 ## Creating Money Values
 
-Create [[africa.shuwari.money.Money]] values with explicit currency types:
+Create [[world.money.Money]] values with explicit currency types:
 
 ```scala
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.money.*
+import world.money.currency.Currencies
 
 val price = Money[Currencies.KES.type](1000.50)
 val cost = Money[Currencies.GBP.type](75.00)
@@ -106,7 +106,7 @@ val amount = Money[Currencies.OMR.type](50.250)
 Currencies use reference equality (singleton objects):
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 val kes1 = Currencies.KES
 val kes2 = Currencies.KES
@@ -120,7 +120,7 @@ kes1 == kes2  // true
 Pattern match on specific currencies:
 
 ```scala
-import africa.shuwari.money.currency.{Currency, Currencies}
+import world.money.currency.{Currency, Currencies}
 
 def currencyRegion(currency: Currency): String = currency match
   case Currencies.GBP => "United Kingdom"
@@ -133,10 +133,10 @@ currencyRegion(Currencies.KES)  // "Kenya"
 
 ## Currency Usage
 
-Retrieve territories where a currency is used via the [[africa.shuwari.money.currency.CurrencyUsage]] typeclass:
+Retrieve territories where a currency is used via the [[world.money.currency.CurrencyUsage]] typeclass:
 
 ```scala
-import africa.shuwari.money.currency.*
+import world.money.currency.*
 
 // Get territories via extension method
 val kesUsage: Set[Country] = Currencies.KES.usageTerritories
@@ -147,14 +147,14 @@ val omrUsage = CurrencyUsage(Currencies.OMR)
 assert(omrUsage.exists(_.alpha2.value == "OM"))
 ```
 
-The [[africa.shuwari.money.currency.CurrencyUsage]] typeclass maps each currency to the set of countries where it is officially used.
+The [[world.money.currency.CurrencyUsage]] typeclass maps each currency to the set of countries where it is officially used.
 
 ## Historic Currencies
 
-Withdrawn currencies are available via [[africa.shuwari.money.currency.HistoricCurrencies$]]:
+Withdrawn currencies are available via [[world.money.currency.HistoricCurrencies$]]:
 
 ```scala
-import africa.shuwari.money.currency.HistoricCurrencies
+import world.money.currency.HistoricCurrencies
 
 // Access historic currencies
 val dem = HistoricCurrencies.DEM  // Deutsche Mark
@@ -179,7 +179,7 @@ val allHistoric: Set[HistoricCurrency] = HistoricCurrencies.all
 Access the complete set of active currencies:
 
 ```scala
-import africa.shuwari.money.currency.Currencies
+import world.money.currency.Currencies
 
 val allCurrencies: Set[Currency] = Currencies.all
 
@@ -208,4 +208,4 @@ Currency codes are generated at compile-time from authoritative sources, ensurin
 
 ## API Reference
 
-See [[africa.shuwari.money.currency.Currency]], [[africa.shuwari.money.currency.Currencies$]], [[africa.shuwari.money.currency.HistoricCurrency]], and [[africa.shuwari.money.currency.HistoricCurrencies$]] for the complete API.
+See [[world.money.currency.Currency]], [[world.money.currency.Currencies$]], [[world.money.currency.HistoricCurrency]], and [[world.money.currency.HistoricCurrencies$]] for the complete API.

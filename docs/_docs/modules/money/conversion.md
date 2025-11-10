@@ -4,7 +4,7 @@ title: Currency Conversion
 
 # Currency Conversion
 
-The [[africa.shuwari.money.conversion]] package provides a pluggable framework for currency conversion through the [[africa.shuwari.money.conversion.ExchangeRateProvider]] trait.
+The [[world.money.conversion]] package provides a pluggable framework for currency conversion through the [[world.money.conversion.ExchangeRateProvider]] trait.
 
 ## Overview
 
@@ -16,7 +16,7 @@ Currency conversion requires two components:
 
 ### ExchangeRateProvider
 
-The [[africa.shuwari.money.conversion.ExchangeRateProvider]] trait defines the service provider interface for exchange rates:
+The [[world.money.conversion.ExchangeRateProvider]] trait defines the service provider interface for exchange rates:
 
 ```scala
 trait ExchangeRateProvider:
@@ -25,11 +25,11 @@ trait ExchangeRateProvider:
 
 Implement this trait to integrate any exchange rate data source—APIs, databases, configuration files, or any other source. The method returns `Either[ConversionError, ConversionRate]` to handle missing rates or provider failures gracefully.
 
-**See**: [[africa.shuwari.money.conversion.ExchangeRateProvider]]
+**See**: [[world.money.conversion.ExchangeRateProvider]]
 
 ### ConversionQuery
 
-[[africa.shuwari.money.conversion.ConversionQuery]] represents a request for an exchange rate:
+[[world.money.conversion.ConversionQuery]] represents a request for an exchange rate:
 
 ```scala
 final case class ConversionQuery(base: Currency, term: Currency)
@@ -39,11 +39,11 @@ The query specifies conversion from the `base` currency to the `term` (or counte
 
 ### ConversionRate
 
-[[africa.shuwari.money.conversion.ConversionRate]] represents an exchange rate between two currencies:
+[[world.money.conversion.ConversionRate]] represents an exchange rate between two currencies:
 
 ```scala
-import africa.shuwari.money.conversion.ConversionRate
-import africa.shuwari.money.currency.Currencies
+import world.money.conversion.ConversionRate
+import world.money.currency.Currencies
 
 val rate = ConversionRate(
   base = Currencies.USD,
@@ -65,11 +65,11 @@ The `rate` represents how much one unit of the `base` currency is worth in the `
 
 ### ConversionContext
 
-[[africa.shuwari.money.conversion.ConversionContext]] encapsulates metadata about the exchange rate:
+[[world.money.conversion.ConversionContext]] encapsulates metadata about the exchange rate:
 
 ```scala
 import java.time.Instant
-import africa.shuwari.money.conversion.ConversionContext
+import world.money.conversion.ConversionContext
 
 val context = ConversionContext(
   provider = "ECB",
@@ -87,8 +87,8 @@ val context = ConversionContext(
 With a `given ExchangeRateProvider` in scope, use the `convertTo` extension method for type-safe currency conversion:
 
 ```scala
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.money.*
+import world.money.currency.Currencies
 
 // Assuming 'given ExchangeRateProvider' is in scope
 
@@ -110,8 +110,8 @@ val result: Either[ConversionError, Money[Currencies.GBP.type]] = gbpResult
 Convert through multiple currencies using for-comprehensions:
 
 ```scala
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.money.*
+import world.money.currency.Currencies
 
 val kesAmount = Money[Currencies.KES.type](10000)
 
@@ -131,7 +131,7 @@ omrResult match
 Conversion operations return `Either[ConversionError, Money[T]]`. Handle errors appropriately:
 
 ```scala
-import africa.shuwari.money.errors.ConversionError
+import world.money.errors.ConversionError
 
 val result = amount.convertTo[Currencies.OMR.type]
 
@@ -157,9 +157,9 @@ result match
 Example implementation using a fixed rate table with KES as the pivot currency:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.{Currency, Currencies}
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.{Currency, Currencies}
+import world.money.errors.ConversionError
 
 val rates: Map[Currency, BigDecimal] = Map(
   Currencies.GBP -> BigDecimal("0.0061"),  // 1 KES = 0.0061 GBP
@@ -197,9 +197,9 @@ given ExchangeRateProvider with
 A provider that automatically calculates inverse rates:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.Currency
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.Currency
+import world.money.errors.ConversionError
 
 class BidirectionalProvider(baseRates: Map[(Currency, Currency), BigDecimal]) 
     extends ExchangeRateProvider:
@@ -226,9 +226,9 @@ Typical integration with an external API:
 
 ```scala
 import java.time.Instant
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.Currency
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.Currency
+import world.money.errors.ConversionError
 
 class ExternalApiProvider(apiKey: String, apiUrl: String) extends ExchangeRateProvider:
   
@@ -260,8 +260,8 @@ Wrap a provider with caching to reduce API calls and improve performance:
 ```scala
 import scala.collection.mutable
 import java.time.{Instant, Duration}
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.errors.ConversionError
 
 class CachingProvider(
   underlying: ExchangeRateProvider,
@@ -303,12 +303,12 @@ given ExchangeRateProvider = CachingProvider(apiProvider)
 
 ## Rate Inversion
 
-[[africa.shuwari.money.conversion.ConversionRate]] supports inversion for calculating reciprocal rates:
+[[world.money.conversion.ConversionRate]] supports inversion for calculating reciprocal rates:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.Currencies
-import africa.shuwari.money.currency.CurrencyMathContext.given
+import world.money.conversion.*
+import world.money.currency.Currencies
+import world.money.currency.CurrencyMathContext.given
 
 val kesToGbp = ConversionRate(
   base = Currencies.KES,
@@ -337,7 +337,7 @@ gbpToKes match
 Always pattern match on conversion results to handle failures gracefully:
 
 ```scala
-import africa.shuwari.money.errors.ConversionError
+import world.money.errors.ConversionError
 
 amount.convertTo[Currencies.GBP.type] match
   case Right(converted) => 
@@ -353,11 +353,11 @@ amount.convertTo[Currencies.GBP.type] match
 
 ### 2. Include Metadata
 
-Use [[africa.shuwari.money.conversion.ConversionContext]] to track rate sources and timestamps for audit trails:
+Use [[world.money.conversion.ConversionContext]] to track rate sources and timestamps for audit trails:
 
 ```scala
 import java.time.Instant
-import africa.shuwari.money.conversion.*
+import world.money.conversion.*
 
 val context = ConversionContext.at("ECB", Instant.now())
 val rate = ConversionRate.withContext(
@@ -373,8 +373,8 @@ val rate = ConversionRate.withContext(
 Use `BigDecimal` string constructors for exchange rates to maintain precision:
 
 ```scala
-import africa.shuwari.money.conversion.ConversionRate
-import africa.shuwari.money.currency.Currencies
+import world.money.conversion.ConversionRate
+import world.money.currency.Currencies
 
 // Good: Precise decimal from string
 val precise = ConversionRate(
@@ -396,8 +396,8 @@ val precise = ConversionRate(
 Chain multiple providers for redundancy:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.errors.ConversionError
 
 class FallbackProvider(primary: ExchangeRateProvider, fallback: ExchangeRateProvider) 
     extends ExchangeRateProvider:
@@ -413,8 +413,8 @@ class FallbackProvider(primary: ExchangeRateProvider, fallback: ExchangeRateProv
 Calculate inverse rates when direct rates are not available:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.CurrencyMathContext.given
+import world.money.conversion.*
+import world.money.currency.CurrencyMathContext.given
 
 def getRate(base: Currency, term: Currency, rates: Map[(Currency, Currency), BigDecimal]): Option[ConversionRate] =
   rates.get((base, term)) match
@@ -429,12 +429,12 @@ def getRate(base: Currency, term: Currency, rates: Map[(Currency, Currency), Big
 
 ### 6. Validate Rates
 
-Ensure rates are positive and non-zero before creating [[africa.shuwari.money.conversion.ConversionRate]] instances:
+Ensure rates are positive and non-zero before creating [[world.money.conversion.ConversionRate]] instances:
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.Currency
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.Currency
+import world.money.errors.ConversionError
 
 def createRate(base: Currency, term: Currency, rate: BigDecimal): Either[ConversionError, ConversionRate] =
   if rate <= 0 then
@@ -464,9 +464,9 @@ given ExchangeRateProvider = CachingProvider(stableRatesApi, Duration.ofHours(24
 ### Mock Provider for Testing
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.{Currency, Currencies}
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.{Currency, Currencies}
+import world.money.errors.ConversionError
 
 class MockProvider(rates: Map[(Currency, Currency), BigDecimal]) extends ExchangeRateProvider:
   def get(query: ConversionQuery): Either[ConversionError, ConversionRate] =
@@ -487,9 +487,9 @@ given ExchangeRateProvider = MockProvider(Map(
 ### Test Rate Provider with Fixed Rate
 
 ```scala
-import africa.shuwari.money.conversion.*
-import africa.shuwari.money.currency.Currency
-import africa.shuwari.money.errors.ConversionError
+import world.money.conversion.*
+import world.money.currency.Currency
+import world.money.errors.ConversionError
 
 class TestRateProvider(fixedRate: BigDecimal = BigDecimal("1.0")) extends ExchangeRateProvider:
   def get(query: ConversionQuery): Either[ConversionError, ConversionRate] =
@@ -501,4 +501,4 @@ given ExchangeRateProvider = TestRateProvider(BigDecimal("0.85"))
 
 ## API Reference
 
-See [[africa.shuwari.money.conversion.ExchangeRateProvider]], [[africa.shuwari.money.conversion.ConversionRate]], [[africa.shuwari.money.conversion.ConversionQuery]], and [[africa.shuwari.money.conversion.ConversionContext]] for the complete API.
+See [[world.money.conversion.ExchangeRateProvider]], [[world.money.conversion.ConversionRate]], [[world.money.conversion.ConversionQuery]], and [[world.money.conversion.ConversionContext]] for the complete API.

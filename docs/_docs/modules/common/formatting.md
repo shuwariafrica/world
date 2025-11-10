@@ -4,7 +4,7 @@ title: Formatting
 
 # Formatting
 
-The [[africa.shuwari.format.Formatter]] trait provides a generic interface for converting types to string representations.
+The [[world.format.Formatter]] trait provides a generic interface for converting types to string representations.
 
 ## The Formatter Trait
 
@@ -16,16 +16,16 @@ trait Formatter[A]:
 
 ## Overview
 
-The [[africa.shuwari.format.Formatter]] trait defines an extension method `formatted` for any type `A`, providing a consistent interface for string conversion.
+The [[world.format.Formatter]] trait defines an extension method `formatted` for any type `A`, providing a consistent interface for string conversion.
 
 ## Using Formatters
 
-Types that implement [[africa.shuwari.format.Formatter]] can be formatted using the `formatted` extension method:
+Types that implement [[world.format.Formatter]] can be formatted using the `formatted` extension method:
 
 ```scala
-import africa.shuwari.format.Formatter
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.format.Formatter
+import world.money.*
+import world.money.currency.Currencies
 
 val amount = Money[Currencies.KES.type](1000.50)
 val text = amount.formatted  // Uses Formatter[Money[Currencies.KES.type]]
@@ -35,7 +35,7 @@ val text = amount.formatted  // Uses Formatter[Money[Currencies.KES.type]]
 
 ## Built-in Formatter Instances
 
-The library provides [[africa.shuwari.format.Formatter]] instances for standard types:
+The library provides [[world.format.Formatter]] instances for standard types:
 
 - `Formatter[String]`
 - `Formatter[Int]`
@@ -47,19 +47,19 @@ The library provides [[africa.shuwari.format.Formatter]] instances for standard 
 
 Additional instances are provided for domain types, including:
 
-- [[africa.shuwari.locale.country.Country]]
-- [[africa.shuwari.money.currency.Currency]]
-- [[africa.shuwari.money.Money]]
+- [[world.locale.country.Country]]
+- [[world.money.currency.Currency]]
+- [[world.money.Money]]
 - etc.
 
 ## Implementing Custom Formatters
 
-Implement [[africa.shuwari.format.Formatter]] for your own types:
+Implement [[world.format.Formatter]] for your own types:
 
 ```scala
-import africa.shuwari.format.Formatter
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.format.Formatter
+import world.money.*
+import world.money.currency.Currencies
 
 case class Product(id: String, name: String, price: Money[Currencies.GBP.type])
 
@@ -77,9 +77,9 @@ product.formatted  // "WIDGET-1: Premium Widget - £29.99"
 Formatters compose naturally:
 
 ```scala
-import africa.shuwari.format.Formatter
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.format.Formatter
+import world.money.*
+import world.money.currency.Currencies
 
 case class Invoice(items: List[Money[Currencies.KES.type]], total: Money[Currencies.KES.type])
 
@@ -98,8 +98,8 @@ The `formatted` method is distinct from `toString`:
 - **formatted** - Provides a user-facing representation
 
 ```scala
-import africa.shuwari.money.*
-import africa.shuwari.money.currency.Currencies
+import world.money.*
+import world.money.currency.Currencies
 
 val amount = Money[Currencies.GBP.type](100)
 
@@ -109,8 +109,8 @@ amount.formatted  // User-facing format
 
 ## Locale-Aware Formatting
 
-The [[africa.shuwari.format.Formatter]] abstraction is not locale-aware. This is a **major limitation** for locale-specific formatting requirements it is **highly likely** that this will be moved to [`world-locale`](../locale/index.md) in a later release.
+The [[world.format.Formatter]] abstraction is not locale-aware. This is a **major limitation** for locale-specific formatting requirements it is **highly likely** that this will be moved to [`world-locale`](../locale/index.md) in a later release.
 
 ## API Reference
 
-See [[africa.shuwari.format.Formatter]] for the complete API.
+See [[world.format.Formatter]] for the complete API.

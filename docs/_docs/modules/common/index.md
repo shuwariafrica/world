@@ -24,7 +24,7 @@ libraryDependencies += "africa.shuwari" %% "world-common" % "{{projectVersion}}"
 
 ### Formatting Abstraction
 
-The [[africa.shuwari.format.Formatter]] trait provides a consistent interface for converting types to string representations.
+The [[world.format.Formatter]] trait provides a consistent interface for converting types to string representations.
 
 See [Formatting Guide](formatting.md) for detailed documentation.
 
@@ -36,7 +36,7 @@ See [Utilities Guide](utilities.md) for detailed documentation.
 
 ## Key Types
 
-- [[africa.shuwari.format.Formatter]] - Generic formatting interface
+- [[world.format.Formatter]] - Generic formatting interface
 - Utility functions for common operations
 
 ## Design Goals

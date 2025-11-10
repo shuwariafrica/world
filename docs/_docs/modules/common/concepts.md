@@ -56,7 +56,7 @@ This leverages Scala 3's contextual abstractions for clean call sites.
 Provides safe conversion from nullable references:
 
 ```scala sc:nocompile
-import africa.shuwari.common.nullable
+import world.common.nullable
 
 val maybeNull: String | Null = getValue()
 val safe: Option[String] = maybeNull.?.toOption

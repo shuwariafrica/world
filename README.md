@@ -9,84 +9,16 @@ A collection of Scala libraries for type-safe modelling and manipulation of real
 
 ## Documentation for Users
 
-This document is for contributors and developers. Users should refer instead to the [project documentation site](https://dev.shuwari.africa/world/) for API reference and usage guides.
+Users should refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and
+usage guides.
 
 ---
 
-## Overview
+## Documentation for Contributors
 
-`world` is a collection of cross-platform Scala 3 libraries for representing and manipulating real-world domain concepts in a type-safe and robust manner.  
-The project aims to provide canonical, principled, and reliable building blocks, interoperable across applicable Scala platforms.
-
-Current modules include:
-
-- **`locale`** – Country and locale primitives
-- **`money`** – Currency, monetary values, and conversion
-
-All modules are cross-compiled for **JVM**, **Scala.js**, and **Scala Native**.
-
----
-
-## Table of Contents
-
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Build & Development Workflow](#build--development-workflow)
-- [Data Management](#data-management)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Project Resources](#project-resources)
-- [License](#license)
-
----
-
-## Project Structure
-
-```
-world/
-├── modules/
-│   ├── common/         # Shared types and utilities
-│   ├── locale/         # Country and locale domain
-│   └── money/          # Currency and monetary domain
-├── docs/               # Documentation sources (Scaladoc, mdoc guides)
-```
-
----
-
-## Prerequisites
-
-- **Java 17+** (Temurin 21+ recommended)
-- **sbt 1.11.7+** (see `project/build.properties`)
-
-#### Optional:
-- **Python 3** (documentation preview server)
-- **Metals** or **IntelliJ IDEA**
-
----
-
-## Build & Development
-
-### Quick Start
-
-#### Clean, Compile & Test For All Platforms
-
-`sbt "clean; test"`
-
-#### Clean, Compile & Test for JVM Platform
-
-`sbt "project jvmProjects; clean; test"`
-
-#### Clean, Compile & Test for Scala JS Platform
-
-`sbt "project jsProjects; clean; test"`
-
-#### Clean, Compile & Test for Scala Native Platform
-
-`sbt "project nativeProjects; clean; test"`
-
-#### Execute Static Analysis & Linting Tools
-
-`sbt format  # Executes scalafmtAll, scalafixAll, headerCreateAll`
+Contributors should refer to
+the [contributor documentation page](https://dev.shuwari.africa/world/docs/contributing.html) detailed contributor
+guidelines.
 
 ---
 
@@ -101,6 +33,7 @@ world/
     - `modules/locale/src/main/scala/africa/shuwari/locale/country/Countries.scala`
 
 **Update process:**
+
 1. Download latest ISO 3166 data.
 2. Update `countries-iso3166.csv` and/or `supplemental-countries.yml`.
 3. Run:
@@ -120,6 +53,7 @@ world/
     - `modules/money/src/main/scala/africa/shuwari/money/CurrencyFactorySyntax.scala`
 
 **Update process:**
+
 1. Download latest ISO 4217 and mapping data.
 2. Update `currencies.yml` and `currency-usage.yml` (validate country codes).
 3. Run:
@@ -144,18 +78,7 @@ python3 -m http.server 8000
 
 ---
 
-## Contributing
-
-### Workflow
-
-1. Fork the repository.
-2. Create a feature or fix branch, e.g: `git checkout -b feature/my-feature`.
-3. Make changes following project conventions.
-4. Format and Lint: `sbt format`.
-5. Test: `sbt test`.
-6. Commit, Push, and open a Pull Request.
-
-### Adding Domain Data
+## Adding Domain Data
 
 #### Currencies
 
@@ -194,7 +117,7 @@ Licensed under the Apache License, Version 2.0 (the "Licence");<br />
 you may not use this file except in compliance with the Licence.<br />
 You may obtain a copy of the Licence at:
 
-  [`https://www.apache.org/licenses/LICENSE-2.0`](https://www.apache.org/licenses/LICENSE-2.0)
+[`https://www.apache.org/licenses/LICENSE-2.0`](https://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software<br />
 distributed under the Licence is distributed on an "AS IS" BASIS,<br />

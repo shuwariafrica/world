@@ -15,7 +15,7 @@ The module includes utilities for working with nullable types safely.
 Check for null references:
 
 ```scala
-import africa.shuwari.common.{isNull, nonNull}
+import world.common.{isNull, nonNull}
 
 val value: String | Null = "hello"
 val nullValue: String | Null = null
@@ -35,7 +35,7 @@ The Common module may provide additional type-level utilities in future releases
 
 ## Internal Utilities
 
-Some utilities in the [[africa.shuwari.common]] package are marked as internal and are not intended for public use. These support implementation details of other modules and may change without notice.
+Some utilities in the [[world.common]] package are marked as internal and are not intended for public use. These support implementation details of other modules and may change without notice.
 
 ## Best Practises
 
@@ -69,4 +69,4 @@ def process(value: Any): Unit =
 
 ## API Reference
 
-See [[africa.shuwari.common]] for the complete API.
+See [[world.common]] for the complete API.
