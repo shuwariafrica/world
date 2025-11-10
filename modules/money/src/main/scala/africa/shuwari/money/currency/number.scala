@@ -97,17 +97,18 @@ object CurrencyMathContext:
       *
       * Defines the number of significant digits used in calculations.
       */
-    inline def precision: Int = context.getPrecision.nn
+    inline def precision: Int = context.getPrecision
 
-    /** The [[RoundingMode]] of the [[CurrencyMathContext]].
+    /** The [[java.math.RoundingMode]] of the
+      * [[africa.shuwari.money.currency.CurrencyMathContext]].
       *
       * Specifies how numbers should be rounded if they cannot be exactly
       * represented with the given precision.
       */
     inline def mode: RoundingMode = context.getRoundingMode.nn
 
-    /** Returns this [[CurrencyMathContext, CurrencyMathContext's]] underlying
-      * `java.math.MathContext`.
+    /** Returns this [[africa.shuwari.money.currency.CurrencyMathContext]]'s
+      * underlying `java.math.MathContext`.
       */
     inline def value: MathContext = context
   end extension
@@ -181,8 +182,14 @@ object CurrencyValue:
     *       case Left(error)  => println(s"Error: ${error.message}")
     *     }
     *   }}}
+    * @param value The string to parse into a CurrencyValue.
+    * @param context A [[africa.shuwari.money.currency.CurrencyMathContext]]
+    *   given instance for decimal precision and rounding.
+    * @return Right with the parsed [[CurrencyValue]], or Left with a
+    *   [[africa.shuwari.money.errors.NumberFormattingError]] if parsing fails.
     */
-  inline def fromString(value: String)(using CurrencyMathContext): Either[NumberFormattingError, CurrencyValue] =
+  inline def fromString(value: String)(using CurrencyMathContext): Either[africa.shuwari.money.errors.NumberFormattingError,
+                                                                          CurrencyValue] =
     catching(classOf[java.lang.NumberFormatException])
       .either(BigDecimal(value, summon[CurrencyMathContext]))
       .left
@@ -218,7 +225,8 @@ object CurrencyValue:
     *
     * @note Using `Double` can lead to precision inaccuracies.
     * @return `Right` with the result, or `Left` containing an
-    *   [[ArithmeticError]] if division fails (e.g. division by zero).
+    *   [[africa.shuwari.money.errors.ArithmeticError]] if division fails (e.g.
+    *   division by zero).
     */
   inline def divide(value: CurrencyValue, divisor: CurrencyValue | BigDecimal | Long | Int | Double)
       (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] = catching(classOf[ArithmeticException])

@@ -34,6 +34,7 @@ trait ExchangeRateProvider:
     *
     * @param query The query specifying the base and term currencies.
     * @return `Right` with a [[ConversionRate]] if a rate is found, or `Left`
-    *   with a [[ConversionError]] if the rate cannot be determined.
+    *   with a [[africa.shuwari.money.errors.ConversionError]] if the rate
+    *   cannot be determined.
     */
   def get(query: ConversionQuery): Either[ConversionError, ConversionRate]

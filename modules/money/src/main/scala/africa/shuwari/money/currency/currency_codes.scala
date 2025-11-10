@@ -17,7 +17,6 @@
  ****************************************************************/
 package africa.shuwari.money.currency
 
-import africa.shuwari.money.errors
 import africa.shuwari.money.errors.CurrencyError
 import africa.shuwari.money.errors.InternalError as MoneyInternalError
 import africa.shuwari.money.internal.*
@@ -44,24 +43,32 @@ opaque type CcyCode = String
 
 /** Provides factory methods for creating instances of [[CcyCode]]. */
 object CcyCode:
+  private transparent inline def normalise(value: String): Option[String] =
+    value.nullableMapOption(_.trim.nn).map(_.toUpperCase.nn).filter(_.nonEmpty)
 
+  /** Validates that a string is exactly 3 uppercase ASCII letters.
+    *
+    * Manual validation avoids Regex instantiation and ensures consistent
+    * behavior across JVM, JS, and Native platforms.
+    */
   private transparent inline def isValidFormat(s: String): Boolean =
-    "^[A-Z]{3}$".r.matches(s)
+    s.length == 3 && s.forall(c => c >= 'A' && c <= 'Z')
 
   /** Returns a [[CcyCode]] if the input `String` matches the required format.
     *
-    * @note This method only validates that the input is a `String` of exactly
-    *   three uppercase ASCII letters. It does not check if the code corresponds
-    *   to a known currency.
+    * @note The input is trimmed and converted to uppercase before validation.
+    *   This method only validates that the input is a `String` of exactly three
+    *   uppercase ASCII letters. It does not check if the code corresponds to a
+    *   known currency.
     * @param value The `String` to validate, e.g., "USD".
     * @return `Right` with a valid [[CcyCode]] on success, or `Left` with a
     *   [[errors.CurrencyError]] on failure.
     */
   inline def from(value: String): Either[CurrencyError, CcyCode] =
-    value.nopt.fold[Either[CurrencyError, CcyCode]](Left(CurrencyError.InvalidCcyCodeFormat("null")))
-      (s =>
-        if isValidFormat(s) then Right(s: CcyCode)
-        else Left(CurrencyError.InvalidCcyCodeFormat(s)))
+    normalise(value) match
+      case Some(normalised) if isValidFormat(normalised) => Right(normalised: CcyCode)
+      case Some(invalid)                                 => Left(CurrencyError.InvalidCcyCodeFormat(invalid))
+      case None                                          => Left(CurrencyError.InvalidCcyCodeFormat(Option(value).fold("null")(_.trim.nn)))
 
   /** Creates a [[CcyCode]] from a `String` assumed to be valid.
     * @note For internal library use only. This method is not part of the public
@@ -70,7 +77,7 @@ object CcyCode:
     *   not a valid currency code format.
     */
   private[money] inline def unsafeFrom(value: String): CcyCode =
-    value.noptF(v_str => Some(v_str).filter(isValidFormat)).getOrElse {
+    normalise(value).filter(isValidFormat).getOrElse {
       throw MoneyInternalError(s"Precondition failed in CcyCode.unsafeFrom: Received null or invalid value '$value'") // scalafix:ok
     }
 
@@ -95,6 +102,7 @@ opaque type NumericCode = Int
 object NumericCode:
   /** Minimum valid value for an ISO 4217 numeric code. */
   private inline val MinValue = 0
+
   /** Maximum valid value for an ISO 4217 numeric code. */
   private inline val MaxValue = 999
 

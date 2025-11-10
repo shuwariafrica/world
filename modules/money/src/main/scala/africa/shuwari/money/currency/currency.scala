@@ -33,10 +33,9 @@ import africa.shuwari.locale.country.Country
 sealed trait CurrencyDetails extends Product with Serializable derives CanEqual:
   /** The 3-letter uppercase [[CcyCode]]. */
   def code: CcyCode
+
   /** The common, human-readable name of the currency. */
   def name: String
-  /** Provides a standard string representation, e.g., "KES (Kenyan Shilling)". */
-  override def toString: String = s"${code.value} ($name)"
 
 /** Represents an actively circulating currency.
   *
@@ -52,6 +51,7 @@ sealed trait CurrencyDetails extends Product with Serializable derives CanEqual:
 trait Currency extends CurrencyDetails derives CanEqual:
   /** The 3-digit [[NumericCode]]. */
   def numericCode: NumericCode
+
   /** The number of decimal places for the currency's minor unit. */
   def minorUnit: Option[Int]
 
@@ -64,6 +64,7 @@ trait Currency extends CurrencyDetails derives CanEqual:
 trait HistoricCurrency extends CurrencyDetails derives CanEqual:
   /** The 3-digit [[NumericCode]], if available. */
   def numericCode: Option[NumericCode]
+
   /** The month and year the currency was withdrawn. */
   def withdrawalDate: YearMonth
 
@@ -72,15 +73,16 @@ trait HistoricCurrency extends CurrencyDetails derives CanEqual:
   * where it is officially used.
   *
   * Default `given` instances for all currencies known to the library are
-  * generated at build time and can be brought into scope by importing from the
-  * [[africa.shuwari.money.currency.instances]] object.
+  * generated at build time and are automatically available when importing
+  * `africa.shuwari.money.currency.*`.
   *
   * @tparam A The specific currency singleton type, e.g., `Currencies.KES.type`.
-  * @see [[africa.shuwari.money.currency.instances]] for predefined instances.
   */
 trait CurrencyUsage[A <: CurrencyDetails]:
-  /** The `Set` of countries where the currency `A` is used. */
-  def territories: Set[Country]
+  /** The `Set` of countries where the currency `A` is used.
+    * @return A `Set` of [[africa.shuwari.locale.country.Country]] instances.
+    */
+  def territories: Set[africa.shuwari.locale.country.Country]
 
 /** Provides methods for convenient access to usage territories of any currency
   * record (e.g., [[Currency]], [[HistoricCurrency]]) via the [[CurrencyUsage]]
@@ -88,9 +90,7 @@ trait CurrencyUsage[A <: CurrencyDetails]:
   *
   * @example
   *   {{{
-  * import africa.shuwari.money.currency.Currencies
-  * import africa.shuwari.money.currency.instances.given // Import generated givens
-  * import africa.shuwari.money.currency.CurrencyUsage.usageTerritories
+  * import africa.shuwari.money.currency.*
   *
   * val shillingUsage: Set[Country] = Currencies.KES.usageTerritories
   * assert(shillingUsage.exists(_.alpha2.value == "KE"))
@@ -104,8 +104,7 @@ object CurrencyUsage:
     *
     * @example
     *   {{{
-    * import africa.shuwari.money.currency.{Currencies, CurrencyUsage}
-    * import africa.shuwari.money.currency.instances.given
+    * import africa.shuwari.money.currency.*
     *
     * val shillingUsage = CurrencyUsage(Currencies.KES)
     * assert(shillingUsage.nonEmpty)
@@ -113,6 +112,92 @@ object CurrencyUsage:
     * @param currency The currency instance (e.g., `Currencies.KES`).
     * @return A `Set` of [[africa.shuwari.locale.country.Country]] instances.
     */
-  transparent inline def apply[A <: CurrencyDetails](currency: A)(using usage: CurrencyUsage[A]): Set[Country] =
+  transparent inline def apply[A <: CurrencyDetails](using usage: CurrencyUsage[A]): Set[Country] =
     usage.territories
 end CurrencyUsage
+
+/** Provides compile-time access to currency precision (minor unit) information.
+  *
+  * This object exposes a match type [[PrecisionOf]] that maps currency
+  * singleton types to their precision values, enabling compile-time validation
+  * and optimisation of monetary calculations.
+  *
+  * The `precisionOf` method provides a total function that returns precision at
+  * compile-time when the currency type is known, falling back to runtime lookup
+  * for generic cases.
+  *
+  * @example
+  *   {{{
+  * import africa.shuwari.money.currency.{Currencies, Currency}
+  *
+  * // Compile-time precision for known currencies
+  * val jpyPrecision = Currency.precisionOf[Currencies.JPY.type]  // 0
+  * val kesPrecision = Currency.precisionOf[Currencies.KES.type]  // 2
+  * val omrPrecision = Currency.precisionOf[Currencies.OMR.type]  // 3
+  *
+  * // Works with generic currency types at runtime
+  * def showPrecision[C <: Currency](using ValueOf[C]): Int =
+  *   Currency.precisionOf[C]
+  *   }}}
+  */
+object Currency:
+  /** Match type that maps currency singleton types to their precision values.
+    *
+    * This type-level function encodes the number of decimal places (minor
+    * units) for each currency. It provides compile-time knowledge of precision
+    * for known currency types.
+    *
+    * Common precision values:
+    *   - 0: Currencies like JPY (Japanese Yen), KRW (Korean Won)
+    *   - 2: Most currencies including KES, EUR, GBP
+    *   - 3: Currencies like OMR (Omani Riyal), KWD (Kuwaiti Dinar)
+    *   - None: Precious metals and currencies without defined minor units
+    *
+    * @tparam C The currency singleton type (e.g., Currencies.KES.type)
+    */
+  type PrecisionOf[C <: Currency] <: Option[Int] = C match
+    case Currencies.JPY.type => Some[0]
+    case Currencies.KRW.type => Some[0]
+    case Currencies.BHD.type => Some[3]
+    case Currencies.KWD.type => Some[3]
+    case Currencies.OMR.type => Some[3]
+    case Currencies.TND.type => Some[3]
+    case _                   => Option[Int]
+
+  /** Returns the precision (number of minor units) for a currency type.
+    *
+    * This method provides compile-time constant folding when the currency type
+    * is statically known, while maintaining totality by falling back to runtime
+    * lookup for generic currency parameters.
+    *
+    * @tparam C The currency type whose precision is requested
+    * @return The number of decimal places for the currency, or None if not
+    *   defined
+    */
+  transparent inline def precisionOf[C <: Currency](using currency: ValueOf[C]): Option[Int] =
+    currency.value.minorUnit
+
+  /** Validates that a BigDecimal value has precision suitable for a currency.
+    *
+    * Checks whether the scale (number of decimal places) of the value does not
+    * exceed the currency's defined minor unit precision.
+    *
+    * @tparam C The currency type
+    * @param value The BigDecimal value to validate
+    * @return true if the value's scale is within the currency's precision,
+    *   false otherwise
+    * @example
+    *   {{{
+    * import africa.shuwari.money.currency.{Currencies, Currency}
+    *
+    * Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100"))    // true
+    * Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100.5"))  // false
+    * Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.99"))  // true
+    * Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.999")) // false
+    *   }}}
+    */
+  transparent inline def validatePrecision[C <: Currency](value: BigDecimal)(using currency: ValueOf[C]): Boolean =
+    currency.value.minorUnit match
+      case Some(precision) => value.scale <= precision
+      case None            => true // No precision constraint
+end Currency

@@ -22,6 +22,7 @@ import java.time.Instant
 import africa.shuwari.money.currency.Currency
 import africa.shuwari.money.currency.CurrencyMathContext
 import africa.shuwari.money.currency.CurrencyValue
+import africa.shuwari.money.errors.ArithmeticError
 
 /** Represents the conversion rate between two currencies.
   *
@@ -32,21 +33,32 @@ import africa.shuwari.money.currency.CurrencyValue
   * @param context Optional metadata about the rate, such as its source and
   *   timestamp.
   */
-final case class ConversionRate(base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext] = None)
+final case class ConversionRate private (base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext])
     derives CanEqual:
 
   /** Creates the inverse of this exchange rate (from term to base).
-    * @note This operation requires a [[CurrencyMathContext]] given instance for
-    *   division.
-    * @throws java.lang.ArithmeticException if the rate is zero.
+    *
+    * @param context A [[africa.shuwari.money.currency.CurrencyMathContext]]
+    *   given instance for division.
+    * @return Right with the inverted rate, or Left with an
+    *   [[africa.shuwari.money.errors.ArithmeticError]] if the rate is zero and
+    *   cannot be inverted.
     */
-  def inverse(using CurrencyMathContext): ConversionRate =
-    // A rate of zero cannot be inverted. We extract the value assuming valid, non-zero rates.
-    val inverseRate =
-      (CurrencyValue(1) / CurrencyValue(rate))
-        .getOrElse(throw new ArithmeticException("Cannot create an inverse for a zero-rate.")) // scalafix:ok
-    ConversionRate(term, base, inverseRate.unwrap, context)
+  def inverse(using CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
+    (CurrencyValue(1) / CurrencyValue(rate)).map { inverseRate =>
+      ConversionRate(term, base, inverseRate.unwrap, context)
+    }
 end ConversionRate
+
+object ConversionRate:
+  def apply(base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext]): ConversionRate =
+    new ConversionRate(base, term, rate, context)
+
+  def apply(base: Currency, term: Currency, rate: BigDecimal): ConversionRate =
+    new ConversionRate(base, term, rate, None)
+
+  def withContext(base: Currency, term: Currency, rate: BigDecimal, context: ConversionContext): ConversionRate =
+    new ConversionRate(base, term, rate, Some(context))
 
 /** Encapsulates metadata about a currency conversion or exchange rate.
   *
@@ -54,7 +66,16 @@ end ConversionRate
   *   (e.g. "ECB", "IMF", "MyBank-API").
   * @param rateTimestamp Optional timestamp indicating when the rate was valid.
   */
-final case class ConversionContext(provider: String, rateTimestamp: Option[Instant] = None) derives CanEqual
+final case class ConversionContext private (provider: String, rateTimestamp: Option[Instant]) derives CanEqual
+
+object ConversionContext:
+  def apply(provider: String, rateTimestamp: Option[Instant]): ConversionContext =
+    new ConversionContext(provider, rateTimestamp)
+
+  def apply(provider: String): ConversionContext = new ConversionContext(provider, None)
+
+  def at(provider: String, rateTimestamp: Instant): ConversionContext =
+    new ConversionContext(provider, Some(rateTimestamp))
 
 /** A query for requesting an exchange rate between two currencies. */
 final case class ConversionQuery(base: Currency, term: Currency) derives CanEqual

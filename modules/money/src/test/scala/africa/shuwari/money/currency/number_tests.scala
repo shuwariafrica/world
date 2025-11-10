@@ -136,4 +136,65 @@ class CurrencyValueSuite extends munit.ScalaCheckSuite:
     assertEquals(value.withScale(2, BigDecimal.RoundingMode.HALF_UP).unwrap, BigDecimal("123.46"))
     assertEquals(value.withScale(1, BigDecimal.RoundingMode.DOWN).unwrap, BigDecimal("123.4"))
   }
+
+  test("unwrap should expose underlying BigDecimal") {
+    val bd = BigDecimal("999.99")
+    val cv = CurrencyValue(bd)
+    assertEquals(cv.unwrap, bd)
+  }
+
+  test("CurrencyValue should handle zero correctly") {
+    val zero = CurrencyValue(0)
+    assertEquals(zero.unwrap, BigDecimal(0))
+    assertEquals(zero.signum, 0)
+    assertEquals(zero.abs, zero)
+    assertEquals(-zero, zero)
+  }
+
+  test("CurrencyValue operations should respect CurrencyMathContext") {
+    val customContext = CurrencyMathContext(2, RoundingMode.HALF_DOWN)
+    given CurrencyMathContext = customContext
+
+    val a = CurrencyValue(10)
+    val b = CurrencyValue(3)
+    val result = a / b
+
+    // Should use precision of 2
+    result.foreach { cv =>
+      assert(cv.unwrap.precision <= 2 || cv.unwrap == BigDecimal("3.3"))
+    }
+  }
+
+  test("CurrencyValue.fromString should handle edge cases") {
+    assertEquals(CurrencyValue.fromString("0").map(_.unwrap), Right(BigDecimal(0)))
+    assertEquals(CurrencyValue.fromString("-0").map(_.unwrap), Right(BigDecimal(0)))
+    assertEquals(CurrencyValue.fromString("0.00").map(_.unwrap), Right(BigDecimal("0.00")))
+    assertEquals(CurrencyValue.fromString(".5").map(_.unwrap), Right(BigDecimal("0.5")))
+    assertEquals(CurrencyValue.fromString("-.5").map(_.unwrap), Right(BigDecimal("-0.5")))
+  }
+
+  test("CurrencyValue.fromString should reject invalid inputs") {
+    assert(CurrencyValue.fromString("").isLeft)
+    assert(CurrencyValue.fromString("abc").isLeft)
+    assert(CurrencyValue.fromString("12.34.56").isLeft)
+    assert(CurrencyValue.fromString("12a34").isLeft)
+  }
+
+  test("CurrencyValue arithmetic should maintain precision") {
+    val a = CurrencyValue(BigDecimal("0.1"))
+    val b = CurrencyValue(BigDecimal("0.2"))
+    val result = a + b
+    assertEquals(result.unwrap, BigDecimal("0.3"))
+  }
+
+  test("CurrencyValue comparison should work correctly") {
+    val a = CurrencyValue(100)
+    val b = CurrencyValue(200)
+    val c = CurrencyValue(100)
+
+    assert(a.unwrap < b.unwrap)
+    assert(b.unwrap > a.unwrap)
+    assertEquals(a, c)
+  }
+
 end CurrencyValueSuite

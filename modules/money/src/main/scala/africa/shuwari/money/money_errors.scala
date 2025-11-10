@@ -44,10 +44,15 @@ object errors:
     * @param message A description of the internal error.
     * @param cause An optional underlying `Throwable` that caused this error.
     */
-  final case class InternalError(message: String, cause: Option[Throwable] = None) extends MoneyError:
+  final case class InternalError private (message: String, cause: Option[Throwable]) extends MoneyError:
     cause.foreach(initCause) // Initialize the cause of this error if provided
     override def getMessage: String =
       s"Internal Money Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+
+  object InternalError:
+    def apply(message: String, cause: Option[Throwable]): InternalError = new InternalError(message, cause)
+    def apply(message: String): InternalError = new InternalError(message, None)
+    def withCause(message: String, cause: Throwable): InternalError = new InternalError(message, Some(cause))
 
   /** Returned when an arithmetic operation on monetary values fails.
     *
@@ -57,10 +62,15 @@ object errors:
     * @param cause The optional underlying `Throwable` (e.g.,
     *   [[java.lang.ArithmeticException]]).
     */
-  final case class ArithmeticError(message: String, cause: Option[Throwable]) extends CurrencyError:
+  final case class ArithmeticError private (message: String, cause: Option[Throwable]) extends MoneyError:
     cause.foreach(initCause) // Initialize the cause of this error if provi
     override def getMessage: String =
       s"Arithmetic Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+
+  object ArithmeticError:
+    def apply(message: String, cause: Option[Throwable]): ArithmeticError = new ArithmeticError(message, cause)
+    def apply(message: String): ArithmeticError = new ArithmeticError(message, None)
+    def withCause(message: String, cause: Throwable): ArithmeticError = new ArithmeticError(message, Some(cause))
 
   /** Returned when a `String` cannot be parsed into a numeric representation.
     *
@@ -71,10 +81,15 @@ object errors:
     * @param cause An optional underlying `Throwable`, typically a
     *   `NumberFormatException`.
     */
-  final case class NumberFormattingError(message: String, cause: Option[Throwable] = None) extends MoneyError:
+  final case class NumberFormattingError private (message: String, cause: Option[Throwable]) extends MoneyError:
     cause.foreach(initCause)
     override def getMessage: String =
       s"Number Formatting Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+
+  object NumberFormattingError:
+    def apply(message: String, cause: Option[Throwable]): NumberFormattingError = new NumberFormattingError(message, cause)
+    def apply(message: String): NumberFormattingError = new NumberFormattingError(message, None)
+    def withCause(message: String, cause: Throwable): NumberFormattingError = new NumberFormattingError(message, Some(cause))
 
   /** A base type for errors related to currency validation and lookup. */
   sealed trait CurrencyError extends MoneyError
@@ -141,8 +156,13 @@ object errors:
       * @param message A description of the provider error.
       * @param cause An optional underlying `Throwable` that caused this error.
       */
-    final case class ProviderError(message: String, cause: Option[Throwable] = None) extends ConversionError:
+    final case class ProviderError private (message: String, cause: Option[Throwable]) extends ConversionError:
       cause.foreach(initCause)
       override def getMessage: String = s"Exchange rate provider error: $message"
+
+    object ProviderError:
+      def apply(message: String, cause: Option[Throwable]): ProviderError = new ProviderError(message, cause)
+      def apply(message: String): ProviderError = new ProviderError(message, None)
+      def withCause(message: String, cause: Throwable): ProviderError = new ProviderError(message, Some(cause))
   end ConversionError
 end errors

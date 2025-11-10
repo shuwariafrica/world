@@ -17,31 +17,23 @@
  ****************************************************************/
 package africa.shuwari.money
 
-import scala.annotation.targetName
-
-/** Internal utility extensions, primarily for handling nullable values
-  * gracefully within the `africa.shuwari.money` library.
+/** Internal utility extensions for the `africa.shuwari.money` library.
   *
-  * These utilities are not intended for public API usage.
+  * This object re-exports canonical null handling utilities from the common
+  * module for use within the money module.
+  *
+  * @note These utilities are not intended for public API usage.
   */
 private[money] object internal:
 
-  extension [A](v: A | Null)
-    @targetName("any_nopt") transparent inline def nopt: Option[A] = inline v match
-      case valueA: A => Some(valueA) // Type test ensures 'valueA' is not null
-      case _: Null   => None
-
-    @targetName("any_noptm") transparent inline def noptM[B](f: A => B): Option[B] = v.nopt.map(f)
-
-    @targetName("any_noptf") transparent inline def noptF[B](f: A => Option[B]): Option[B] = v.nopt.flatMap(f)
-
-  extension [A](v: Option[A | Null])
-    @targetName("option_nopt") transparent inline def nopt: Option[A] = v.flatMap {
-      case valueA: A => Some(valueA) // Type test ensures 'valueA' is not null
-      case _: Null   => None
-    }
-
-    @targetName("option_noptm") transparent inline def noptM[B](f: A => B): Option[B] = v.nopt.map(f)
-
-    @targetName("option_noptf") transparent inline def noptF[B](f: A => Option[B]): Option[B] = v.nopt.flatMap(f)
+  // Re-export nullable utilities from common module with descriptive names
+  export africa.shuwari.common.nullable.{
+    flatMapFlattenNull as nullableFlatMapFlattenNull,
+    flatMapOption as nullableFlatMapOption,
+    flattenNull as nullableFlattenNull,
+    mapFlattenNull as nullableMapFlattenNull,
+    mapOption as nullableMapOption,
+    toEither as nullableToEither,
+    toOption as nullableToOption
+  }
 end internal

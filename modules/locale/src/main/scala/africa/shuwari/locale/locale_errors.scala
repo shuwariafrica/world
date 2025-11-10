@@ -32,7 +32,7 @@ object errors:
     * overhead of stack trace generation, as these errors are typically used for
     * control flow rather than debugging deep call stacks.
     */
-  sealed trait LocaleError extends Throwable with NoStackTrace
+  sealed trait LocaleError extends Throwable with NoStackTrace with Product with Serializable
 
   /** Returned if an ISO 3166-1 Alpha-2 country code does not conform to the
     * required 2-uppercase-letter format.
@@ -57,9 +57,21 @@ object errors:
     * @param value The code provided.
     * @param reason A human-readable explanation of why the code is invalid.
     */
-  final case class InvalidM49Code(value: Int, reason: String = "Must be between 1 and 999.") extends LocaleError:
+  final case class InvalidM49Code private (value: Int, reason: String) extends LocaleError:
     override def getMessage: String =
       s"Invalid UN M49 code: $value. $reason"
+
+  object InvalidM49Code:
+    val DefaultReason = "Must be between 1 and 999."
+    def apply(value: Int, reason: String): InvalidM49Code = new InvalidM49Code(value, reason)
+    def apply(value: Int): InvalidM49Code = new InvalidM49Code(value, DefaultReason)
+
+    /** Returned when attempting to create a custom country that conflicts with
+      * a predefined one.
+      *
+      * @param message A message detailing which field caused the conflict.
+      */
+  final case class DuplicateCountryData(message: String) extends LocaleError
 
   /** Returned when an unexpected internal error occurs within the locale
     * module.
@@ -70,8 +82,13 @@ object errors:
     * @param message A description of the internal error.
     * @param cause An optional underlying `Throwable` that caused this error.
     */
-  final case class InternalError(message: String, cause: Option[Throwable] = None) extends LocaleError:
+  final case class InternalError private (message: String, cause: Option[Throwable]) extends LocaleError:
     override def getMessage: String =
       s"Internal Locale Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
     cause.foreach(initCause)
+
+  object InternalError:
+    def apply(message: String, cause: Option[Throwable]): InternalError = new InternalError(message, cause)
+    def apply(message: String): InternalError = new InternalError(message, None)
+    def withCause(message: String, cause: Throwable): InternalError = new InternalError(message, Some(cause))
 end errors

@@ -17,8 +17,6 @@
  ****************************************************************/
 package africa.shuwari.locale.country
 
-import scala.util.matching.Regex
-
 import africa.shuwari.locale.errors
 import africa.shuwari.locale.errors.InternalError as LocaleInternalError
 
@@ -47,22 +45,35 @@ opaque type Alpha2Code = String
 
 /** Provides factory methods for creating instances of [[Alpha2Code]]. */
 object Alpha2Code:
-  private inline def Alpha2Regex: Regex = "^[A-Z]{2}$".r
+  private transparent inline def normalise(value: String): Option[String] =
+    Option(value)
+      .map(_.trim.nn)
+      .filter(_.nonEmpty)
+      .map(_.toUpperCase.nn)
+
+  /** Validates that a string is exactly 2 uppercase ASCII letters.
+    *
+    * Manual validation avoids Regex instantiation and ensures consistent
+    * behavior across JVM, JS, and Native platforms.
+    */
+  private transparent inline def isValidFormat(s: String): Boolean =
+    s.length == 2 && s.forall(c => c >= 'A' && c <= 'Z')
 
   /** Returns an [[Alpha2Code]] if the input string matches the Alpha-2 code
     * format.
     *
-    * @note Only the format is checked: exactly two uppercase ASCII letters.
-    *   This method does not validate if the code corresponds to an existing
-    *   country.
+    * @note The input is trimmed and converted to uppercase before validation.
+    *   Only the format is checked: exactly two uppercase ASCII letters. This
+    *   method does not validate if the code corresponds to an existing country.
     * @param value A string of two uppercase ASCII letters.
     * @return Either a `Right` with a valid [[Alpha2Code]] or a `Left` with a
     *   [[errors.LocaleError]].
     */
   inline def from(value: String): Either[errors.LocaleError, Alpha2Code] =
-    Option(value).filter(Alpha2Regex.matches) match
-      case Some(validCode) => Right(validCode)
-      case None            => Left(errors.InvalidAlpha2CodeFormat(Option(value).getOrElse("null")))
+    normalise(value) match
+      case Some(normalised) if isValidFormat(normalised) => Right(normalised)
+      case Some(invalid)                                 => Left(errors.InvalidAlpha2CodeFormat(invalid))
+      case None                                          => Left(errors.InvalidAlpha2CodeFormat(Option(value).fold("null")(_.trim.nn)))
 
   /** Creates an [[Alpha2Code]] from a string assumed to be valid.
     *
@@ -72,10 +83,9 @@ object Alpha2Code:
     *   not a valid Alpha-2 code format.
     */
   private[locale] inline def unsafeFrom(value: String): Alpha2Code =
-    Option(value).filter(Alpha2Regex.matches) match
-      case Some(validCode) => validCode
-      case None =>
-        throw LocaleInternalError(s"Precondition failed in Alpha2Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
+    normalise(value).filter(isValidFormat).getOrElse {
+      throw LocaleInternalError(s"Precondition failed in Alpha2Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
+    }
 
   /** Provides compile-time safe equality checking for [[Alpha2Code]] instances. */
   given CanEqual[Alpha2Code, Alpha2Code] = CanEqual.derived
@@ -96,20 +106,34 @@ opaque type Alpha3Code = String
 
 /** Provides factory methods for creating instances of [[Alpha3Code]]. */
 object Alpha3Code:
-  private inline def Alpha3Regex: Regex = "^[A-Z]{3}$".r
+  private transparent inline def normalise(value: String): Option[String] =
+    Option(value)
+      .map(_.trim.nn)
+      .filter(_.nonEmpty)
+      .map(_.toUpperCase.nn)
+
+  /** Validates that a string is exactly 3 uppercase ASCII letters.
+    *
+    * Manual validation avoids Regex instantiation and ensures consistent
+    * behavior across JVM, JS, and Native platforms.
+    */
+  private transparent inline def isValidFormat(s: String): Boolean =
+    s.length == 3 && s.forall(c => c >= 'A' && c <= 'Z')
 
   /** Returns an [[Alpha3Code]] if the input string matches the Alpha-3 code
     * format.
     *
-    * @note Only the format is checked: exactly three uppercase ASCII letters.
+    * @note The input is trimmed and converted to uppercase before validation.
+    *   Only the format is checked: exactly three uppercase ASCII letters.
     * @param value A string of three uppercase ASCII letters.
     * @return Either a `Right` with a valid [[Alpha3Code]] or a `Left` with a
     *   [[errors.LocaleError]].
     */
   inline def from(value: String): Either[errors.LocaleError, Alpha3Code] =
-    Option(value).filter(Alpha3Regex.matches) match
-      case Some(validCode) => Right(validCode)
-      case None            => Left(errors.InvalidAlpha3CodeFormat(Option(value).getOrElse("null")))
+    normalise(value) match
+      case Some(normalised) if isValidFormat(normalised) => Right(normalised)
+      case Some(invalid)                                 => Left(errors.InvalidAlpha3CodeFormat(invalid))
+      case None                                          => Left(errors.InvalidAlpha3CodeFormat(Option(value).fold("null")(_.trim.nn)))
 
   /** Creates an [[Alpha3Code]] from a `String` assumed to be valid.
     *
@@ -119,10 +143,9 @@ object Alpha3Code:
     *   not a valid Alpha-3 code format.
     */
   private[locale] inline def unsafeFrom(value: String): Alpha3Code =
-    Option(value).filter(Alpha3Regex.matches) match
-      case Some(validCode) => validCode
-      case None =>
-        throw LocaleInternalError(s"Precondition failed in Alpha3Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
+    normalise(value).filter(isValidFormat).getOrElse {
+      throw LocaleInternalError(s"Precondition failed in Alpha3Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
+    }
 
   /** Provides compile-time safe equality checking for [[Alpha3Code]] instances. */
   given CanEqual[Alpha3Code, Alpha3Code] = CanEqual.derived
@@ -145,6 +168,7 @@ opaque type M49Code = Int
 object M49Code:
   /** Minimum valid value for an M49 code. */
   private inline val MinValue = 1
+
   /** Maximum valid value for an M49 code. */
   private inline val MaxValue = 999
 

@@ -25,6 +25,18 @@ import africa.shuwari.locale.errors.*
 
 class CountryCodeSuite extends ScalaCheckSuite:
 
+  private def normalise(value: String): Option[String] =
+    Option(value)
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .map(_.toUpperCase)
+
+  private def isAlpha2(value: String): Boolean =
+    value.length == 2 && value.forall(ch => ch >= 'A' && ch <= 'Z')
+
+  private def isAlpha3(value: String): Boolean =
+    value.length == 3 && value.forall(ch => ch >= 'A' && ch <= 'Z')
+
   // --- Alpha2Code Tests ---
   property("Alpha2Code.from should succeed for valid 2-letter uppercase strings") {
     forAll(Gen.stringOfN(2, Gen.alphaUpperChar)) { s =>
@@ -33,9 +45,19 @@ class CountryCodeSuite extends ScalaCheckSuite:
   }
 
   property("Alpha2Code.from should fail for invalid strings") {
-    forAll(Gen.alphaNumStr.suchThat(s => s == null || !s.matches("^[A-Z]{2}$"))) { s =>
-      assert(Alpha2Code.from(s).isLeft, s"'$s' should be an invalid Alpha-2 code")
-    } // scalafix:ok
+    val invalidAlpha2Gen = Gen.alphaNumStr.suchThat(s => normalise(s).forall(v => !isAlpha2(v)))
+    forAll(invalidAlpha2Gen) { s =>
+      assert(Alpha2Code.from(s).isLeft, s"'$s' should be an invalid Alpha-2 code even after normalisation")
+    }
+  }
+
+  property("Alpha2Code.from should normalise input before validation") {
+    val cases = Seq(" ke " -> "KE", "us" -> "US", "  Gb" -> "GB")
+    cases.foreach { (input, expected) =>
+      Alpha2Code.from(input) match
+        case Right(code) => assertEquals(code.value, expected)
+        case Left(err)   => fail(s"Expected Right for '$input' but got $err")
+    }
   }
 
   // --- Alpha3Code Tests ---
@@ -46,9 +68,19 @@ class CountryCodeSuite extends ScalaCheckSuite:
   }
 
   property("Alpha3Code.from should fail for invalid strings") {
-    forAll(Gen.alphaNumStr.suchThat(s => s == null || !s.matches("^[A-Z]{3}$"))) { s =>
-      assert(Alpha3Code.from(s).isLeft, s"'$s' should be an invalid Alpha-3 code")
-    } // scalafix:ok
+    val invalidAlpha3Gen = Gen.alphaNumStr.suchThat(s => normalise(s).forall(v => !isAlpha3(v)))
+    forAll(invalidAlpha3Gen) { s =>
+      assert(Alpha3Code.from(s).isLeft, s"'$s' should be an invalid Alpha-3 code even after normalisation")
+    }
+  }
+
+  property("Alpha3Code.from should normalise input before validation") {
+    val cases = Seq(" ken " -> "KEN", "tza" -> "TZA", "  gBr" -> "GBR")
+    cases.foreach { (input, expected) =>
+      Alpha3Code.from(input) match
+        case Right(code) => assertEquals(code.value, expected)
+        case Left(err)   => fail(s"Expected Right for '$input' but got $err")
+    }
   }
 
   // --- M49Code Tests ---
@@ -64,6 +96,41 @@ class CountryCodeSuite extends ScalaCheckSuite:
       assert(M49Code.from(i).isLeft, s"$i should be an invalid M49 code")
     }
   }
+
+  // --- Opaque Type Extension Tests ---
+  test("Alpha2Code.value should expose the underlying string") {
+    val code = Alpha2Code.from("KE").toOption.get
+    assertEquals(code.value, "KE")
+  }
+
+  test("Alpha3Code.value should expose the underlying string") {
+    val code = Alpha3Code.from("KEN").toOption.get
+    assertEquals(code.value, "KEN")
+  }
+
+  test("M49Code.value should expose the underlying int") {
+    val code = M49Code.from(404).toOption.get
+    assertEquals(code.value, 404)
+  }
+
+  test("Alpha2Code should maintain equality semantics") {
+    val code1 = Alpha2Code.from("GB").toOption.get
+    val code2 = Alpha2Code.from("gb").toOption.get // normalized to GB
+    assertEquals(code1, code2)
+  }
+
+  test("Alpha3Code should maintain equality semantics") {
+    val code1 = Alpha3Code.from("GBR").toOption.get
+    val code2 = Alpha3Code.from("gbr").toOption.get // normalized to GBR
+    assertEquals(code1, code2)
+  }
+
+  test("M49Code should maintain value equality") {
+    val code1 = M49Code.from(404).toOption.get
+    val code2 = M49Code.from(404).toOption.get
+    assertEquals(code1, code2)
+  }
+
 end CountryCodeSuite
 
 class CountriesSuite extends munit.FunSuite:

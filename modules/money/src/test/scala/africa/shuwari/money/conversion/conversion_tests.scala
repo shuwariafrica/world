@@ -33,31 +33,34 @@ class ConversionModelSuite extends FunSuite:
     assertEquals(context.provider, "ECB")
     assert(context.rateTimestamp.isDefined)
 
-    val query = ConversionQuery(Currencies.EUR, Currencies.USD)
+    val query = ConversionQuery(Currencies.EUR, Currencies.JPY)
     assertEquals(query.base, Currencies.EUR)
-    assertEquals(query.term, Currencies.USD)
+    assertEquals(query.term, Currencies.JPY)
   }
 
   test("ConversionRate.inverse should correctly invert the base, term, and rate") {
-    val originalRate = ConversionRate(Currencies.USD, Currencies.KES, BigDecimal("125.50"))
-    val inverseRate = originalRate.inverse
+    val originalRate = ConversionRate(Currencies.KES, Currencies.JPY, BigDecimal("10.50"))
+    val inverseRateResult = originalRate.inverse
 
-    assertEquals(inverseRate.base, Currencies.KES)
-    assertEquals(inverseRate.term, Currencies.USD)
+    assert(inverseRateResult.isRight, "Inverse should succeed for non-zero rate")
+    inverseRateResult.foreach { inverseRate =>
+      assertEquals(inverseRate.base, Currencies.JPY)
+      assertEquals(inverseRate.term, Currencies.KES)
 
-    // Check that the inverse rate is mathematically correct (1 / 125.50)
-    val expectedInverseValue = CurrencyValue(1) / CurrencyValue(BigDecimal("125.50"))
-    assert(expectedInverseValue.isRight)
-    expectedInverseValue.foreach { expected =>
-      // Allow for a small tolerance due to precision of division
-      assert((inverseRate.rate - expected.unwrap).abs < BigDecimal("0.000000000000001"))
+      // Check that the inverse rate is mathematically correct (1 / 10.50)
+      val expectedInverseValue = CurrencyValue(1) / CurrencyValue(BigDecimal("10.50"))
+      assert(expectedInverseValue.isRight)
+      expectedInverseValue.foreach { expected =>
+        // Allow for a small tolerance due to precision of division
+        assert((inverseRate.rate - expected.unwrap).abs < BigDecimal("0.000000000000001"))
+      }
     }
   }
 
-  test("ConversionRate.inverse should throw an exception for a zero rate") {
-    val zeroRate = ConversionRate(Currencies.USD, Currencies.KES, BigDecimal("0"))
-    intercept[ArithmeticException] {
-      zeroRate.inverse
-    }
+  test("ConversionRate.inverse should return Left for a zero rate") {
+    val zeroRate = ConversionRate(Currencies.KES, Currencies.JPY, BigDecimal("0"))
+    val result = zeroRate.inverse
+    assert(result.isLeft, "Inverse should fail for zero rate")
   }
+
 end ConversionModelSuite

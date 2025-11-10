@@ -20,8 +20,10 @@ package africa.shuwari.money.currency
 import munit.FunSuite
 
 import africa.shuwari.locale.country.Countries
+import africa.shuwari.locale.country.Country
 
 import africa.shuwari.money.Money
+import africa.shuwari.money.format.given
 
 class CurrencySuite extends FunSuite:
   test("Currencies object should contain accessible, valid currency objects") {
@@ -29,7 +31,7 @@ class CurrencySuite extends FunSuite:
     assertEquals(kes.code.value, "KES")
     assertEquals(kes.name, "Kenyan Shilling")
     assertEquals(kes.numericCode.value, 404)
-    assertEquals(kes.toString, "KES (Kenyan Shilling)")
+    assertEquals(kes.formatted, "KES (Kenyan Shilling)")
   }
 
   test("HistoricCurrencies object should contain accessible, valid currency objects") {
@@ -40,8 +42,8 @@ class CurrencySuite extends FunSuite:
   }
 
   test("Currencies.fromCode should find active currencies") {
-    assertEquals(Currencies.fromCode("USD"), Some(Currencies.USD))
-    assertEquals(Currencies.fromCode("usd"), Some(Currencies.USD)) // case-insensitive
+    assertEquals(Currencies.fromCode("KES"), Some(Currencies.KES))
+    assertEquals(Currencies.fromCode("kes"), Some(Currencies.KES)) // case-insensitive
     assertEquals(Currencies.fromCode("XYZ"), None) // unknown
   }
 
@@ -49,42 +51,75 @@ class CurrencySuite extends FunSuite:
     assertEquals(Currencies.fromNumericCode(404), Some(Currencies.KES))
     assertEquals(Currencies.fromNumericCode(9999), None)
   }
+
+  test("Currency.precisionOf should return correct minor units") {
+    // Zero-decimal currencies
+    assertEquals(Currency.precisionOf[Currencies.JPY.type], Some(0))
+    assertEquals(Currency.precisionOf[Currencies.KRW.type], Some(0))
+
+    // Two-decimal currencies (most common)
+    assertEquals(Currency.precisionOf[Currencies.KES.type], Some(2))
+    assertEquals(Currency.precisionOf[Currencies.GBP.type], Some(2))
+
+    // Three-decimal currencies
+    assertEquals(Currency.precisionOf[Currencies.BHD.type], Some(3))
+    assertEquals(Currency.precisionOf[Currencies.KWD.type], Some(3))
+    assertEquals(Currency.precisionOf[Currencies.OMR.type], Some(3))
+    assertEquals(Currency.precisionOf[Currencies.TND.type], Some(3))
+  }
+
+  test("Currency.validatePrecision should check decimal places correctly") {
+    // JPY has 0 decimal places
+    assert(Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100")))
+    assert(!Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100.5")))
+
+    // KES has 2 decimal places
+    assert(Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.99")))
+    assert(!Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.999")))
+    assert(Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.9")))
+    assert(Currency.validatePrecision[Currencies.KES.type](BigDecimal("10")))
+
+    // OMR has 3 decimal places
+    assert(Currency.validatePrecision[Currencies.OMR.type](BigDecimal("10.999")))
+    assert(!Currency.validatePrecision[Currencies.OMR.type](BigDecimal("10.9999")))
+    assert(Currency.validatePrecision[Currencies.OMR.type](BigDecimal("10.99")))
+  }
+
+  test("Currency instances should have correct minorUnit values") {
+    assertEquals(Currencies.KES.minorUnit, Some(2))
+    assertEquals(Currencies.JPY.minorUnit, Some(0))
+    assertEquals(Currencies.OMR.minorUnit, Some(3))
+  }
+
+  test("Currency properties should be accessible") {
+    val kes = Currencies.KES
+    assert(kes.code.value.nonEmpty)
+    assert(kes.name.nonEmpty)
+    assert(kes.numericCode.value >= 0)
+    assert(kes.minorUnit.isDefined)
+  }
+
 end CurrencySuite
 
 class CurrencyUsageSuite extends FunSuite:
   test("CurrencyUsage.apply should retrieve territories for a given currency") {
-    // Bring the generated given instances into scope
-    import africa.shuwari.money.currency.instances.given
-
-    val kesUsage = CurrencyUsage(Currencies.KES)
-    assertEquals(kesUsage, Set(Countries.KE))
+    val kesUsage = CurrencyUsage[Currencies.KES]
+    assertEquals(kesUsage, Set[Country](Countries.KE))
 
     // Test a multi-country currency
-    val zarUsage = CurrencyUsage(Currencies.ZAR)
+    val zarUsage = CurrencyUsage[Currencies.ZAR]
     assert(zarUsage.contains(Countries.ZA))
     assert(zarUsage.contains(Countries.LS))
     assert(zarUsage.contains(Countries.NA))
   }
 
   test("`.usage` syntax extension should retrieve territories") {
-    import africa.shuwari.money.currency.instances.given
-    import africa.shuwari.money.currency.syntax.*
-
-    assertEquals(Currencies.JPY.usage, Set(Countries.JP))
-  }
-
-  test("`.usage` syntax should fail to compile if givens are not in scope") {
-    // This test verifies that the typeclass mechanism is working correctly.
-    // Without `import instances.given`, the compiler cannot find a CurrencyUsage instance.
-    assert(compileErrors("africa.shuwari.money.currency.syntax.syntax(africa.shuwari.money.currency.Currencies.USD).usage").nonEmpty)
+    assertEquals(Currencies.JPY.usage, Set[Country](Countries.JP))
   }
 end CurrencyUsageSuite
 
 class CurrencyFactorySyntaxSuite extends FunSuite:
   test("Currency-as-factory syntax should create correctly typed Money instances") {
-    import africa.shuwari.money.currency.syntax.*
-    import africa.shuwari.money.currency.CurrencyMathContext.given // for CurrencyValue creation
-
     val amount: Money[Currencies.KES.type] = Currencies.KES(1500)
     assertEquals(amount.value, CurrencyValue(1500))
     assertEquals(amount.currency, Currencies.KES)

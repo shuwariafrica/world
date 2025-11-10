@@ -15,18 +15,31 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package africa.shuwari.money
+package africa.shuwari.locale.format
 
-/** Provides convenient, importable syntax extensions for creating [[Money]]
-  * allowing use of a DSL-like syntax for creating type-safe `Money` values from
-  * standard numeric types.
-  *
-  * @example
-  *   {{{
-  * import africa.shuwari.money.syntax.*
-  *
-  * val tenDollars = 10.USD
-  * val fiftyEuro = 50.0.EUR
-  *   }}}
+import africa.shuwari.format.Formatter.given
+
+import africa.shuwari.locale.country.Alpha2Code
+import africa.shuwari.locale.country.Alpha3Code
+import africa.shuwari.locale.country.Country
+import africa.shuwari.locale.country.M49Code
+
+/** Alias for [[africa.shuwari.format.Formatter]] */
+type Formatter[A] = africa.shuwari.format.Formatter[A]
+
+/** Alias for
+  * [[africa.shuwari.format.Formatter africa.shuwari.format.Formatter]]
   */
-object syntax extends CurrencyFactorySyntax
+val Formatter = africa.shuwari.format.Formatter
+
+/** Default formatter for Country: full name */
+given Formatter[Country] = africa.shuwari.format.Formatter[Country](_.name)
+
+/** Default formatter for Alpha2Code: uppercase code */
+given Formatter[Alpha2Code] = africa.shuwari.format.Formatter[Alpha2Code](_.value)
+
+/** Default formatter for Alpha3Code: uppercase code */
+given Formatter[Alpha3Code] = africa.shuwari.format.Formatter[Alpha3Code](_.value)
+
+/** Default formatter for M49Code: numeric string */
+given Formatter[M49Code] = africa.shuwari.format.Formatter[M49Code](code => code.value.formatted)

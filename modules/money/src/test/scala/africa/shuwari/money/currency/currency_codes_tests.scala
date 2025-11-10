@@ -22,6 +22,16 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 
 class CcyCodeSuite extends ScalaCheckSuite:
+
+  private def normalise(value: String): Option[String] =
+    Option(value)
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .map(_.toUpperCase)
+
+  private def isAlphabetic(value: String): Boolean =
+    value.length == 3 && value.forall(ch => ch >= 'A' && ch <= 'Z')
+
   property("CcyCode.from should succeed for valid 3-letter uppercase strings") {
     forAll(Gen.stringOfN(3, Gen.alphaUpperChar)) { s =>
       assert(CcyCode.from(s).isRight)
@@ -29,10 +39,32 @@ class CcyCodeSuite extends ScalaCheckSuite:
   }
 
   property("CcyCode.from should fail for invalid strings") {
-    forAll(Gen.alphaNumStr.suchThat(s => s == null || !s.matches("^[A-Z]{3}$"))) { s =>
-      assert(CcyCode.from(s).isLeft) // scalafix:ok
+    val invalidCcyGen = Gen.alphaNumStr.suchThat(s => normalise(s).forall(v => !isAlphabetic(v)))
+    forAll(invalidCcyGen) { s =>
+      assert(CcyCode.from(s).isLeft)
     }
   }
+
+  property("CcyCode.from should normalise input before validation") {
+    val cases = Seq(" kes " -> "KES", "jpy" -> "JPY", "  oMr" -> "OMR")
+    cases.foreach { (input, expected) =>
+      CcyCode.from(input) match
+        case Right(code) => assertEquals(code.value, expected)
+        case Left(err)   => fail(s"Expected Right for '$input' but got $err")
+    }
+  }
+
+  test("CcyCode.value should expose the underlying string") {
+    val code = CcyCode.from("KES").toOption.get
+    assertEquals(code.value, "KES")
+  }
+
+  test("CcyCode should maintain equality semantics") {
+    val code1 = CcyCode.from("KES").toOption.get
+    val code2 = CcyCode.from("kes").toOption.get // normalized
+    assertEquals(code1, code2)
+  }
+
 end CcyCodeSuite
 
 class NumericCodeSuite extends ScalaCheckSuite:
@@ -48,4 +80,24 @@ class NumericCodeSuite extends ScalaCheckSuite:
       assert(NumericCode.from(i).isLeft)
     }
   }
+
+  test("NumericCode.value should expose the underlying int") {
+    val code = NumericCode.from(404).toOption.get
+    assertEquals(code.value, 404)
+  }
+
+  test("NumericCode should maintain value equality") {
+    val code1 = NumericCode.from(840).toOption.get
+    val code2 = NumericCode.from(840).toOption.get
+    assertEquals(code1, code2)
+  }
+
+  test("NumericCode should handle edge values correctly") {
+    val zero = NumericCode.from(0).toOption.get
+    assertEquals(zero.value, 0)
+
+    val max = NumericCode.from(999).toOption.get
+    assertEquals(max.value, 999)
+  }
+
 end NumericCodeSuite
