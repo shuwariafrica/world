@@ -155,9 +155,13 @@ object WorldUnidocPlugin extends AutoPlugin {
       // This uses the ScalaUnidoc plugin
       val docDirs = (Compile / unidoc).value
       val mainDocDir = docDirs.headOption.getOrElse(target.value / "unidoc")
-      
-      log.info(s"Documentation generated at: ${mainDocDir.getAbsolutePath}")
-      mainDocDir
+
+      // Copy to a stable (scala-version agnostic) site directory for publishing
+      val siteDir = target.value / "site"
+      if (siteDir.exists()) IO.delete(siteDir)
+      IO.copyDirectory(mainDocDir, siteDir)
+      log.info(s"Copied unified documentation to: ${siteDir.getAbsolutePath}")
+      siteDir
     }
   )
 

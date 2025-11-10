@@ -7,18 +7,12 @@ A collection of Scala libraries for type-safe modelling and manipulation of real
 
 ---
 
-## Documentation for Users
+## Documentation
 
-Users should refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and
-usage guides.
-
----
-
-## Documentation for Contributors
-
-Contributors should refer to
-the [contributor documentation page](https://dev.shuwari.africa/world/docs/contributing.html) detailed contributor
-guidelines.
+- Users should refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and
+  usage guides.
+- Contributors should also refer to the [contributor documentation page](https://dev.shuwari.africa/world/docs/contributing.html)
+  detailed contributor guidelines.
 
 ---
 
@@ -71,7 +65,7 @@ guidelines.
 Generate documentation:
 
 ```bash
-sbt unidoc
+sbt generateUnidoc
 cd target/scala-3.7.3/unidoc # Or current Scala specific target directory
 python3 -m http.server 8000
 ```

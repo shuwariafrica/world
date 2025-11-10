@@ -1,0 +1,267 @@
+name: Integration Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+
+env:
+  NODE_LTS: 22
+  JDK_PUBLISH_LTS: 17
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test (${{ matrix.platform }} / JDK ${{ matrix.java }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 17, 21 ]
+        platform: [ jvm, js, native ]
+        os: [ ubuntu-latest ]
+        include:
+          - platform: native
+            java: 21
+            os: windows-latest
+        exclude:
+          - platform: js
+            java: 17
+          - platform: native
+            java: 17
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v6
+
+      - name: Set up Node.js
+        if: matrix.platform == 'js'
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_LTS }}
+
+      - name: Install LLVM/Clang toolchain (Ubuntu)
+        if: matrix.platform == 'native' && startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm libgc-dev
+
+      - name: Install LLVM toolchain (Windows)
+        if: matrix.platform == 'native' && startsWith(matrix.os, 'windows')
+        shell: pwsh
+        run: |
+          choco install -y llvm
+          "C:\\Program Files\\LLVM\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build & Test (${{ matrix.platform }} / JDK ${{ matrix.java }} / ${{ matrix.os }})
+        shell: bash
+        run: sbt -Dsbt.ci=true "world-${{ matrix.platform }}/test"
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v6
+
+      - name: Verify Formatting
+        id: scalafmt-check
+        run: sbt -Dsbt.ci=true scalafmtCheckAll
+        continue-on-error: true
+
+      - name: Verify Linting Conformance
+        id: scalafix-check
+        run: sbt -Dsbt.ci=true "scalafixAll --check"
+        continue-on-error: true
+
+      - name: Verify Source File Headers
+        id: header-check
+        run: sbt -Dsbt.ci=true headerCheckAll
+        continue-on-error: true
+
+      - name: Report Failures
+        if: steps.scalafmt-check.outcome == 'failure' || steps.scalafix-check.outcome == 'failure' || steps.header-check.outcome == 'failure'
+        run: |
+          echo "Error: One or more static analysis tasks failed." >&2
+          if [[ "${{ steps.scalafmt-check.outcome }}" == "failure" ]]; then
+            echo "- Scalafmt code formatting check failed." >&2
+          fi
+          if [[ "${{ steps.scalafix-check.outcome }}" == "failure" ]]; then
+            echo "- Scalafix code compliance check failed." >&2
+          fi
+          if [[ "${{ steps.header-check.outcome }}" == "failure" ]]; then
+            echo "- Source file headers check failed." >&2
+          fi
+          exit 1
+
+  documentation:
+    name: Compile Documentation Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v6
+
+      - name: Compile Documentation
+        run: sbt -Dsbt.ci=true generateUnidoc
+
+  publish:
+    name: Publish Artefacts
+    needs: [ build, static-analysis, documentation ]
+    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup GPG Key and Agent'
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.SIGNING_KEY }}
+          trust_level: 5
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+          check-latest: true
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v6
+
+      - name: Publish Release Artefacts (jvm/js/native)
+        env:
+          PUBLISH_USER: ${{ secrets.PUBLISH_USER }}
+          PUBLISH_USER_PASSPHRASE: ${{ secrets.PUBLISH_USER_PASSPHRASE }}
+          SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+        run: sbt -Dsbt.ci=true "publishSigned; sonatypeBundleRelease"
+
+  site-release:
+    name: Publish Site & GitHub Release
+    needs: [ publish ]
+    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # needed to create a release
+      pages: write             # deploy to GitHub Pages
+      id-token: write          # required by actions/deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v6
+
+      - name: Build Site (generateUnidoc)
+        id: build-site
+        run: |
+          sbt -Dsbt.ci=true generateUnidoc
+          echo "site_dir=$(pwd)/target/site" >> $GITHUB_OUTPUT
+
+      - name: Sanity check site
+        run: |
+          test -s "${{ steps.build-site.outputs.site_dir }}/index.html"
+
+      - name: Prepare Pages Artifact (.nojekyll)
+        run: |
+          touch "${{ steps.build-site.outputs.site_dir }}/.nojekyll"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.build-site.outputs.site_dir }}
+
+      - name: Deploy to GitHub Pages
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') || startsWith(github.ref_name, 'v0.') }}

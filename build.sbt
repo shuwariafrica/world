@@ -49,7 +49,7 @@ val `world-numbers` =
     .settings(unitTestSettings)
     .settings(publishSettings)
 
-val jvmProjects =
+val `world-jvm` =
   project
     .in(file(".jvm"))
     .notPublished
@@ -60,7 +60,7 @@ val jvmProjects =
       `world-numbers`.jvm,
     )
 
-val nativeProjects =
+val `world-native` =
   project
     .in(file(".native"))
     .notPublished
@@ -71,7 +71,7 @@ val nativeProjects =
       `world-numbers`.native,
     )
 
-val jsProjects =
+val `world-js` =
   project
     .in(file(".js"))
     .notPublished
@@ -89,11 +89,11 @@ val `world-root` =
     .notPublished
     .apacheLicensed
     .enablePlugins(ScalaUnidocPlugin, WorldUnidocPlugin)
-    .aggregate(jvmProjects, jsProjects, nativeProjects)
+    .aggregate(`world-jvm`, `world-js`, `world-native`)
     .settings(sonatypeProfileSetting)
     .settings(
       // Aggregate ScalaUnidoc from JVM projects only
-      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(jsProjects, nativeProjects)
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`world-js`, `world-native`)
     )
 
 inThisBuild(
@@ -159,13 +159,9 @@ def publishSettings = publishCredentials +: pgpSettings ++: List(
 def sonatypeProfileSetting = sonatypeProfileName := "africa.shuwari"
 
 def pgpSettings = List(
-  PgpKeys.pgpSelectPassphrase :=
-    sys.props
-      .get("SIGNING_KEY_PASSPHRASE")
-      .map(_.toCharArray),
   usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
 )
 
-addCommandAlias("format", "project jvmProjects; scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
+addCommandAlias("format", "project world-jvm; scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
-addCommandAlias("analyse", "project jvmProjects; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("analyse", "project world-jvm; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
