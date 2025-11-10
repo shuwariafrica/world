@@ -1,15 +1,18 @@
-# All dotfile directories
-.*/
+# All dotfiles and directories
+.*
+# Exceptions
 !.github/
+!.gitattributes
+!.gitignore
+!.sbtopts
+!.scalafix.conf
+!.scalafmt.conf
 
-metals.sbt
-
-# PowerShell specific files
-PowerShell*/
 
 # Build output directories
 target/
 
 # Miscellaneous
-*.worksheet.sc
 null/
+PowerShell*/
+metals.sbt

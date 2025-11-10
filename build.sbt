@@ -1,76 +1,117 @@
 val libraries = new {
   val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
   val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
-  val sjavatime = Def.setting("org.ekrich" %%% "sjavatime" % "1.4.0")
+  val `scala-java-time` = Def.setting("io.github.cquiroz" %%% "scala-java-time" % "2.6.0")
+  val `scala-java-time-tzdb` = `scala-java-time`.apply(_.withName("scala-java-time-tzdb"))
 }
 
-val locale =
+val `world-common` =
+  crossProject(JVMPlatform, JSPlatform, NativePlatform)
+    .crossType(CrossType.Pure)
+    .withoutSuffixFor(JVMPlatform)
+    .in(file("modules/common"))
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .dependsOn(libraries.`munit-scalacheck`(_ % Test))
+
+val `world-locale` =
   crossProject(JVMPlatform, JSPlatform, NativePlatform)
     .crossType(CrossType.Pure)
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/locale"))
+    .dependsOn(`world-common`)
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
     .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
 
-val money =
+val `world-money` =
   crossProject(JVMPlatform, JSPlatform, NativePlatform)
     .crossType(CrossType.Pure)
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/money"))
-    .dependsOn(locale)
+    .dependsOn(`world-locale`)
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
     .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
-    .jsSettings(libraryDependency(libraries.sjavatime))
-    .nativeSettings(libraryDependency(libraries.sjavatime))
+    .jsSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
+    .jsSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
+    .nativeSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
+    .nativeSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
 
-val jvmProjects =
+val `world-numbers` =
+  crossProject(JVMPlatform, JSPlatform, NativePlatform)
+    .crossType(CrossType.Pure)
+    .withoutSuffixFor(JVMPlatform)
+    .in(file("modules/numbers"))
+    .dependsOn(`world-locale`)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+
+val `world-jvm` =
   project
     .in(file(".jvm"))
     .notPublished
-    .aggregate(locale.jvm, money.jvm)
+    .aggregate(
+      `world-common`.jvm,
+      `world-locale`.jvm,
+      `world-money`.jvm,
+      `world-numbers`.jvm,
+    )
 
-val nativeProjects =
+val `world-native` =
   project
     .in(file(".native"))
     .notPublished
-    .aggregate(locale.native, money.native)
+    .aggregate(
+      `world-common`.native,
+      `world-locale`.native,
+      `world-money`.native,
+      `world-numbers`.native,
+    )
 
-val jsProjects =
+val `world-js` =
   project
     .in(file(".js"))
     .notPublished
-    .aggregate(locale.js, money.js)
+    .aggregate(
+      `world-common`.js,
+      `world-locale`.js,
+      `world-money`.js,
+      `world-numbers`.js,
+    )
 
-val `money-root` =
+val `world-root` =
   project
     .in(file("."))
     .shuwariProject
     .notPublished
     .apacheLicensed
-    .aggregate(jvmProjects, jsProjects, nativeProjects)
+    .enablePlugins(ScalaUnidocPlugin, WorldUnidocPlugin)
+    .aggregate(`world-jvm`, `world-js`, `world-native`)
     .settings(sonatypeProfileSetting)
-    .dependsOn(money.jvm)
+    .settings(
+      // Aggregate ScalaUnidoc from JVM projects only
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`world-js`, `world-native`)
+    )
 
 inThisBuild(
   List(
     scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := List("3.3.5"),
+    crossScalaVersions := List("3.7.3"),
     organization := "africa.shuwari",
-    description := "Scala Money & Currency API.",
-    homepage := Some(url("https://github.com/shuwarifrica/money")),
+    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
+    homepage := Some(url("https://github.com/shuwarifrica/world")),
     startYear := Some(2023),
     semanticdbEnabled := true,
     sonatypeCredentialHost := "s01.oss.sonatype.org",
     publishCredentials,
     scmInfo := ScmInfo(
-      url("https://github.com/shuwariafrica/money"),
-      "scm:git:https://github.com/shuwariafrica/money.git",
-      Some("scm:git:git@github.com:shuwariafrica/money.git")
-    ).some
+      url("https://github.com/shuwariafrica/world"),
+      "scm:git:https://github.com/shuwariafrica/world.git",
+      Some("scm:git:git@github.com:shuwariafrica/world.git")
+    ).some,
   ) ++ formattingSettings
 )
 
@@ -118,13 +159,9 @@ def publishSettings = publishCredentials +: pgpSettings ++: List(
 def sonatypeProfileSetting = sonatypeProfileName := "africa.shuwari"
 
 def pgpSettings = List(
-  PgpKeys.pgpSelectPassphrase :=
-    sys.props
-      .get("SIGNING_KEY_PASSPHRASE")
-      .map(_.toCharArray),
   usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
 )
 
-addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
+addCommandAlias("format", "project world-jvm; scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
-addCommandAlias("staticCheck", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("analyse", "project world-jvm; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
