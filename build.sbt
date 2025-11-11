@@ -93,7 +93,7 @@ inThisBuild(
     homepage := Some(url("https://github.com/shuwarifrica/world")),
     startYear := Some(2023),
     semanticdbEnabled := true,
-    sonatypeCredentialHost := "s01.oss.sonatype.org",
+    sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
     publishCredentials,
     scmInfo := ScmInfo(
       url("https://dev.shuwari.africa/world"),
