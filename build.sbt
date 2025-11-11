@@ -40,15 +40,6 @@ val `world-money` =
     .nativeSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
     .nativeSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
 
-val `world-numbers` =
-  crossProject(JVMPlatform, JSPlatform, NativePlatform)
-    .crossType(CrossType.Pure)
-    .withoutSuffixFor(JVMPlatform)
-    .in(file("modules/numbers"))
-    .dependsOn(`world-locale`)
-    .settings(unitTestSettings)
-    .settings(publishSettings)
-
 val `world-jvm` =
   project
     .in(file(".jvm"))
@@ -56,8 +47,7 @@ val `world-jvm` =
     .aggregate(
       `world-common`.jvm,
       `world-locale`.jvm,
-      `world-money`.jvm,
-      `world-numbers`.jvm,
+      `world-money`.jvm
     )
 
 val `world-native` =
@@ -67,8 +57,7 @@ val `world-native` =
     .aggregate(
       `world-common`.native,
       `world-locale`.native,
-      `world-money`.native,
-      `world-numbers`.native,
+      `world-money`.native
     )
 
 val `world-js` =
@@ -78,8 +67,7 @@ val `world-js` =
     .aggregate(
       `world-common`.js,
       `world-locale`.js,
-      `world-money`.js,
-      `world-numbers`.js,
+      `world-money`.js
     )
 
 val `world-root` =
@@ -108,10 +96,10 @@ inThisBuild(
     sonatypeCredentialHost := "s01.oss.sonatype.org",
     publishCredentials,
     scmInfo := ScmInfo(
-      url("https://github.com/shuwariafrica/world"),
+      url("https://dev.shuwari.africa/world"),
       "scm:git:https://github.com/shuwariafrica/world.git",
       Some("scm:git:git@github.com:shuwariafrica/world.git")
-    ).some,
+    ).some
   ) ++ formattingSettings
 )
 

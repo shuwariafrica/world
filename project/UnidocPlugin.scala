@@ -23,7 +23,7 @@ object WorldUnidocPlugin extends AutoPlugin {
     val documentationFooter = settingKey[String]("Footer text for documentation")
     val generateUnidoc = taskKey[File]("Generate unified API documentation with static site")
     val preprocessDocs = taskKey[File]("Preprocess documentation with mdoc and copy assets")
-    
+
     // Version keys for injection into documentation via mdoc
     val scalaJsVersion = settingKey[String]("Scala.js version used in the project")
     val scalaNativeVersion = settingKey[String]("Scala Native version used in the project")
@@ -52,31 +52,31 @@ object WorldUnidocPlugin extends AutoPlugin {
       },
       "VERSION" -> version.value
     ),
-    
+
     // Suppress link hygiene warnings for API references mdoc can't validate
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    
+
     // Task to run mdoc and copy non-markdown assets
     preprocessDocs := {
       val log = streams.value.log
-      
+
       // First run mdoc to process markdown files (mdoc is an InputTask)
       val _ = (Compile / mdoc).toTask("").value
-      
+
       val docsRoot = file("docs")
       val mdocOutputRoot = mdocOut.value.getParentFile // target/mdoc-processed
-      
+
       // Copy sidebar.yml, rootdoc.md, _assets, _layouts if they exist
       val filesToCopy = List(
         docsRoot / "sidebar.yml" -> mdocOutputRoot / "sidebar.yml",
         docsRoot / "rootdoc.md" -> mdocOutputRoot / "rootdoc.md"
       )
-      
+
       val dirsToCopy = List(
         docsRoot / "_assets" -> mdocOutputRoot / "_assets",
         docsRoot / "_layouts" -> mdocOutputRoot / "_layouts"
       )
-      
+
       // Copy files
       filesToCopy.foreach { case (src, dest) =>
         if (src.exists()) {
@@ -84,7 +84,7 @@ object WorldUnidocPlugin extends AutoPlugin {
           log.info(s"Copied ${src.getName} to mdoc output")
         }
       }
-      
+
       // Copy directories
       dirsToCopy.foreach { case (src, dest) =>
         if (src.exists()) {
@@ -92,7 +92,7 @@ object WorldUnidocPlugin extends AutoPlugin {
           log.info(s"Copied ${src.getName}/ to mdoc output")
         }
       }
-      
+
       mdocOutputRoot
     },
 
@@ -103,7 +103,7 @@ object WorldUnidocPlugin extends AutoPlugin {
     Compile / doc / scalacOptions ++= {
       // CRITICAL: Run mdoc (with asset copying) BEFORE generating Scaladoc
       val processedDocsDir = preprocessDocs.value
-      
+
       val siteRoot = processedDocsDir.getAbsolutePath
       val projectUrl = "https://world.shuwari.africa"
       val socialLinks = Seq("github" -> "https://github.com/shuwariafrica/world")
@@ -115,10 +115,14 @@ object WorldUnidocPlugin extends AutoPlugin {
       val footer = documentationFooter.value
 
       val baseOptions = Seq(
-        "-project", "`world`",
-        "-project-version", version.value,
-        "-project-url", projectUrl,
-        "-siteroot", siteRoot,
+        "-project",
+        "`world`",
+        "-project-version",
+        version.value,
+        "-project-url",
+        projectUrl,
+        "-siteroot",
+        siteRoot,
         "-author",
         "-groups",
         // Enable Inkuire type-based search engine
@@ -143,7 +147,7 @@ object WorldUnidocPlugin extends AutoPlugin {
 
       val sourceLinkOptions = Seq("-source-links", sourceLinks)
 
-      baseOptions ++ rootContentOption ++ logoOption ++ footerOption ++ 
+      baseOptions ++ rootContentOption ++ logoOption ++ footerOption ++
         socialLinkOptions ++ sourceLinkOptions
     },
 
@@ -165,9 +169,7 @@ object WorldUnidocPlugin extends AutoPlugin {
     }
   )
 
-
-  private final case class PluginVersions(scalaJS: String, scalaNative: String)
-
+  final private case class PluginVersions(scalaJS: String, scalaNative: String)
 
   private lazy val pluginVersions = Def.setting[PluginVersions] {
     val sourceFile = (LocalRootProject / baseDirectory).value / "project" / "plugins.sbt"

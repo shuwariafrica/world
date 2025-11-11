@@ -26,7 +26,9 @@ object CountriesPopulator {
     if (!sourceCsvFile.exists()) sys.error(s"CountriesPopulator: Source CSV file does not exist at: ${sourceCsvFile.getAbsolutePath}")
     implicit val countryOrdering: Ordering[ParsedCountryData] = Ordering.by(_.alpha2)
     val baseCountries = Try(Using.resource(CSVReader.open(sourceCsvFile)(UNSDFormat)) { r =>
-      r.iteratorWithHeaders.zipWithIndex.flatMap { case (rowMap, index) => fromCsvRow(rowMap, sourceCsvFile.getName, index + 2) }.to[SortedSet]
+      r.iteratorWithHeaders.zipWithIndex
+        .flatMap { case (rowMap, index) => fromCsvRow(rowMap, sourceCsvFile.getName, index + 2) }
+        .to[SortedSet]
     }).getOrElse(sys.error(s"Could not load or parse ${sourceCsvFile.getName}."))
     val supplementalCountries = parseYaml[SupplementalRoot](supplementalYamlFile, log).map(_.countries).getOrElse(Nil)
     val baseCountryMap = baseCountries.map(c => c.alpha2 -> c).toMap
@@ -36,7 +38,10 @@ object CountriesPopulator {
     val authorDateString: String = {
       val relativeCsvPath = IO.relativize(projectRootDir, sourceCsvFile).getOrElse("countries-iso3166.csv")
       val gitCommand = Seq("git", "log", "-1", "--pretty=format:%at", "--", relativeCsvPath)
-      Try(Process(gitCommand, projectRootDir).!!.trim).filter(_.nonEmpty).map(ts => Instant.ofEpochSecond(ts.toLong).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)).getOrElse("unknown")
+      Try(Process(gitCommand, projectRootDir).!!.trim)
+        .filter(_.nonEmpty)
+        .map(ts => Instant.ofEpochSecond(ts.toLong).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+        .getOrElse("unknown")
     }
     val countrySource = generateCountriesFileSource(finalCountries, authorDateString)
     (countrySource, targetFile)
@@ -50,11 +55,15 @@ object CountriesPopulator {
     val alpha3 = rowMap.getOrElse("ISO-alpha3 Code", "").trim.toUpperCase
     if (name.isEmpty && m49Str.isEmpty && alpha2.isEmpty && alpha3.isEmpty) return None
     if (name.isEmpty) sys.error(s"Validation failed in $fileName (Line $lineNum): 'Country or Area' cannot be empty. Row: $rowMap")
-    if (!alpha2.matches("^[A-Z]{2}$")) sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha2 Code' ('$alpha2') is not 2 uppercase letters. Row: $rowMap")
-    if (!alpha3.matches("^[A-Z]{3}$")) sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha3 Code' ('$alpha3') is not 3 uppercase letters. Row: $rowMap")
-    if (!m49Str.matches("^[0-9]+$")) sys.error(s"Validation failed in $fileName (Line $lineNum): 'M49 Code' ('$m49Str') is not a valid number. Row: $rowMap")
+    if (!alpha2.matches("^[A-Z]{2}$"))
+      sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha2 Code' ('$alpha2') is not 2 uppercase letters. Row: $rowMap")
+    if (!alpha3.matches("^[A-Z]{3}$"))
+      sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha3 Code' ('$alpha3') is not 3 uppercase letters. Row: $rowMap")
+    if (!m49Str.matches("^[0-9]+$"))
+      sys.error(s"Validation failed in $fileName (Line $lineNum): 'M49 Code' ('$m49Str') is not a valid number. Row: $rowMap")
     val m49 = Try(m49Str.toInt).getOrElse(sys.error(s"Critical error parsing M49 code '$m49Str' to Int."))
-    if (m49 < 1 || m49 > 999) sys.error(s"Validation failed in $fileName (Line $lineNum): M49 code '$m49' is out of the valid range (1-999). Row: $rowMap")
+    if (m49 < 1 || m49 > 999)
+      sys.error(s"Validation failed in $fileName (Line $lineNum): M49 code '$m49' is out of the valid range (1-999). Row: $rowMap")
     Some(ParsedCountryData(name, alpha2, alpha3, m49))
   }
   private def parseYaml[A: Decoder](file: File, log: Logger): Option[A] = {
@@ -64,11 +73,12 @@ object CountriesPopulator {
     }
     val yamlString = Using.resource(Source.fromFile(file, StandardCharsets.UTF_8.name()))(_.mkString)
     parser.parse(yamlString) match {
-      case Left(e) => sys.error(s"YAML parsing failed for ${file.getName}: ${e.getMessage}")
-      case Right(json) => json.as[A] match {
-        case Left(e) => sys.error(s"YAML decoding failed for ${file.getName}: ${e.getMessage}\n${e.history.mkString("\n")}")
-        case Right(data) => Some(data)
-      }
+      case Left(e)     => sys.error(s"YAML parsing failed for ${file.getName}: ${e.getMessage}")
+      case Right(json) =>
+        json.as[A] match {
+          case Left(e)     => sys.error(s"YAML decoding failed for ${file.getName}: ${e.getMessage}\n${e.history.mkString("\n")}")
+          case Right(data) => Some(data)
+        }
     }
   }
 
@@ -147,9 +157,10 @@ object Countries:
     }
 
     val countrySetElements = countries.map(_.alpha2).mkString(",\n    ")
-    sb.append(s"""  /** A `Set` containing all defined [[Country]] instances in this object. */
+    sb.append(
+      s"""  /** A `Set` containing all defined [[Country]] instances in this object. */
   val all: Set[Country] = Set(\n    $countrySetElements\n  )\n\n""" +
-      s"""  def fromAlpha2(code: String): Option[Country] = byAlpha2.get(code.trim.toUpperCase.nn)
+        s"""  def fromAlpha2(code: String): Option[Country] = byAlpha2.get(code.trim.toUpperCase.nn)
   def fromAlpha3(code: String): Option[Country] = byAlpha3.get(code.trim.toUpperCase.nn)
   def fromM49(code: Int): Option[Country] = byM49.get(code)
   def fromName(name: String): Option[Country] = byName.get(name.trim.toLowerCase.nn)
