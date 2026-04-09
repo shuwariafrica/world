@@ -41,4 +41,4 @@ given Formatter[Alpha2Code] = world.format.Formatter[Alpha2Code](_.value)
 given Formatter[Alpha3Code] = world.format.Formatter[Alpha3Code](_.value)
 
 /** Default formatter for M49Code: numeric string */
-given Formatter[M49Code] = world.format.Formatter[M49Code](code => code.value.formatted)
+given Formatter[M49Code] = world.format.Formatter[M49Code](code => code.value.display)

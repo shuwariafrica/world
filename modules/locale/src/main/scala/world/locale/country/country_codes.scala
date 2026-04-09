@@ -93,6 +93,15 @@ object Alpha2Code:
   extension (code: Alpha2Code)
     /** The raw 2-character `String` representation of the Alpha-2 code. */
     inline def value: String = code
+
+    /** Looks up the [[Country]] with this Alpha-2 code in the contextual country set.
+      *
+      * @param countries The set of countries to search. A default `given` is provided
+      *   by [[Country$ Country]] containing all predefined countries.
+      * @return `Some(country)` if found, `None` otherwise.
+      */
+    def country(using countries: Set[Country]): Option[Country] =
+      countries.find(_.alpha2 == code)
 end Alpha2Code
 
 /** A type-safe ISO 3166-1 Alpha-3 country code.
@@ -153,6 +162,15 @@ object Alpha3Code:
   extension (code: Alpha3Code)
     /** The raw 3-character `String` representation of the Alpha-3 code. */
     inline def value: String = code
+
+    /** Looks up the [[Country]] with this Alpha-3 code in the contextual country set.
+      *
+      * @param countries The set of countries to search. A default `given` is provided
+      *   by [[Country$ Country]] containing all predefined countries.
+      * @return `Some(country)` if found, `None` otherwise.
+      */
+    def country(using countries: Set[Country]): Option[Country] =
+      countries.find(_.alpha3 == code)
 end Alpha3Code
 
 /** A type-safe UN M49 numeric code for a country or area.
@@ -201,4 +219,13 @@ object M49Code:
   extension (code: M49Code)
     /** The raw `Int` representation of the M49 code. */
     inline def value: Int = code
+
+    /** Looks up the [[Country]] with this M49 code in the contextual country set.
+      *
+      * @param countries The set of countries to search. A default `given` is provided
+      *   by [[Country$ Country]] containing all predefined countries.
+      * @return `Some(country)` if found, `None` otherwise.
+      */
+    def country(using countries: Set[Country]): Option[Country] =
+      countries.find(_.m49 == code)
 end M49Code

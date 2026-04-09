@@ -17,10 +17,10 @@ title: Contributing
 To allow for cross-platform builds, ensure the following system toolchains are available:
 
 - JavaScript runtime (Scala.js):
-  - **Node.js 18+**
+  - **Node.js 22+**
 
 - Native toolchain (Scala Native):
-    - **LLVM toolchain**: `clang`, `clang++`, and
+    - **LLVM toolchain**: `clang`, and
     - standard C toolchain utilities
     - Linux quick hints:
         - Fedora/RHEL: `sudo dnf group install -y development-tools && sudo dnf install -y llvm clang lld gc-devel zlib-devel`
@@ -54,7 +54,7 @@ world/
 │   ├── common/         # Shared utilities
 │   ├── locale/         # Country and locale primitives
 │   ├── money/          # Currency and monetary values
-│   └── numbers/        # Number formatting
+│   └── numbers/        # Number formatting (future)
 ├── docs/               # Documentation sources
 └── project/            # Build configuration and source generators
 ```
@@ -76,15 +76,20 @@ All code must be:
 
 **All behaviour resides in companion objects, never on data types.**
 
-Data aggregates (`case class`, `enum`, `opaque type`) carry only data. Extension methods, smart constructors, type class instances, and all operations live in the companion.
+Data aggregates (`case class`, `enum`, `opaque type`, **some** `trait`s depending on context) carry only data.
+Extension methods, smart constructors, type class instances, and all operations live in the companion object.
+
+> With regards `trait`s ensure to differentiate between traits which serve as parts of a data aggregate definition (which
+> **must not** contain any behaviour methods) and traits which provide behaviour (such as type class instances, etc which
+> **should only** have behaviour within them)
 
 Good:
 
 ```scala sc:nocompile
-final case class User(id: UserId, name: String) derives CanEqual
+final case class User(id: UserId, name: String)
 
 object User:
-
+  given CanEqual[User, User] = CanEqual.derived
   extension (u: User)
     def initials: String = u.name.split(" ").map(_.headOption.getOrElse('?')).mkString
 ```

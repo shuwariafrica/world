@@ -68,7 +68,7 @@ extension [A <: CurrencyDetails](@unused currency: A)
     * val countriesUsingKES = Currencies.KES.usage
     *   }}}
     */
-  transparent inline def usage(using CurrencyUsage[A]): Set[Country] = CurrencyUsage[A]
+  transparent inline def usage(using usage: CurrencyUsage[A]): Set[Country] = usage.territories
 end extension
 
 extension (c: Currency)
@@ -96,13 +96,13 @@ extension (c: Currency)
 end extension
 
 extension (currency: CurrencyDetails)
-  /** Upcasts this currency instance to the general [[CurrencyDetails]] trait.
+  /** Widens this currency instance to the general [[CurrencyDetails]] trait.
     *
-    * This is a utility for situations, particularly in tests, where the
-    * compiler cannot equate a specific singleton type (e.g.,
-    * `Currencies.KES.type`) with an existential one (`? <: Currency`). By
-    * upcasting both sides of a comparison to their common supertype, type-level
-    * comparison issues can be avoided.
+    * This is necessary when comparing a specific singleton type (e.g.,
+    * `Currencies.KES.type`) with an existential one (`? <: Currency`), such as
+    * the currency obtained from [[world.money.Money$.from Money.from]]. By
+    * widening both sides of a comparison to their common supertype, type-level
+    * comparison under strict equality is resolved.
     *
     * @return The same currency instance, but with its type widened to
     *   [[CurrencyDetails]].
@@ -110,8 +110,9 @@ extension (currency: CurrencyDetails)
     *   {{{
     * import world.money.currency.*
     *
-    * val genericCurrency: CurrencyDetails = Currencies.KES.asCurrency
+    * val runtime = Money.from(100, Currencies.KES)
+    * assert(runtime.currency.widen == Currencies.KES.widen)
     *   }}}
     */
-  inline def asCurrency: CurrencyDetails = currency
+  inline def widen: CurrencyDetails = currency
 end extension

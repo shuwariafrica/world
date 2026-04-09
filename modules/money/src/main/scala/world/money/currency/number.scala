@@ -21,7 +21,7 @@ import java.math.MathContext
 import java.math.RoundingMode
 
 import scala.annotation.targetName
-import scala.util.control.Exception.catching
+import scala.util.Try
 
 import world.money.errors.ArithmeticError
 import world.money.errors.NumberFormattingError
@@ -68,10 +68,10 @@ object CurrencyMathContext:
 
   inline given CurrencyMathContext = Default
 
-  /** Creates a [[CurrencyMathContext]] from an implicit `CurrencyMathContext`.
+  /** Summons a [[CurrencyMathContext]] from the implicit scope.
     * @return The summoned `CurrencyMathContext`.
     */
-  inline def apply[A <: CurrencyMathContext](using A): CurrencyMathContext = summon[A]
+  inline def summon(using ctx: CurrencyMathContext): CurrencyMathContext = ctx
 
   /** Creates a [[CurrencyMathContext]] from a standard `java.math.MathContext`.
     *
@@ -189,8 +189,8 @@ object CurrencyValue:
     *   [[world.money.errors.NumberFormattingError]] if parsing fails.
     */
   inline def fromString(value: String)(using CurrencyMathContext): Either[world.money.errors.NumberFormattingError, CurrencyValue] =
-    catching(classOf[java.lang.NumberFormatException])
-      .either(BigDecimal(value, summon[CurrencyMathContext]))
+    Try(BigDecimal(value, summon[CurrencyMathContext]))
+      .toEither
       .left
       .map(t => NumberFormattingError("Unable to parse string as a CurrencyValue.", Some(t)))
 
@@ -228,10 +228,10 @@ object CurrencyValue:
     *   division by zero).
     */
   inline def divide(value: CurrencyValue, divisor: CurrencyValue | BigDecimal | Long | Int | Double)
-      (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] = catching(classOf[ArithmeticException])
-    .either(BigDecimal(bigDecimal(value).divide(bigDecimal(divisor), summon[CurrencyMathContext]).nn))
-    .left
-    .map(t => ArithmeticError(s"Error attempting to divide values.", Some(t)))
+      (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+    val d = bigDecimal(divisor)
+    if d.signum == 0 then Left(ArithmeticError("Division by zero."))
+    else Right(BigDecimal(bigDecimal(value).divide(d, summon[CurrencyMathContext]).nn))
 
   given CanEqual[CurrencyValue, CurrencyValue] = CanEqual.derived
 

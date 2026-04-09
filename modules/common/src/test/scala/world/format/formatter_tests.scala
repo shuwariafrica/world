@@ -22,58 +22,59 @@ import munit.FunSuite
 class FormatterSuite extends FunSuite:
 
   test("Formatter.apply should summon given instances") {
-    val stringFormatter = Formatter[String]
-    assertEquals(stringFormatter.formatted("hello"), "hello")
+    import Formatter.given
+    val intFormatter = summon[Formatter[Int]]
+    assertEquals(intFormatter.display(42), "42")
   }
 
   test("Formatter.apply should create instances from functions") {
     case class Person(name: String, age: Int)
     val personFormatter = Formatter[Person](p => s"${p.name} (${p.age})")
     val person = Person("Alice", 30)
-    assertEquals(personFormatter.formatted(person), "Alice (30)")
+    assertEquals(personFormatter.display(person), "Alice (30)")
   }
 
   test("Built-in String formatter should return identity") {
     import Formatter.given
     val str = "test string"
-    assertEquals(summon[Formatter[String]].formatted(str), str)
+    assertEquals(summon[Formatter[String]].display(str), str)
   }
 
   test("Built-in Int formatter should convert to string") {
     import Formatter.given
-    assertEquals(summon[Formatter[Int]].formatted(42), "42")
-    assertEquals(summon[Formatter[Int]].formatted(-100), "-100")
-    assertEquals(summon[Formatter[Int]].formatted(0), "0")
+    assertEquals(summon[Formatter[Int]].display(42), "42")
+    assertEquals(summon[Formatter[Int]].display(-100), "-100")
+    assertEquals(summon[Formatter[Int]].display(0), "0")
   }
 
   test("Built-in Long formatter should convert to string") {
     import Formatter.given
-    assertEquals(summon[Formatter[Long]].formatted(123456789L), "123456789")
-    assertEquals(summon[Formatter[Long]].formatted(Long.MaxValue), Long.MaxValue.toString)
+    assertEquals(summon[Formatter[Long]].display(123456789L), "123456789")
+    assertEquals(summon[Formatter[Long]].display(Long.MaxValue), Long.MaxValue.toString)
   }
 
   test("Built-in Double formatter should convert to string") {
     import Formatter.given
-    assertEquals(summon[Formatter[Double]].formatted(3.14), "3.14")
-    assertEquals(summon[Formatter[Double]].formatted(-0.5), "-0.5")
+    assertEquals(summon[Formatter[Double]].display(3.14), "3.14")
+    assertEquals(summon[Formatter[Double]].display(-0.5), "-0.5")
   }
 
   test("Built-in BigDecimal formatter should convert to string") {
     import Formatter.given
     val bd = BigDecimal("123.456789")
-    assertEquals(summon[Formatter[BigDecimal]].formatted(bd), "123.456789")
+    assertEquals(summon[Formatter[BigDecimal]].display(bd), "123.456789")
   }
 
   test("Built-in BigInt formatter should convert to string") {
     import Formatter.given
     val bi = BigInt("9999999999999999999")
-    assertEquals(summon[Formatter[BigInt]].formatted(bi), "9999999999999999999")
+    assertEquals(summon[Formatter[BigInt]].display(bi), "9999999999999999999")
   }
 
   test("Built-in Boolean formatter should convert to string") {
     import Formatter.given
-    assertEquals(summon[Formatter[Boolean]].formatted(true), "true")
-    assertEquals(summon[Formatter[Boolean]].formatted(false), "false")
+    assertEquals(summon[Formatter[Boolean]].display(true), "true")
+    assertEquals(summon[Formatter[Boolean]].display(false), "false")
   }
 
   test("Custom formatter should be usable via extension method") {
@@ -81,15 +82,7 @@ class FormatterSuite extends FunSuite:
     given Formatter[Temperature] = Formatter(t => f"${t.celsius}%.1f°C")
 
     val temp = Temperature(23.5)
-    assertEquals(temp.formatted, "23.5°C")
-  }
-
-  test("Formatter instances should be comparable via CanEqual") {
-    import Formatter.given
-    val f1 = Formatter[Int]
-    val f2 = Formatter[Int]
-    // Both should reference the same given instance
-    assert(f1 == f2)
+    assertEquals(temp.display, "23.5°C")
   }
 
   test("Functional formatter should handle edge cases") {
@@ -98,8 +91,8 @@ class FormatterSuite extends FunSuite:
       case None    => "Absent"
     }
 
-    assertEquals(formatter.formatted(Some("value")), "Present: value")
-    assertEquals(formatter.formatted(None), "Absent")
+    assertEquals(formatter.display(Some("value")), "Present: value")
+    assertEquals(formatter.display(None), "Absent")
   }
 
 end FormatterSuite

@@ -53,7 +53,7 @@ class CurrencyMathContextSuite extends FunSuite:
 
   test("contextual should summon the correct given instance") {
     given customContext: CurrencyMathContext = CurrencyMathContext(8, RoundingMode.FLOOR)
-    val summoned = CurrencyMathContext.apply
+    val summoned = CurrencyMathContext.summon
     assertEquals(summoned, customContext)
   }
 

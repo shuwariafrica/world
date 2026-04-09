@@ -1,7 +1,7 @@
 # `world` – Real-World Domain Concepts for Scala
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://github.com/shuwariafrica/world/workflows/CI/badge.svg)](https://github.com/shuwariafrica/world/actions)
+[![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
 A collection of Scala libraries for type-safe modelling and manipulation of real-world domain concepts.
 
@@ -93,9 +93,9 @@ python3 -m http.server 8000
 
 ## Project Resources
 
-- **Project Site**: https://dev.shuwari.africa/world/
-- **API Docs**: https://dev.shuwari.africa/world/api/
-- **GitHub**: https://github.com/shuwariafrica/world
+- **Project Documentation Site**: https://dev.shuwari.africa/world/docs
+- **API Reference**: https://dev.shuwari.africa/world
+- **Souce Code Repository**: https://github.com/shuwariafrica/world
 - **ISO 3166 (Countries)**: https://unstats.un.org/unsd/methodology/m49/
 - **ISO 4217 (Currencies)**: https://www.six-group.com/en/products-services/financial-information/data-standards.html#iso-4217
 - **IMF Exchange Rates**: https://data.imf.org/?sk=E6A5467B-4675-438A-862A-05A490D65A40

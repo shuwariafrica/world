@@ -19,7 +19,6 @@ package world.money.currency
 
 import world.money.errors.CurrencyError
 import world.money.errors.InternalError as MoneyInternalError
-import world.money.internal.*
 
 /** A type-safe 3-letter uppercase ISO 4217 alphabetic currency code.
   *
@@ -44,7 +43,10 @@ opaque type CcyCode = String
 /** Provides factory methods for creating instances of [[CcyCode]]. */
 object CcyCode:
   private transparent inline def normalise(value: String): Option[String] =
-    value.nullableMapOption(_.trim.nn).map(_.toUpperCase.nn).filter(_.nonEmpty)
+    Option(value)
+      .map(_.trim.nn)
+      .filter(_.nonEmpty)
+      .map(_.toUpperCase.nn)
 
   /** Validates that a string is exactly 3 uppercase ASCII letters.
     *

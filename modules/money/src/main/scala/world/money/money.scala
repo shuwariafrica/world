@@ -100,9 +100,17 @@ object Money:
   /** Creates a `Money` instance from a runtime currency value.
     *
     * This factory is useful when the currency is not known at compile time
-    * (e.g., when deserializing data or creating amounts from user input). The
+    * (e.g., when deserialising data or creating amounts from user input). The
     * returned type is an existential `Money[? <: Currency]` because the
     * specific currency type `C` cannot be known by the compiler.
+    *
+    * To compare the currency of the result with a known currency singleton,
+    * use the [[world.money.currency.widen widen]] extension to widen both
+    * sides to [[world.money.currency.CurrencyDetails CurrencyDetails]]:
+    * {{{
+    * val m = Money.from(100, someCurrency)
+    * assert(m.currency.widen == Currencies.KES.widen)
+    * }}}
     *
     * @param value The numeric amount.
     * @param currency The runtime currency object.
@@ -310,51 +318,47 @@ object Money:
         val total = ratios.sum
         if total == 0 then Left(errors.ArithmeticError("Cannot allocate when sum of ratios is zero"))
         else
-          // Calculate proportional shares
-          val shares = ratios.map { ratio =>
-            CurrencyValue.divide(self.value * ratio, total)
-          }
+          import scala.util.boundary, boundary.break
 
-          // Check if any division failed
-          shares.collectFirst { case Left(err) => err } match
-            case Some(err) => Left(err)
-            case None      =>
-              val amounts = shares.collect { case Right(v) => v }
+          // Single-pass: compute shares and check for division errors
+          boundary[Either[errors.ArithmeticError, Seq[Money[C]]]]:
+            val amounts = ratios.map { ratio =>
+              CurrencyValue.divide(self.value * ratio, total) match
+                case Left(err) => break(Left(err))
+                case Right(v)  => v
+            }
 
-              // Round each share to currency precision
-              val rounded = amounts.map { amt =>
-                self.currency.minorUnit match
-                  case Some(decimals) =>
-                    Money(CurrencyValue(amt.unwrap.setScale(decimals, BigDecimal.RoundingMode.DOWN)))
-                  case None => Money(amt)
-              }
+            // Round each share to currency precision
+            val rounded = amounts.map { amt =>
+              self.currency.minorUnit match
+                case Some(decimals) =>
+                  Money(CurrencyValue(amt.unwrap.setScale(decimals, BigDecimal.RoundingMode.DOWN)))
+                case None => Money(amt)
+            }
 
-              // Calculate and distribute remainder
-              val allocatedSum = rounded.map(_.value).fold(CurrencyValue(0))(_ + _)
-              val remainder = self.value - allocatedSum
+            // Calculate and distribute remainder
+            val allocatedSum = rounded.map(_.value).fold(CurrencyValue(0))(_ + _)
+            val remainder = self.value - allocatedSum
 
-              if remainder.unwrap == 0 then Right(rounded)
-              else
-                // Distribute remainder to first portions (one minor unit at a time)
-                val minorUnit = self.currency.minorUnit.getOrElse(0)
-                val unitValue = CurrencyValue(BigDecimal(1) / BigDecimal(10).pow(minorUnit))
+            if remainder.unwrap == 0 then Right(rounded)
+            else
+              val minorUnit = self.currency.minorUnit.getOrElse(0)
+              val unitValue = CurrencyValue(BigDecimal(1) / BigDecimal(10).pow(minorUnit))
 
-                // Use Builder for O(n) performance
-                // Handle both positive and negative remainders
-                val adjusted = rounded
-                  .foldLeft((List.newBuilder[Money[C]], remainder)) { case ((builder, remaining), amount) =>
-                    if remaining.unwrap != 0 then
-                      val adjustment = if remaining.unwrap > 0 then unitValue else -unitValue
-                      (builder += (amount + adjustment), remaining - adjustment)
-                    else (builder += amount, remaining)
-                  }
-                  ._1
-                  .result()
+              // Hotpath: mutable builder avoids List concatenation overhead during
+              // remainder distribution across potentially many allocations
+              val adjusted = rounded
+                .foldLeft((List.newBuilder[Money[C]], remainder)) { case ((builder, remaining), amount) =>
+                  if remaining.unwrap != 0 then
+                    val adjustment = if remaining.unwrap > 0 then unitValue else -unitValue
+                    (builder += (amount + adjustment), remaining - adjustment)
+                  else (builder += amount, remaining)
+                }
+                ._1
+                .result()
 
-                Right(adjusted)
-              end if
-          end match
-        end if
+              Right(adjusted)
+            end if
 
     /** Returns a `Money` instance with its value rounded to the currency's
       * conventional number of fractional digits.

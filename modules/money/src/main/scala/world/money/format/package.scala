@@ -37,19 +37,19 @@ given [C <: Currency](using ValueOf[C]): Formatter[Money[C]] =
   world.format.Formatter[Money[C]]
     (money =>
       val rounded = money.rounded
-      // Use summon to get BigDecimal formatter to avoid String.formatted deprecation
-      s"${rounded.currency.code.value} ${summon[Formatter[BigDecimal]].formatted(rounded.value.unwrap)}")
+      // Summon BigDecimal formatter explicitly for clarity
+      s"${rounded.currency.code.value} ${summon[Formatter[BigDecimal]].display(rounded.value.unwrap)}")
 
 given Formatter[CurrencyDetails] =
   world.format.Formatter[CurrencyDetails](details => s"${details.code.value} (${details.name})")
 
 /** Default formatter for Currency: "KES (Kenyan Shilling)" */
 given Formatter[Currency] =
-  world.format.Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].formatted(currency))
+  world.format.Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].display(currency))
 
 given Formatter[HistoricCurrency] =
-  world.format.Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].formatted(currency))
+  world.format.Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].display(currency))
 
 /** Default formatter for CurrencyValue: raw BigDecimal representation */
 given Formatter[CurrencyValue] =
-  world.format.Formatter[CurrencyValue](value => value.unwrap.formatted)
+  world.format.Formatter[CurrencyValue](value => value.unwrap.display)

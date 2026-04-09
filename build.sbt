@@ -1,8 +1,33 @@
+inThisBuild(
+  List(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := List("3.8.3"),
+    organization := "africa.shuwari",
+    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
+    homepage := Some(url("https://github.com/shuwarifrica/world")),
+    startYear := Some(2023),
+    semanticdbEnabled := true,
+    scmInfo := ScmInfo(
+      url("https://dev.shuwari.africa/world"),
+      "scm:git:https://github.com/shuwariafrica/world.git",
+      Some("scm:git:git@github.com:shuwariafrica/world.git")
+    ).some
+  ) ++ formattingSettings
+)
+
 val libraries = new {
-  val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
-  val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
+  val munit = Def.setting("org.scalameta" %%% "munit" % "1.2.4")
+  val `munit-scalacheck` = Def.setting("org.scalameta" %%% "munit-scalacheck" % "1.2.0")
   val `scala-java-time` = Def.setting("io.github.cquiroz" %%% "scala-java-time" % "2.6.0")
   val `scala-java-time-tzdb` = `scala-java-time`.apply(_.withName("scala-java-time-tzdb"))
+}
+
+def compilerSettingsModifier = {
+  val options = List[Setting[?]](
+  compile / scalacOptions ++= Seq("-Wsafe-init", "-Werror"),
+  compile / scalacOptions --= Seq("-Xfatal-warnings")
+)
+inConfig(Compile)(options) ++ inConfig(Test)(options)
 }
 
 val `world-common` =
@@ -10,6 +35,7 @@ val `world-common` =
     .crossType(CrossType.Pure)
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/common"))
+    .settings(compilerSettingsModifier)
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
@@ -20,6 +46,7 @@ val `world-locale` =
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/locale"))
     .dependsOn(`world-common`)
+    .settings(compilerSettingsModifier)
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
@@ -31,6 +58,7 @@ val `world-money` =
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/money"))
     .dependsOn(`world-locale`)
+    .settings(compilerSettingsModifier)
     .settings(unitTestSettings)
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
@@ -78,30 +106,10 @@ val `world-root` =
     .apacheLicensed
     .enablePlugins(ScalaUnidocPlugin, WorldUnidocPlugin)
     .aggregate(`world-jvm`, `world-js`, `world-native`)
-    .settings(sonatypeProfileSetting)
     .settings(
       // Aggregate ScalaUnidoc from JVM projects only
       ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`world-js`, `world-native`)
     )
-
-inThisBuild(
-  List(
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := List("3.7.3"),
-    organization := "africa.shuwari",
-    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
-    homepage := Some(url("https://github.com/shuwarifrica/world")),
-    startYear := Some(2023),
-    semanticdbEnabled := true,
-    sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
-    publishCredentials,
-    scmInfo := ScmInfo(
-      url("https://dev.shuwari.africa/world"),
-      "scm:git:https://github.com/shuwariafrica/world.git",
-      Some("scm:git:git@github.com:shuwariafrica/world.git")
-    ).some
-  ) ++ formattingSettings
-)
 
 def unitTestSettings: List[Setting[?]] = List(
   libraryDependencies += libraries.munit.value % Test,
@@ -116,16 +124,7 @@ def formattingSettings =
 
 def libraryDependency(library: Def.Initialize[ModuleID]) = libraryDependencies += library.value
 
-def publishCredentials = credentials := List(
-  Credentials(
-    "Sonatype Nexus Repository Manager",
-    sonatypeCredentialHost.value,
-    System.getenv("PUBLISH_USER"),
-    System.getenv("PUBLISH_USER_PASSPHRASE")
-  )
-)
-
-def publishSettings = publishCredentials +: pgpSettings ++: List(
+def publishSettings = pgpSettings ++: List(
   packageOptions += Package.ManifestAttributes(
     "Created-By" -> "Simple Build Tool",
     "Built-By" -> System.getProperty("user.name"),
@@ -138,13 +137,14 @@ def publishSettings = publishCredentials +: pgpSettings ++: List(
     "Implementation-Vendor-Id" -> organization.value,
     "Implementation-Vendor" -> organizationName.value
   ),
-  publishTo := sonatypePublishToBundle.value,
+  publishTo := {
+    if (isSnapshot.value)
+      Some("central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
+    else localStaging.value
+  },
   pomIncludeRepository := (_ => false),
   publishMavenStyle := true,
-  sonatypeProfileSetting
 )
-
-def sonatypeProfileSetting = sonatypeProfileName := "africa.shuwari"
 
 def pgpSettings = List(
   usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
@@ -152,4 +152,4 @@ def pgpSettings = List(
 
 addCommandAlias("format", "project world-jvm; scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
-addCommandAlias("analyse", "project world-jvm; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("check", "project world-jvm; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")

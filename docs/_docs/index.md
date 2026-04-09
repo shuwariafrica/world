@@ -10,15 +10,11 @@ The project is composed of independent, loosely coupled modules, with additional
 
 ### Platform Support
 
-| Platform                 | Build Version(s)       |
-|--------------------------|------------------------|
-| **Scala Language**       | @SCALA3_VERSION@+      |
-| **Java Development Kit** | @JDK_VERSION@+         |
-| **Scala.js**             | @SCALAJS_VERSION@+     |
-| **Scala Native**         | @SCALANATIVE_VERSION@+ |
+|                     | Scala Language    | Java Development Kit | Scala.js           | Scala Native           |
+|---------------------|-------------------|----------------------|--------------------|------------------------|
+| **Version(s) Used** | @SCALA3_VERSION@+ | @JDK_VERSION@+       | @SCALAJS_VERSION@+ | @SCALANATIVE_VERSION@+ |
 
 > see **module specific** documentation for information on platforms supported by each respective module.
-
 
 ### Dependency Resolution
 
@@ -31,6 +27,8 @@ libraryDependencies += "africa.shuwari" %% "money" % "{{projectVersion}}"
 ```
 
 > **Note**: Use `%%%` for cross-platform projects (JVM, Scala.js, Scala Native). Use `%%` for JVM-only.
+
+---
 
 ## Quick Examples
 
@@ -93,13 +91,19 @@ println(halved)     // EUR 50.00
 println(difference) // EUR 75.00
 ```
 
+---
+
 ## Next Steps
 
 See an overview of available modules, and links to the respective documentation pages of each on our [module overview page](modules/index.md), to view the usage documentation of each module.
- 
+
+--- 
+
 ## License
 
 `world` is licensed under the Apache License, Version 2.0. Refer to the [LICENSE](https://www.apache.org/licenses/LICENSE-2.0.txt) text for details.
+
+---
 
 ## Contributing
 

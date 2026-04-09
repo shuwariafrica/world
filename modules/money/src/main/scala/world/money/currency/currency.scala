@@ -30,12 +30,12 @@ import world.locale.country.Country
   * @see [[Currency]] for actively circulating currencies.
   * @see [[HistoricCurrency]] for withdrawn currencies.
   */
-sealed trait CurrencyDetails extends Product with Serializable derives CanEqual:
+sealed trait CurrencyDetails extends Product with Serializable:
   /** The 3-letter uppercase [[CcyCode]]. */
-  def code: CcyCode
+  val code: CcyCode
 
   /** The common, human-readable name of the currency. */
-  def name: String
+  val name: String
 
 /** Represents an actively circulating currency.
   *
@@ -50,10 +50,10 @@ sealed trait CurrencyDetails extends Product with Serializable derives CanEqual:
   */
 trait Currency extends CurrencyDetails derives CanEqual:
   /** The 3-digit [[NumericCode]]. */
-  def numericCode: NumericCode
+  val numericCode: NumericCode
 
   /** The number of decimal places for the currency's minor unit. */
-  def minorUnit: Option[Int]
+  val minorUnit: Option[Int]
 
 /** Represents a historic currency that is no longer in circulation.
   *
@@ -63,10 +63,10 @@ trait Currency extends CurrencyDetails derives CanEqual:
   */
 trait HistoricCurrency extends CurrencyDetails derives CanEqual:
   /** The 3-digit [[NumericCode]], if available. */
-  def numericCode: Option[NumericCode]
+  val numericCode: Option[NumericCode]
 
   /** The month and year the currency was withdrawn. */
-  def withdrawalDate: YearMonth
+  val withdrawalDate: YearMonth
 
 /** A typeclass that defines the geographical usage of a currency, providing a
   * mechanism to associate a currency with the set of [[Country Countries]]
@@ -112,7 +112,12 @@ object CurrencyUsage:
     * @param currency The currency instance (e.g., `Currencies.KES`).
     * @return A `Set` of [[world.locale.country.Country]] instances.
     */
-  transparent inline def apply[A <: CurrencyDetails](using usage: CurrencyUsage[A]): Set[Country] =
+  /** Retrieves the set of countries where a specific currency is used.
+    *
+    * @param currency The currency instance (e.g., `Currencies.KES`).
+    * @return A `Set` of [[world.locale.country.Country]] instances.
+    */
+  transparent inline def apply[A <: CurrencyDetails](@scala.annotation.unused currency: A)(using usage: CurrencyUsage[A]): Set[Country] =
     usage.territories
 end CurrencyUsage
 

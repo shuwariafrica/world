@@ -26,51 +26,51 @@ class LocaleFormatterSuite extends FunSuite:
 
   test("Country formatter should display full name") {
     val kenya = Countries.KE
-    assertEquals(kenya.formatted, "Kenya")
+    assertEquals(kenya.display, "Kenya")
 
     val uk = Countries.GB
-    assertEquals(uk.formatted, "United Kingdom of Great Britain and Northern Ireland")
+    assertEquals(uk.display, "United Kingdom of Great Britain and Northern Ireland")
   }
 
   test("Alpha2Code formatter should display uppercase code") {
     val code = Alpha2Code.from("ke").toOption.get
-    assertEquals(code.formatted, "KE")
+    assertEquals(code.display, "KE")
   }
 
   test("Alpha2Code formatter should work after normalisation") {
     val code = Alpha2Code.from(" gb ").toOption.get
-    assertEquals(code.formatted, "GB")
+    assertEquals(code.display, "GB")
   }
 
   test("Alpha3Code formatter should display uppercase code") {
     val code = Alpha3Code.from("ken").toOption.get
-    assertEquals(code.formatted, "KEN")
+    assertEquals(code.display, "KEN")
   }
 
   test("Alpha3Code formatter should work with different cases") {
     val code = Alpha3Code.from("GBR").toOption.get
-    assertEquals(code.formatted, "GBR")
+    assertEquals(code.display, "GBR")
   }
 
   test("M49Code formatter should display numeric string") {
     val code = M49Code.from(404).toOption.get
-    assertEquals(code.formatted, "404")
+    assertEquals(code.display, "404")
   }
 
   test("M49Code formatter should handle leading zeros correctly") {
     val code = M49Code.from(4).toOption.get
-    assertEquals(code.formatted, "4")
+    assertEquals(code.display, "4")
   }
 
   test("M49Code formatter should handle large numbers") {
     val code = M49Code.from(999).toOption.get
-    assertEquals(code.formatted, "999")
+    assertEquals(code.display, "999")
   }
 
   test("Formatters should be available via import") {
     import world.locale.country.Countries
 
-    val formatted = Countries.GB.formatted
+    val formatted = Countries.GB.display
     assertEquals(formatted, "United Kingdom of Great Britain and Northern Ireland")
   }
 
@@ -86,7 +86,7 @@ class LocaleFormatterSuite extends FunSuite:
       )
 
     samples.foreach { case (country, expected) =>
-      assertEquals(country.formatted, expected)
+      assertEquals(country.display, expected)
     }
   }
 

@@ -45,9 +45,9 @@ object errors:
     * @param cause An optional underlying `Throwable` that caused this error.
     */
   final case class InternalError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause) // Initialize the cause of this error if provided
     override def getMessage: String =
       s"Internal Money Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object InternalError:
     def apply(message: String, cause: Option[Throwable]): InternalError = new InternalError(message, cause)
@@ -63,9 +63,9 @@ object errors:
     *   [[java.lang.ArithmeticException]]).
     */
   final case class ArithmeticError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause) // Initialize the cause of this error if provi
     override def getMessage: String =
       s"Arithmetic Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object ArithmeticError:
     def apply(message: String, cause: Option[Throwable]): ArithmeticError = new ArithmeticError(message, cause)
@@ -82,9 +82,9 @@ object errors:
     *   `NumberFormatException`.
     */
   final case class NumberFormattingError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause)
     override def getMessage: String =
       s"Number Formatting Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object NumberFormattingError:
     def apply(message: String, cause: Option[Throwable]): NumberFormattingError = new NumberFormattingError(message, cause)
@@ -157,8 +157,8 @@ object errors:
       * @param cause An optional underlying `Throwable` that caused this error.
       */
     final case class ProviderError private (message: String, cause: Option[Throwable]) extends ConversionError:
-      cause.foreach(initCause)
       override def getMessage: String = s"Exchange rate provider error: $message"
+      override def getCause: Throwable | Null = cause.orNull
 
     object ProviderError:
       def apply(message: String, cause: Option[Throwable]): ProviderError = new ProviderError(message, cause)

@@ -63,7 +63,7 @@ class MoneySuite extends ScalaCheckSuite:
     val runtimeCurrency: Currency = Currencies.JPY
     val amount = Money.from(1000, runtimeCurrency)
     assertEquals(amount.value, CurrencyValue(1000))
-    assertEquals(amount.currency.asCurrency, Currencies.JPY.asCurrency)
+    assertEquals(amount.currency.widen, Currencies.JPY.widen)
   }
 
   test("Money.zero creates a zero-value instance") {
@@ -209,8 +209,8 @@ class MoneySuite extends ScalaCheckSuite:
   }
 
   test("formatted should produce a standard representation") {
-    assertEquals(123.45.KES.formatted, "KES 123.45")
-    assertEquals(-500.JPY.formatted, "JPY -500")
+    assertEquals(123.45.KES.display, "KES 123.45")
+    assertEquals(-500.JPY.display, "JPY -500")
   }
 
   // --- Bulk Operations ---

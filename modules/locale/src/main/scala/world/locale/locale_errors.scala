@@ -85,7 +85,7 @@ object errors:
   final case class InternalError private (message: String, cause: Option[Throwable]) extends LocaleError:
     override def getMessage: String =
       s"Internal Locale Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
-    cause.foreach(initCause)
+    override def getCause: Throwable | Null = cause.orNull
 
   object InternalError:
     def apply(message: String, cause: Option[Throwable]): InternalError = new InternalError(message, cause)

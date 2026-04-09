@@ -30,7 +30,7 @@ class CurrencySuite extends FunSuite:
     assertEquals(kes.code.value, "KES")
     assertEquals(kes.name, "Kenyan Shilling")
     assertEquals(kes.numericCode.value, 404)
-    assertEquals(kes.formatted, "KES (Kenyan Shilling)")
+    assertEquals(kes.display, "KES (Kenyan Shilling)")
   }
 
   test("HistoricCurrencies object should contain accessible, valid currency objects") {
@@ -102,11 +102,11 @@ end CurrencySuite
 
 class CurrencyUsageSuite extends FunSuite:
   test("CurrencyUsage.apply should retrieve territories for a given currency") {
-    val kesUsage = CurrencyUsage[Currencies.KES]
+    val kesUsage = CurrencyUsage(Currencies.KES)
     assertEquals(kesUsage, Set[Country](Countries.KE))
 
     // Test a multi-country currency
-    val zarUsage = CurrencyUsage[Currencies.ZAR]
+    val zarUsage = CurrencyUsage(Currencies.ZAR)
     assert(zarUsage.contains(Countries.ZA))
     assert(zarUsage.contains(Countries.LS))
     assert(zarUsage.contains(Countries.NA))

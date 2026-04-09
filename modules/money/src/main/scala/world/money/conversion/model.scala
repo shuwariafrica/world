@@ -34,21 +34,7 @@ import world.money.errors.ArithmeticError
   *   timestamp.
   */
 final case class ConversionRate private (base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext])
-    derives CanEqual:
-
-  /** Creates the inverse of this exchange rate (from term to base).
-    *
-    * @param context A [[world.money.currency.CurrencyMathContext]]
-    *   given instance for division.
-    * @return Right with the inverted rate, or Left with an
-    *   [[world.money.errors.ArithmeticError]] if the rate is zero and
-    *   cannot be inverted.
-    */
-  def inverse(using CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
-    (CurrencyValue(1) / CurrencyValue(rate)).map { inverseRate =>
-      ConversionRate(term, base, inverseRate.unwrap, context)
-    }
-end ConversionRate
+    derives CanEqual
 
 object ConversionRate:
   def apply(base: Currency, term: Currency, rate: BigDecimal, context: Option[ConversionContext]): ConversionRate =
@@ -59,6 +45,20 @@ object ConversionRate:
 
   def withContext(base: Currency, term: Currency, rate: BigDecimal, context: ConversionContext): ConversionRate =
     new ConversionRate(base, term, rate, Some(context))
+
+  /** Creates the inverse of this exchange rate (from term to base).
+    *
+    * @param context A [[world.money.currency.CurrencyMathContext]]
+    *   given instance for division.
+    * @return Right with the inverted rate, or Left with an
+    *   [[world.money.errors.ArithmeticError]] if the rate is zero and
+    *   cannot be inverted.
+    */
+  extension (self: ConversionRate)
+    def inverse(using CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
+      (CurrencyValue(1) / CurrencyValue(self.rate)).map { inverseRate =>
+        ConversionRate(self.term, self.base, inverseRate.unwrap, self.context)
+      }
 
 /** Encapsulates metadata about a currency conversion or exchange rate.
   *
