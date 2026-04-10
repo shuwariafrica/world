@@ -19,8 +19,6 @@ object SourceGenerators {
       projectRootDir / "supplemental-countries.yml"
     )
 
-    // The function that performs the generation.
-    // It takes a set of modified input files and returns a set of generated output files.
     val generate: Set[File] => Set[File] = { changedFiles =>
       log.info(s"SourceGenerators: ${changedFiles.size} country data file(s) changed. Regenerating Countries.scala...")
       val outputFile = sourceManagedDir / "africa" / "shuwari" / "locale" / "country" / "Countries.scala"
@@ -30,7 +28,6 @@ object SourceGenerators {
       Set(generatedFile)
     }
 
-    // Use sbt's cached function to track input file changes.
     val cachedGenerate = FileFunction.cached(
       streams.value.cacheDirectory / "sbt-countries-generator",
       inStyle = FileInfo.lastModified,
@@ -40,14 +37,40 @@ object SourceGenerators {
     cachedGenerate(inputFiles).toSeq
   }
 
-  // Defines the task for the 'money' module.
+  // Defines the task for the 'money' module (Currencies + FactorySyntax).
   val currenciesGeneratorTask: Def.Initialize[Task[Seq[File]]] = Def.task {
     val log = streams.value.log
     val sourceManagedDir = (Compile / sourceManaged).value
     val projectRootDir = (ThisBuild / baseDirectory).value
 
-    // Input files include both currency and country data, as currency generation
-    // validates against the country codes.
+    val inputFiles: Set[File] = Set(
+      projectRootDir / "currencies.yml"
+    )
+
+    val generate: Set[File] => Set[File] = { changedFiles =>
+      log.info(s"SourceGenerators: ${changedFiles.size} currency data file(s) changed. Regenerating currency sources...")
+      val outputDir = sourceManagedDir / "africa" / "shuwari"
+      val generated: Map[File, String] = CurrenciesPopulator.generateCurrencies(projectRootDir, outputDir, log)
+      generated.foreach { case (file, content) => IO.write(file, content) }
+      log.info(s"SourceGenerators: Finished generating ${generated.size} currency source file(s).")
+      generated.keySet
+    }
+
+    val cachedGenerate = FileFunction.cached(
+      streams.value.cacheDirectory / "sbt-currencies-generator",
+      inStyle = FilesInfo.lastModified,
+      outStyle = FilesInfo.exists
+    )(generate)
+
+    cachedGenerate(inputFiles).toSeq
+  }
+
+  // Defines the task for the 'money-usage' module (CurrencyUsageInstances).
+  val currencyUsageGeneratorTask: Def.Initialize[Task[Seq[File]]] = Def.task {
+    val log = streams.value.log
+    val sourceManagedDir = (Compile / sourceManaged).value
+    val projectRootDir = (ThisBuild / baseDirectory).value
+
     val inputFiles: Set[File] = Set(
       projectRootDir / "countries-iso3166.csv",
       projectRootDir / "supplemental-countries.yml",
@@ -56,16 +79,16 @@ object SourceGenerators {
     )
 
     val generate: Set[File] => Set[File] = { changedFiles =>
-      log.info(s"SourceGenerators: ${changedFiles.size} currency data file(s) changed. Regenerating currency sources...")
+      log.info(s"SourceGenerators: ${changedFiles.size} usage data file(s) changed. Regenerating CurrencyUsageInstances...")
       val outputDir = sourceManagedDir / "africa" / "shuwari"
-      val generated: Map[File, String] = CurrenciesPopulator.generate(projectRootDir, outputDir, log)
+      val generated: Map[File, String] = CurrenciesPopulator.generateUsage(projectRootDir, outputDir, log)
       generated.foreach { case (file, content) => IO.write(file, content) }
-      log.info(s"SourceGenerators: Finished generating ${generated.size} currency source file(s).")
+      log.info(s"SourceGenerators: Finished generating ${generated.size} usage source file(s).")
       generated.keySet
     }
 
     val cachedGenerate = FileFunction.cached(
-      streams.value.cacheDirectory / "sbt-currencies-generator",
+      streams.value.cacheDirectory / "sbt-currency-usage-generator",
       inStyle = FilesInfo.lastModified,
       outStyle = FilesInfo.exists
     )(generate)

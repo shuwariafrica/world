@@ -88,13 +88,13 @@ class CurrencyValueSuite extends munit.ScalaCheckSuite:
 
   property("add and + operator should be equivalent") {
     forAll(genCurrencyValue, genCurrencyValue) { (a, b) =>
-      assertEquals(CurrencyValue.add(a, b), a + b)
+      assertEquals(CurrencyValue.add(a, b.unwrap), a + b.unwrap)
     }
   }
 
   property("subtract and - operator should be equivalent") {
     forAll(genCurrencyValue, genCurrencyValue) { (a, b) =>
-      assertEquals(CurrencyValue.subtract(a, b), a - b)
+      assertEquals(CurrencyValue.subtract(a, b.unwrap), a - b.unwrap)
     }
   }
 
@@ -106,7 +106,7 @@ class CurrencyValueSuite extends munit.ScalaCheckSuite:
 
   property("divide and / operator should be equivalent") {
     forAll(genCurrencyValue, genCurrencyValue.filterNot(_ == CurrencyValue(0))) { (a, b) =>
-      assertEquals(CurrencyValue.divide(a, b), a / b)
+      assertEquals(CurrencyValue.divide(a, b.unwrap), a / b.unwrap)
     }
   }
 
@@ -158,7 +158,7 @@ class CurrencyValueSuite extends munit.ScalaCheckSuite:
 
     val a = CurrencyValue(10)
     val b = CurrencyValue(3)
-    val result = a / b
+    val result = a / b.unwrap
 
     // Should use precision of 2
     result.foreach { cv =>
@@ -184,7 +184,7 @@ class CurrencyValueSuite extends munit.ScalaCheckSuite:
   test("CurrencyValue arithmetic should maintain precision") {
     val a = CurrencyValue(BigDecimal("0.1"))
     val b = CurrencyValue(BigDecimal("0.2"))
-    val result = a + b
+    val result = a + b.unwrap
     assertEquals(result.unwrap, BigDecimal("0.3"))
   }
 

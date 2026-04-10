@@ -108,7 +108,7 @@ class MoneySuite extends ScalaCheckSuite:
     forAll(genKES, genNonZeroCurrencyValue) { (m, cv) =>
       // CORRECTED: Perform the operation and then assert properties of the result.
       val result = m / cv.unwrap
-      val expected = CurrencyValue.divide(m.value, cv)
+      val expected = CurrencyValue.divide(m.value, cv.unwrap)
 
       assertEquals(result.map(_.value), expected)
     }
@@ -123,7 +123,7 @@ class MoneySuite extends ScalaCheckSuite:
   property("Addition with zero is stable (a + 0 == a)") {
     forAll(genKES) { a =>
       assertEquals(a + 0, a)
-      assertEquals(a + Money.zero, a)
+      assertEquals(a + Money.zero[Currencies.KES.type], a)
     }
   }
 
@@ -297,18 +297,17 @@ class MoneySuite extends ScalaCheckSuite:
     assertEquals(sorted, List(100.KES, 200.KES, 300.KES))
   }
 
-  test("Money case class should only have value field") {
+  test("Money opaque type should expose value and currency") {
     // Ensure Money remains a pure data aggregate
     val money = 100.KES
     assertEquals(money.value, CurrencyValue(100))
     assertEquals(money.currency, Currencies.KES)
-    // All operations should be extension methods, not case class methods
+    // All operations should be extension methods
   }
 
-  test("Money should support pattern matching") {
+  test("Money should support value access") {
     val money = 100.KES
-    money match
-      case Money(value) => assertEquals(value, CurrencyValue(100))
+    assertEquals(money.value, CurrencyValue(100))
   }
 
   test("Money.from should handle different numeric types") {
@@ -407,7 +406,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("33.33"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("33.33"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -424,7 +423,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("33.33"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("16.66"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -441,7 +440,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("3.33"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("3.33"))
       // Verify sum equals original exactly
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -458,7 +457,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("33"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("33"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -475,7 +474,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("3.333"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("3.333"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -501,7 +500,7 @@ class MoneySuite extends ScalaCheckSuite:
         assertEquals(amount.value.unwrap, BigDecimal("10.00"))
       }
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -516,7 +515,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(1).value.unwrap, BigDecimal("33.33"))
       assertEquals(allocated(2).value.unwrap, BigDecimal("50.00"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -531,7 +530,7 @@ class MoneySuite extends ScalaCheckSuite:
       assertEquals(allocated(0).value.unwrap, BigDecimal("0.03"))
       assertEquals(allocated(1).value.unwrap, BigDecimal("0.02"))
       // Verify sum equals original
-      assertEquals(allocated.map(_.value).fold(CurrencyValue(0))(_ + _), money.value)
+      assertEquals(allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap)), money.value)
     }
   }
 
@@ -552,7 +551,7 @@ class MoneySuite extends ScalaCheckSuite:
       val ratios = ratioInts.map(BigDecimal(_))
       val result = money.allocate(ratios)
       result.foreach { allocated =>
-        val sum = allocated.map(_.value).fold(CurrencyValue(0))(_ + _)
+        val sum = allocated.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, b.unwrap))
         assertEquals(sum, money.value)
       }
     }

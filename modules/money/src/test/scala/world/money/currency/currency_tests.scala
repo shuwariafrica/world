@@ -17,8 +17,6 @@
  ****************************************************************/
 package world.money.currency
 
-import world.locale.country.Countries
-import world.locale.country.Country
 import world.money.Money
 import world.money.format.given
 
@@ -99,23 +97,6 @@ class CurrencySuite extends FunSuite:
   }
 
 end CurrencySuite
-
-class CurrencyUsageSuite extends FunSuite:
-  test("CurrencyUsage.apply should retrieve territories for a given currency") {
-    val kesUsage = CurrencyUsage(Currencies.KES)
-    assertEquals(kesUsage, Set[Country](Countries.KE))
-
-    // Test a multi-country currency
-    val zarUsage = CurrencyUsage(Currencies.ZAR)
-    assert(zarUsage.contains(Countries.ZA))
-    assert(zarUsage.contains(Countries.LS))
-    assert(zarUsage.contains(Countries.NA))
-  }
-
-  test("`.usage` syntax extension should retrieve territories") {
-    assertEquals(Currencies.JPY.usage, Set[Country](Countries.JP))
-  }
-end CurrencyUsageSuite
 
 class CurrencyFactorySyntaxSuite extends FunSuite:
   test("Currency-as-factory syntax should create correctly typed Money instances") {

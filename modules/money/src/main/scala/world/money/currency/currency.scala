@@ -19,8 +19,6 @@ package world.money.currency
 
 import java.time.YearMonth
 
-import world.locale.country.Country
-
 /** A base trait for all ISO 4217 currency data representations.
   *
   * It defines the fundamental properties shared by all currency entries.
@@ -67,59 +65,6 @@ trait HistoricCurrency extends CurrencyDetails derives CanEqual:
 
   /** The month and year the currency was withdrawn. */
   val withdrawalDate: YearMonth
-
-/** A typeclass that defines the geographical usage of a currency, providing a
-  * mechanism to associate a currency with the set of [[Country Countries]]
-  * where it is officially used.
-  *
-  * Default `given` instances for all currencies known to the library are
-  * generated at build time and are automatically available when importing
-  * `world.money.currency.*`.
-  *
-  * @tparam A The specific currency singleton type, e.g., `Currencies.KES.type`.
-  */
-trait CurrencyUsage[A <: CurrencyDetails]:
-  /** The `Set` of countries where the currency `A` is used.
-    * @return A `Set` of [[world.locale.country.Country]] instances.
-    */
-  def territories: Set[world.locale.country.Country]
-
-/** Provides methods for convenient access to usage territories of any currency
-  * record (e.g., [[Currency]], [[HistoricCurrency]]) via the [[CurrencyUsage]]
-  * typeclass.
-  *
-  * @example
-  *   {{{
-  * import world.money.currency.*
-  *
-  * val shillingUsage: Set[Country] = Currencies.KES.usageTerritories
-  * assert(shillingUsage.exists(_.alpha2.value == "KE"))
-  *   }}}
-  */
-object CurrencyUsage:
-  /** Retrieves the set of countries where a specific currency is used.
-    *
-    * This method relies on a `given` [[CurrencyUsage]] instance for the
-    * currency's specific type being available in the current scope.
-    *
-    * @example
-    *   {{{
-    * import world.money.currency.*
-    *
-    * val shillingUsage = CurrencyUsage(Currencies.KES)
-    * assert(shillingUsage.nonEmpty)
-    *   }}}
-    * @param currency The currency instance (e.g., `Currencies.KES`).
-    * @return A `Set` of [[world.locale.country.Country]] instances.
-    */
-  /** Retrieves the set of countries where a specific currency is used.
-    *
-    * @param currency The currency instance (e.g., `Currencies.KES`).
-    * @return A `Set` of [[world.locale.country.Country]] instances.
-    */
-  transparent inline def apply[A <: CurrencyDetails](@scala.annotation.unused currency: A)(using usage: CurrencyUsage[A]): Set[Country] =
-    usage.territories
-end CurrencyUsage
 
 /** Provides compile-time access to currency precision (minor unit) information.
   *

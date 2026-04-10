@@ -93,17 +93,11 @@ object CurrencyMathContext:
   inline def unwrap(v: CurrencyMathContext): MathContext = v
 
   extension (context: CurrencyMathContext)
-    /** The precision of the [[CurrencyMathContext]].
-      *
-      * Defines the number of significant digits used in calculations.
-      */
+    /** The precision of the [[CurrencyMathContext]]. */
     inline def precision: Int = context.getPrecision
 
     /** The [[java.math.RoundingMode]] of the
       * [[world.money.currency.CurrencyMathContext]].
-      *
-      * Specifies how numbers should be rounded if they cannot be exactly
-      * represented with the given precision.
       */
     inline def mode: RoundingMode = context.getRoundingMode.nn
 
@@ -119,7 +113,7 @@ end CurrencyMathContext
   *
   * This type wraps `BigDecimal` to enforce that all arithmetic operations are
   * performed using a controlled [[CurrencyMathContext]], preventing common
-  * floating-point errors and ensuring consistent, calculations across the
+  * floating-point errors and ensuring consistent calculations across the
   * library.
   *
   * @example
@@ -138,31 +132,28 @@ opaque type CurrencyValue = BigDecimal
 
 /** Provides factory methods and arithmetic operations for [[CurrencyValue]]. */
 object CurrencyValue:
-  /** Creates a [[CurrencyValue]] from a `BigDecimal`, `Long`, `Int`, or
-    * `Double`.
+
+  // --- Factory Methods ---
+
+  /** Creates a [[CurrencyValue]] from a `BigDecimal`. */
+  inline def apply(value: BigDecimal)(using @scala.annotation.unused ctx: CurrencyMathContext): CurrencyValue = value
+
+  /** Creates a [[CurrencyValue]] from a `Long`. */
+  @targetName("apply_long") inline def apply(value: Long)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value, scala.Predef.summon[CurrencyMathContext])
+
+  /** Creates a [[CurrencyValue]] from an `Int`. */
+  @targetName("apply_int") inline def apply(value: Int)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value, scala.Predef.summon[CurrencyMathContext])
+
+  /** Creates a [[CurrencyValue]] from a `Double`.
     *
     * @note Using `Double` can lead to floating-point precision inaccuracies
-    *   because `Double` is a binary floating point number, and cannot precisely
-    *   represent some decimal values. This can lead to unexpected rounding or
-    *   comparison results.
-    *
-    * @param value A [[CurrencyValue]], [[BigDecimal]], [[Long]], [[Int]], or
-    *   [[Double]] to create a `CurrencyValue` from.
-    * @return A new `CurrencyValue` instance.
-    *
-    * @example
-    *   {{{
-    *     import world.money.currency.CurrencyValue
-    *     val value1: CurrencyValue = CurrencyValue(10.5)
-    *     val value2: CurrencyValue = CurrencyValue(100L)
-    *   }}}
+    *   because `Double` is a binary floating point number. Prefer `BigDecimal`
+    *   or `String`-based construction for exact values.
     */
-  inline def apply(value: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
-    inline value match
-      case v: BigDecimal => v
-      case v: Long       => BigDecimal(v, summon[CurrencyMathContext])
-      case v: Int        => BigDecimal(v, summon[CurrencyMathContext])
-      case v: Double     => BigDecimal(v, summon[CurrencyMathContext])
+  @targetName("apply_double") inline def apply(value: Double)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value, scala.Predef.summon[CurrencyMathContext])
 
   /** Attempts to create a [[CurrencyValue]] from a `String` representation.
     *
@@ -170,28 +161,12 @@ object CurrencyValue:
     * the source value is not already a `BigDecimal`, as it avoids binary
     * floating-point inaccuracies.
     *
-    * @param value The string to parse as a `CurrencyValue`.
-    * @return An `Either` containing either a [[NumberFormattingError]] if
-    *   parsing fails, or the resulting `CurrencyValue`.
-    *
-    * @example
-    *   {{{
-    *     import world.money.currency.CurrencyValue
-    *     CurrencyValue.fromString("123.45") match {
-    *       case Right(value) => println(s"Value: $value")
-    *       case Left(error)  => println(s"Error: ${error.message}")
-    *     }
-    *   }}}
     * @param value The string to parse into a CurrencyValue.
-    * @param context A [[world.money.currency.CurrencyMathContext]]
-    *   given instance for decimal precision and rounding.
     * @return Right with the parsed [[CurrencyValue]], or Left with a
     *   [[world.money.errors.NumberFormattingError]] if parsing fails.
     */
-  inline def fromString(value: String)(using CurrencyMathContext): Either[world.money.errors.NumberFormattingError, CurrencyValue] =
-    Try(BigDecimal(value, summon[CurrencyMathContext]))
-      .toEither
-      .left
+  inline def fromString(value: String)(using CurrencyMathContext): Either[NumberFormattingError, CurrencyValue] =
+    Try(BigDecimal(value, scala.Predef.summon[CurrencyMathContext])).toEither.left
       .map(t => NumberFormattingError("Unable to parse string as a CurrencyValue.", Some(t)))
 
   /** Represents a constant `CurrencyValue` with a value of zero. */
@@ -200,85 +175,168 @@ object CurrencyValue:
   /** Unwraps a [[CurrencyValue]] to its underlying `BigDecimal`. */
   inline def unwrap(value: CurrencyValue): BigDecimal = value
 
-  /** Adds `augend` to a [[CurrencyValue]].
-    * @note Using `Double` can lead to precision inaccuracies.
-    */
-  inline def add(value: CurrencyValue, augend: CurrencyValue | BigDecimal | Long | Int | Double)
-      (using CurrencyMathContext): CurrencyValue = BigDecimal(bigDecimal(value).add(bigDecimal(augend), summon[CurrencyMathContext]).nn)
+  // --- Companion Arithmetic ---
 
-  /** Subtracts `subtrahend` from a [[CurrencyValue]].
-    * @note Using `Double` can lead to precision inaccuracies.
-    */
-  inline def subtract(value: CurrencyValue, subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)
-      (using CurrencyMathContext): CurrencyValue = BigDecimal
-    (bigDecimal(value).subtract(bigDecimal(subtrahend), summon[CurrencyMathContext]).nn)
+  /** Adds `augend` to a [[CurrencyValue]]. */
+  inline def add(value: CurrencyValue, augend: BigDecimal)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value.bigDecimal.add(augend.bigDecimal, scala.Predef.summon[CurrencyMathContext]).nn)
 
-  /** Multiplies a [[CurrencyValue]] by `multiplicand`.
-    * @note Using `Double` can lead to precision inaccuracies.
-    */
-  inline def multiply(value: CurrencyValue, multiplicand: CurrencyValue | BigDecimal | Long | Int | Double)
-      (using CurrencyMathContext): CurrencyValue = BigDecimal
-    (bigDecimal(value).multiply(bigDecimal(multiplicand), summon[CurrencyMathContext]).nn)
+  /** Adds a `Long` augend to a [[CurrencyValue]]. */
+  @targetName("add_long") inline def add(value: CurrencyValue, augend: Long)(using CurrencyMathContext): CurrencyValue =
+    add(value, BigDecimal(augend, scala.Predef.summon[CurrencyMathContext]))
 
-  /** Attempts to divide a [[CurrencyValue]] by `divisor`.
+  /** Adds an `Int` augend to a [[CurrencyValue]]. */
+  @targetName("add_int") inline def add(value: CurrencyValue, augend: Int)(using CurrencyMathContext): CurrencyValue =
+    add(value, BigDecimal(augend, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Adds a `Double` augend to a [[CurrencyValue]]. */
+  @targetName("add_double") inline def add(value: CurrencyValue, augend: Double)(using CurrencyMathContext): CurrencyValue =
+    add(value, BigDecimal(augend, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Subtracts `subtrahend` from a [[CurrencyValue]]. */
+  inline def subtract(value: CurrencyValue, subtrahend: BigDecimal)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value.bigDecimal.subtract(subtrahend.bigDecimal, scala.Predef.summon[CurrencyMathContext]).nn)
+
+  /** Subtracts a `Long` from a [[CurrencyValue]]. */
+  @targetName("subtract_long") inline def subtract(value: CurrencyValue, subtrahend: Long)(using CurrencyMathContext): CurrencyValue =
+    subtract(value, BigDecimal(subtrahend, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Subtracts an `Int` from a [[CurrencyValue]]. */
+  @targetName("subtract_int") inline def subtract(value: CurrencyValue, subtrahend: Int)(using CurrencyMathContext): CurrencyValue =
+    subtract(value, BigDecimal(subtrahend, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Subtracts a `Double` from a [[CurrencyValue]]. */
+  @targetName("subtract_double") inline def subtract(value: CurrencyValue, subtrahend: Double)(using CurrencyMathContext): CurrencyValue =
+    subtract(value, BigDecimal(subtrahend, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Multiplies a [[CurrencyValue]] by a `BigDecimal` multiplicand. */
+  inline def multiply(value: CurrencyValue, multiplicand: BigDecimal)(using CurrencyMathContext): CurrencyValue =
+    BigDecimal(value.bigDecimal.multiply(multiplicand.bigDecimal, scala.Predef.summon[CurrencyMathContext]).nn)
+
+  /** Multiplies a [[CurrencyValue]] by a `Long`. */
+  @targetName("multiply_long") inline def multiply(value: CurrencyValue, multiplicand: Long)(using CurrencyMathContext): CurrencyValue =
+    multiply(value, BigDecimal(multiplicand, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Multiplies a [[CurrencyValue]] by an `Int`. */
+  @targetName("multiply_int") inline def multiply(value: CurrencyValue, multiplicand: Int)(using CurrencyMathContext): CurrencyValue =
+    multiply(value, BigDecimal(multiplicand, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Multiplies a [[CurrencyValue]] by a `Double`. */
+  @targetName("multiply_double") inline def multiply(value: CurrencyValue, multiplicand: Double)(using CurrencyMathContext): CurrencyValue =
+    multiply(value, BigDecimal(multiplicand, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Attempts to divide a [[CurrencyValue]] by a `BigDecimal` divisor.
     *
-    * @note Using `Double` can lead to precision inaccuracies.
     * @return `Right` with the result, or `Left` containing an
-    *   [[world.money.errors.ArithmeticError]] if division fails (e.g.
-    *   division by zero).
+    *   [[world.money.errors.ArithmeticError]] if the divisor is zero.
     */
-  inline def divide(value: CurrencyValue, divisor: CurrencyValue | BigDecimal | Long | Int | Double)
+  inline def divide(value: CurrencyValue, divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+    if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
+    else Right(BigDecimal(value.bigDecimal.divide(divisor.bigDecimal, scala.Predef.summon[CurrencyMathContext]).nn))
+
+  /** Attempts to divide a [[CurrencyValue]] by a `Long` divisor. */
+  @targetName("divide_long") inline def divide(value: CurrencyValue, divisor: Long)
       (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
-    val d = bigDecimal(divisor)
-    if d.signum == 0 then Left(ArithmeticError("Division by zero."))
-    else Right(BigDecimal(bigDecimal(value).divide(d, summon[CurrencyMathContext]).nn))
+    divide(value, BigDecimal(divisor, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Attempts to divide a [[CurrencyValue]] by an `Int` divisor. */
+  @targetName("divide_int") inline def divide(value: CurrencyValue, divisor: Int)
+      (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+    divide(value, BigDecimal(divisor, scala.Predef.summon[CurrencyMathContext]))
+
+  /** Attempts to divide a [[CurrencyValue]] by a `Double` divisor. */
+  @targetName("divide_double") inline def divide(value: CurrencyValue, divisor: Double)
+      (using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+    divide(value, BigDecimal(divisor, scala.Predef.summon[CurrencyMathContext]))
 
   given CanEqual[CurrencyValue, CurrencyValue] = CanEqual.derived
 
   given Ordering[CurrencyValue] = Ordering.BigDecimal
   export scala.math.Ordering.Implicits.infixOrderingOps
 
+  // --- Extension Methods ---
+
   extension (value: CurrencyValue)
     /** The raw `BigDecimal` representation of this value. */
     @targetName("unwrap_ext") inline def unwrap: BigDecimal = value
 
-    /** Adds a value to this [[CurrencyValue]].
-      * @note Using `Double` can lead to precision inaccuracies.
-      */
-    @targetName("plus_ext")
-    inline def +(augend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
-      add(value, CurrencyValue(augend))(summon[CurrencyMathContext])
+    /** Adds a `BigDecimal` to this [[CurrencyValue]]. */
+    @targetName("plus_bd")
+    inline def +(augend: BigDecimal)(using CurrencyMathContext): CurrencyValue = add(value, augend)
 
-    /** Subtracts a value from this [[CurrencyValue]].
-      * @note Using `Double` can lead to precision inaccuracies.
-      */
-    @targetName("minus_ext")
-    inline def -(subtrahend: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
-      subtract(value, subtrahend)(summon[CurrencyMathContext])
+    /** Adds a `Long` to this [[CurrencyValue]]. */
+    @targetName("plus_long")
+    inline def +(augend: Long)(using CurrencyMathContext): CurrencyValue = add(value, augend)
 
-    /** Multiplies this [[CurrencyValue]] by a value.
-      * @note Using `Double` can lead to precision inaccuracies.
-      */
-    @targetName("times_ext")
-    inline def *(multiplicand: BigDecimal | Long | Int | Double)(using CurrencyMathContext): CurrencyValue =
-      multiply(value, multiplicand)(summon[CurrencyMathContext])
+    /** Adds an `Int` to this [[CurrencyValue]]. */
+    @targetName("plus_int")
+    inline def +(augend: Int)(using CurrencyMathContext): CurrencyValue = add(value, augend)
 
-    @targetName("divide_ext") inline def /(divisor: CurrencyValue | BigDecimal | Long | Int | Double)(using CurrencyMathContext): Either[
-      ArithmeticError,
-      CurrencyValue] = divide(value, divisor)
+    /** Adds a `Double` to this [[CurrencyValue]]. */
+    @targetName("plus_double")
+    inline def +(augend: Double)(using CurrencyMathContext): CurrencyValue = add(value, augend)
+
+    /** Subtracts a `BigDecimal` from this [[CurrencyValue]]. */
+    @targetName("minus_bd")
+    inline def -(subtrahend: BigDecimal)(using CurrencyMathContext): CurrencyValue = subtract(value, subtrahend)
+
+    /** Subtracts a `Long` from this [[CurrencyValue]]. */
+    @targetName("minus_long")
+    inline def -(subtrahend: Long)(using CurrencyMathContext): CurrencyValue = subtract(value, subtrahend)
+
+    /** Subtracts an `Int` from this [[CurrencyValue]]. */
+    @targetName("minus_int")
+    inline def -(subtrahend: Int)(using CurrencyMathContext): CurrencyValue = subtract(value, subtrahend)
+
+    /** Subtracts a `Double` from this [[CurrencyValue]]. */
+    @targetName("minus_double")
+    inline def -(subtrahend: Double)(using CurrencyMathContext): CurrencyValue = subtract(value, subtrahend)
+
+    /** Multiplies this [[CurrencyValue]] by a `BigDecimal`. */
+    @targetName("times_bd")
+    inline def *(multiplicand: BigDecimal)(using CurrencyMathContext): CurrencyValue = multiply(value, multiplicand)
+
+    /** Multiplies this [[CurrencyValue]] by a `Long`. */
+    @targetName("times_long")
+    inline def *(multiplicand: Long)(using CurrencyMathContext): CurrencyValue = multiply(value, multiplicand)
+
+    /** Multiplies this [[CurrencyValue]] by an `Int`. */
+    @targetName("times_int")
+    inline def *(multiplicand: Int)(using CurrencyMathContext): CurrencyValue = multiply(value, multiplicand)
+
+    /** Multiplies this [[CurrencyValue]] by a `Double`. */
+    @targetName("times_double")
+    inline def *(multiplicand: Double)(using CurrencyMathContext): CurrencyValue = multiply(value, multiplicand)
+
+    /** Divides this [[CurrencyValue]] by a `BigDecimal`. */
+    @targetName("divide_bd_ext") inline def /(divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+      divide(value, divisor)
+
+    /** Divides this [[CurrencyValue]] by a `Long`. */
+    @targetName("divide_long_ext") inline def /(divisor: Long)(using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+      divide(value, divisor)
+
+    /** Divides this [[CurrencyValue]] by an `Int`. */
+    @targetName("divide_int_ext") inline def /(divisor: Int)(using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+      divide(value, divisor)
+
+    /** Divides this [[CurrencyValue]] by a `Double`. */
+    @targetName("divide_double_ext") inline def /(divisor: Double)(using CurrencyMathContext): Either[ArithmeticError, CurrencyValue] =
+      divide(value, divisor)
 
     /** Negates this [[CurrencyValue]]. */
     @targetName("negate")
-    inline def unary_-(using CurrencyMathContext): CurrencyValue = negate(summon[CurrencyMathContext])
+    inline def unary_-(using CurrencyMathContext): CurrencyValue = negate(scala.Predef.summon[CurrencyMathContext])
 
     /** Returns the absolute value of this [[CurrencyValue]]. */
-    inline def abs(using CurrencyMathContext): CurrencyValue = value.abs(summon[CurrencyMathContext])
+    inline def abs(using CurrencyMathContext): CurrencyValue = value.abs(scala.Predef.summon[CurrencyMathContext])
 
     /** Negates this [[CurrencyValue]].
       *
       * @return A new `CurrencyValue` representing the negation of this value.
       */
-    inline def negate(using CurrencyMathContext): CurrencyValue = value.bigDecimal.negate(summon[CurrencyMathContext]).nn
+    inline def negate(using CurrencyMathContext): CurrencyValue =
+      value.bigDecimal.negate(scala.Predef.summon[CurrencyMathContext]).nn
 
     /** Returns the signum of this `CurrencyValue`: -1 (negative), 0 (zero), or
       * 1 (positive).
@@ -288,10 +346,6 @@ object CurrencyValue:
     /** Returns a [[CurrencyValue]] whose value is this `CurrencyValue` with the
       * specified scale.
       *
-      * This is useful for explicit rounding to a certain number of decimal
-      * places, which is distinct from the precision-based rounding of the
-      * contextual `CurrencyMathContext`.
-      *
       * @param scale Scale of the `CurrencyValue` to be returned.
       * @param roundingMode The rounding mode to use.
       * @return A `CurrencyValue` whose value is this `CurrencyValue` with the
@@ -300,12 +354,5 @@ object CurrencyValue:
     inline def withScale(scale: Int, roundingMode: BigDecimal.RoundingMode.RoundingMode): CurrencyValue =
       value.setScale(scale, roundingMode)
   end extension
-
-  private transparent inline def bigDecimal(v: CurrencyValue | BigDecimal | Int | Long | Double)
-      (using CurrencyMathContext): java.math.BigDecimal = inline v match
-    case v: BigDecimal => v.bigDecimal
-    case v: Int        => new java.math.BigDecimal(v, summon[CurrencyMathContext])
-    case v: Long       => new java.math.BigDecimal(v, summon[CurrencyMathContext])
-    case v: Double     => new java.math.BigDecimal(v, summon[CurrencyMathContext])
 
 end CurrencyValue

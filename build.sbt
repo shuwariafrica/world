@@ -57,7 +57,7 @@ val `world-money` =
     .crossType(CrossType.Pure)
     .withoutSuffixFor(JVMPlatform)
     .in(file("modules/money"))
-    .dependsOn(`world-locale`)
+    .dependsOn(`world-common`)
     .settings(compilerSettingsModifier)
     .settings(unitTestSettings)
     .settings(publishSettings)
@@ -68,6 +68,18 @@ val `world-money` =
     .nativeSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
     .nativeSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
 
+val `world-money-usage` =
+  crossProject(JVMPlatform, JSPlatform, NativePlatform)
+    .crossType(CrossType.Pure)
+    .withoutSuffixFor(JVMPlatform)
+    .in(file("modules/money-usage"))
+    .dependsOn(`world-locale`, `world-money`)
+    .settings(compilerSettingsModifier)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .dependsOn(libraries.`munit-scalacheck`(_ % Test))
+    .settings(Compile / sourceGenerators += SourceGenerators.currencyUsageGeneratorTask)
+
 val `world-jvm` =
   project
     .in(file(".jvm"))
@@ -75,7 +87,8 @@ val `world-jvm` =
     .aggregate(
       `world-common`.jvm,
       `world-locale`.jvm,
-      `world-money`.jvm
+      `world-money`.jvm,
+      `world-money-usage`.jvm
     )
 
 val `world-native` =
@@ -85,7 +98,8 @@ val `world-native` =
     .aggregate(
       `world-common`.native,
       `world-locale`.native,
-      `world-money`.native
+      `world-money`.native,
+      `world-money-usage`.native
     )
 
 val `world-js` =
@@ -95,7 +109,8 @@ val `world-js` =
     .aggregate(
       `world-common`.js,
       `world-locale`.js,
-      `world-money`.js
+      `world-money`.js,
+      `world-money-usage`.js
     )
 
 val `world-root` =

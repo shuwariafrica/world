@@ -56,9 +56,10 @@ object ConversionRate:
     */
   extension (self: ConversionRate)
     def inverse(using CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
-      (CurrencyValue(1) / CurrencyValue(self.rate)).map { inverseRate =>
+      CurrencyValue.divide(CurrencyValue(1), self.rate).map { inverseRate =>
         ConversionRate(self.term, self.base, inverseRate.unwrap, self.context)
       }
+end ConversionRate
 
 /** Encapsulates metadata about a currency conversion or exchange rate.
   *

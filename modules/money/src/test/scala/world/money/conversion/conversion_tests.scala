@@ -48,7 +48,7 @@ class ConversionModelSuite extends FunSuite:
       assertEquals(inverseRate.term, Currencies.KES)
 
       // Check that the inverse rate is mathematically correct (1 / 10.50)
-      val expectedInverseValue = CurrencyValue(1) / CurrencyValue(BigDecimal("10.50"))
+      val expectedInverseValue = CurrencyValue(1) / BigDecimal("10.50")
       assert(expectedInverseValue.isRight)
       expectedInverseValue.foreach { expected =>
         // Allow for a small tolerance due to precision of division

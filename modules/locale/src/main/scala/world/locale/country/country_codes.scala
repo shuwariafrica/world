@@ -102,6 +102,7 @@ object Alpha2Code:
       */
     def country(using countries: Set[Country]): Option[Country] =
       countries.find(_.alpha2 == code)
+  end extension
 end Alpha2Code
 
 /** A type-safe ISO 3166-1 Alpha-3 country code.
@@ -171,6 +172,7 @@ object Alpha3Code:
       */
     def country(using countries: Set[Country]): Option[Country] =
       countries.find(_.alpha3 == code)
+  end extension
 end Alpha3Code
 
 /** A type-safe UN M49 numeric code for a country or area.
@@ -228,4 +230,5 @@ object M49Code:
       */
     def country(using countries: Set[Country]): Option[Country] =
       countries.find(_.m49 == code)
+  end extension
 end M49Code

@@ -30,8 +30,6 @@ val Formatter = world.format.Formatter
 /** Default formatter for Money: "KES 100.50"
   *
   * This is a neutral, technical representation using the ISO currency code.
-  * TODO: locale-specific formatting (symbols, separators), via
-  * `world.locale`.
   */
 given [C <: Currency](using ValueOf[C]): Formatter[Money[C]] =
   world.format.Formatter[Money[C]]
