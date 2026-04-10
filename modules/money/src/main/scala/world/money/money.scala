@@ -30,12 +30,9 @@ import world.money.errors.ConversionError
 /** A type-safe representation of a monetary amount, parameterised by its
   * currency.
   *
-  * `Money` is a zero-cost opaque type over [[world.money.currency.CurrencyValue CurrencyValue]],
-  * ensuring that arithmetic operations between different currencies are
-  * prevented at compile time whilst incurring no allocation overhead.
-  *
-  * All operations on `Money` instances are provided as extension methods in the
-  * companion object, maintaining strict separation of data from behaviour.
+  * Arithmetic operations between different currencies are prevented at
+  * compile time. All operations are provided as extension methods in
+  * [[Money$ Money]].
   *
   * ===How to Create `Money` Instances===
   *

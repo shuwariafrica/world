@@ -77,8 +77,7 @@ object Alpha2Code:
 
   /** Creates an [[Alpha2Code]] from a string assumed to be valid.
     *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
+    * @note This method skips validation. Use [[from]] for untrusted input.
     * @throws world.locale.errors.InternalError if `value` is `null` or
     *   not a valid Alpha-2 code format.
     */
@@ -147,8 +146,7 @@ object Alpha3Code:
 
   /** Creates an [[Alpha3Code]] from a `String` assumed to be valid.
     *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
+    * @note This method skips validation. Use [[from]] for untrusted input.
     * @throws world.locale.errors.InternalError if `value` is `null` or
     *   not a valid Alpha-3 code format.
     */
@@ -206,8 +204,7 @@ object M49Code:
 
   /** Creates an [[M49Code]] from an `Int` assumed to be valid.
     *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
+    * @note This method skips validation. Use [[from]] for untrusted input.
     * @throws world.locale.errors.InternalError if `value` is outside
     *   the valid range.
     */

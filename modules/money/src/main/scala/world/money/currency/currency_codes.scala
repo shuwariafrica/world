@@ -73,8 +73,7 @@ object CcyCode:
       case None                                          => Left(CurrencyError.InvalidCcyCodeFormat(Option(value).fold("null")(_.trim.nn)))
 
   /** Creates a [[CcyCode]] from a `String` assumed to be valid.
-    * @note For internal library use only. This method is not part of the public
-    *   API.
+    * @note This method skips validation. Use [[from]] for untrusted input.
     * @throws world.money.errors.InternalError if `value` is `null` or
     *   not a valid currency code format.
     */
@@ -121,8 +120,7 @@ object NumericCode:
     else Left(CurrencyError.InvalidNumericCodeRange(value))
 
   /** Creates a [[NumericCode]] from an `Int` assumed to be valid.
-    * @note For internal library use only. This method is not part of the public
-    *   API.
+    * @note This method skips validation. Use [[from]] for untrusted input.
     * @throws world.money.errors.InternalError if `value` is outside
     *   the valid range (0-999).
     */
