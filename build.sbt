@@ -1,5 +1,5 @@
 val libraries = new {
-  val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
+  val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.1")
   val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
   val `scala-java-time` = Def.setting("io.github.cquiroz" %%% "scala-java-time" % "2.6.0")
   val `scala-java-time-tzdb` = `scala-java-time`.apply(_.withName("scala-java-time-tzdb"))
