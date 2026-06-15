@@ -1,5 +1,5 @@
 addSbtPlugin("com.github.sbt" % "sbt-dynver" % "5.1.1")
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.0")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.1")
 addSbtPlugin("africa.shuwari.sbt" % "sbt-shuwari" % "0.14.2")
