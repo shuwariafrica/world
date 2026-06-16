@@ -87,7 +87,7 @@ val `world-root` =
 inThisBuild(
   List(
     scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := List("3.7.4"),
+    crossScalaVersions := List("3.8.4"),
     organization := "africa.shuwari",
     description := "Scala toolkit for representation and manipulation of real-world domain concepts",
     homepage := Some(url("https://github.com/shuwarifrica/world")),
