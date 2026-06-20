@@ -26,59 +26,28 @@
   * import world.money.currency.*
   *
   * val tenShillings = Currencies.KES(10)
-  * val amount = 100.50
+  * val amount = 100
   * val money = Currencies.EUR(amount)
   *   }}}
   */
 package world.money.currency
 
-import scala.annotation.targetName
-
 import world.money.Money
 
+// The Currency.apply factory lives at package level rather than in the Currency
+// companion to avoid a circular dependency: Currency is defined here, and Money
+// depends on Currency, so a companion factory returning Money would reverse it.
+
 extension (c: Currency)
-  /** Creates a type-safe [[Money]] instance for this specific currency.
+  /** Creates a [[Money]] of this currency, typed to its singleton.
     *
-    * This factory method provides an ergonomic way to create `Money` values
-    * directly from a currency object. The resulting `Money` instance is
-    * strongly typed with this currency's specific singleton type.
-    *
-    * @param value The numeric amount for the new `Money` instance.
-    * @return A `Money` instance with its currency type fixed to this specific
-    *   currency.
     * @example
     *   {{{
     * import world.money.currency.*
     *
     * val oneHundredShillings: Money[Currencies.KES.type] = Currencies.KES(100)
-    * val fiftyPounds: Money[Currencies.GBP.type] = Currencies.GBP(50.0)
+    * val fiftyPounds: Money[Currencies.GBP.type] = Currencies.GBP(50)
     *   }}}
     */
-  transparent inline def apply(value: BigDecimal)(using CurrencyMathContext): Money[c.type] =
-    given ValueOf[c.type] = ValueOf(c)
-    Money[c.type](CurrencyValue(value))
-  @targetName("currency_apply_long") transparent inline def apply(value: Long)(using CurrencyMathContext): Money[c.type] =
-    given ValueOf[c.type] = ValueOf(c)
-    Money[c.type](CurrencyValue(value))
-  @targetName("currency_apply_int") transparent inline def apply(value: Int)(using CurrencyMathContext): Money[c.type] =
-    given ValueOf[c.type] = ValueOf(c)
-    Money[c.type](CurrencyValue(value))
-  @targetName("currency_apply_double") transparent inline def apply(value: Double)(using CurrencyMathContext): Money[c.type] =
-    given ValueOf[c.type] = ValueOf(c)
-    Money[c.type](CurrencyValue(value))
-end extension
-
-extension (currency: CurrencyDetails)
-  /** Widens this currency instance to the general [[CurrencyDetails]] trait.
-    *
-    * This is necessary when comparing a specific singleton type (e.g.,
-    * `Currencies.KES.type`) with an existential one (`? <: Currency`), such as
-    * the currency obtained from [[world.money.Money$.from Money.from]]. By
-    * widening both sides of a comparison to their common supertype, type-level
-    * comparison under strict equality is resolved.
-    *
-    * @return The same currency instance, but with its type widened to
-    *   [[CurrencyDetails]].
-    */
-  inline def widen: CurrencyDetails = currency
+  def apply(amount: BigDecimal): Money[c.type] = Money(amount, c)
 end extension

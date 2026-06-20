@@ -22,31 +22,33 @@ import world.money.format.given
 
 import munit.FunSuite
 
+import boilerplate.*
+
 class CurrencySuite extends FunSuite:
   test("Currencies object should contain accessible, valid currency objects") {
     val kes = Currencies.KES
-    assertEquals(kes.code.value, "KES")
+    assertEquals(kes.code.unwrap, "KES")
     assertEquals(kes.name, "Kenyan Shilling")
-    assertEquals(kes.numericCode.value, 404)
+    assertEquals(kes.numericCode.unwrap, 404)
     assertEquals(kes.display, "KES (Kenyan Shilling)")
   }
 
   test("HistoricCurrencies object should contain accessible, valid currency objects") {
     val dem = HistoricCurrencies.DEM
-    assertEquals(dem.code.value, "DEM")
-    assertEquals(dem.name, "Deutsche Mark")
+    assertEquals(dem.code.unwrap, "DEM")
+    assertEquals(dem.name, "German Mark")
     assert(dem.withdrawalDate.isBefore(java.time.YearMonth.now()))
   }
 
-  test("Currencies.fromCode should find active currencies") {
-    assertEquals(Currencies.fromCode("KES"), Some(Currencies.KES))
-    assertEquals(Currencies.fromCode("kes"), Some(Currencies.KES)) // case-insensitive
-    assertEquals(Currencies.fromCode("XYZ"), None) // unknown
+  test("Currencies.from finds active currencies by alphabetic code") {
+    assertEquals(Currencies.from("KES"), Some(Currencies.KES))
+    assertEquals(Currencies.from("kes"), Some(Currencies.KES)) // case-insensitive
+    assertEquals(Currencies.from("XYZ"), None) // unknown
   }
 
-  test("Currencies.fromNumericCode should find active currencies") {
-    assertEquals(Currencies.fromNumericCode(404), Some(Currencies.KES))
-    assertEquals(Currencies.fromNumericCode(9999), None)
+  test("Currencies.from finds active currencies by numeric code") {
+    assertEquals(Currencies.from(404), Some(Currencies.KES))
+    assertEquals(Currencies.from(9999), None)
   }
 
   test("Currency.precisionOf should return correct minor units") {
@@ -82,18 +84,25 @@ class CurrencySuite extends FunSuite:
     assert(Currency.validatePrecision[Currencies.OMR.type](BigDecimal("10.99")))
   }
 
-  test("Currency instances should have correct minorUnit values") {
-    assertEquals(Currencies.KES.minorUnit, Some(2))
-    assertEquals(Currencies.JPY.minorUnit, Some(0))
-    assertEquals(Currencies.OMR.minorUnit, Some(3))
+  test("Currency instances should have correct digits values") {
+    assertEquals(Currencies.KES.digits, Some(2))
+    assertEquals(Currencies.JPY.digits, Some(0))
+    assertEquals(Currencies.OMR.digits, Some(3))
+  }
+
+  test("Currency instances should expose cash rounding data from CLDR") {
+    // CAD has cashRounding=5 (rounds to nearest 5 cents in cash)
+    assertEquals(Currencies.CAD.cashRounding, Some(5))
+    // KES has no special cash rounding
+    assertEquals(Currencies.KES.cashRounding, None)
   }
 
   test("Currency properties should be accessible") {
     val kes = Currencies.KES
-    assert(kes.code.value.nonEmpty)
+    assert(kes.code.unwrap.nonEmpty)
     assert(kes.name.nonEmpty)
-    assert(kes.numericCode.value >= 0)
-    assert(kes.minorUnit.isDefined)
+    assert(kes.numericCode.unwrap >= 0)
+    assert(kes.digits.isDefined)
   }
 
 end CurrencySuite
@@ -101,6 +110,6 @@ end CurrencySuite
 class CurrencyFactorySyntaxSuite extends FunSuite:
   test("Currency-as-factory syntax should create correctly typed Money instances") {
     val amount: Money[Currencies.KES.type] = Currencies.KES(1500)
-    assertEquals(amount.value, CurrencyValue(1500))
+    assertEquals(amount.value, BigDecimal(1500))
     assertEquals(amount.currency, Currencies.KES)
   }

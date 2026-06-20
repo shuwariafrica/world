@@ -4,7 +4,7 @@ inThisBuild(
     crossScalaVersions := List("3.8.3"),
     organization := "africa.shuwari",
     description := "Scala toolkit for representation and manipulation of real-world domain concepts",
-    homepage := Some(url("https://github.com/shuwarifrica/world")),
+    homepage := Some(url("https://github.com/shuwariafrica/world")),
     startYear := Some(2023),
     semanticdbEnabled := true,
     scmInfo := ScmInfo(
@@ -16,6 +16,7 @@ inThisBuild(
 )
 
 val libraries = new {
+  val boilerplate = Def.setting("io.github.arashi01" %%% "boilerplate" % "0.7.0")
   val munit = Def.setting("org.scalameta" %%% "munit" % "1.2.4")
   val `munit-scalacheck` = Def.setting("org.scalameta" %%% "munit-scalacheck" % "1.2.0")
   val `scala-java-time` = Def.setting("io.github.cquiroz" %%% "scala-java-time" % "2.6.0")
@@ -24,10 +25,10 @@ val libraries = new {
 
 def compilerSettingsModifier = {
   val options = List[Setting[?]](
-  compile / scalacOptions ++= Seq("-Wsafe-init", "-Werror"),
-  compile / scalacOptions --= Seq("-Xfatal-warnings")
-)
-inConfig(Compile)(options) ++ inConfig(Test)(options)
+    compile / scalacOptions ++= Seq("-Wsafe-init", "-Werror"),
+    compile / scalacOptions --= Seq("-Xfatal-warnings")
+  )
+  inConfig(Compile)(options) ++ inConfig(Test)(options)
 }
 
 val `world-common` =
@@ -38,6 +39,7 @@ val `world-common` =
     .settings(compilerSettingsModifier)
     .settings(unitTestSettings)
     .settings(publishSettings)
+    .settings(libraryDependency(libraries.boilerplate))
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
 
 val `world-locale` =
@@ -51,6 +53,9 @@ val `world-locale` =
     .settings(publishSettings)
     .dependsOn(libraries.`munit-scalacheck`(_ % Test))
     .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.languagesGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.scriptsGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.likelySubtagsGeneratorTask)
 
 val `world-money` =
   crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -154,11 +159,11 @@ def publishSettings = pgpSettings ++: List(
   ),
   publishTo := {
     if (isSnapshot.value)
-      Some("central-snapshots" at "https://central.sonatype.com/repository/maven-snapshots/")
+      Some("central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/"))
     else localStaging.value
   },
   pomIncludeRepository := (_ => false),
-  publishMavenStyle := true,
+  publishMavenStyle := true
 )
 
 def pgpSettings = List(

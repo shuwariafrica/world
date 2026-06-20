@@ -18,371 +18,281 @@
 package world.money
 
 import scala.annotation.targetName
-import scala.language.strictEquality
+import scala.math.BigDecimal.RoundingMode
+import scala.util.Try
 
 import world.money.conversion.ConversionQuery
 import world.money.conversion.ExchangeRateProvider
 import world.money.currency.Currency
 import world.money.currency.CurrencyMathContext
-import world.money.currency.CurrencyValue
+import world.money.errors.ArithmeticError
 import world.money.errors.ConversionError
+import world.money.errors.NumberFormattingError
 
-/** A type-safe representation of a monetary amount, parameterised by its
-  * currency.
+/** A monetary amount paired with its [[world.money.currency.Currency Currency]].
   *
-  * Arithmetic operations between different currencies are prevented at
-  * compile time. All operations are provided as extension methods in
-  * [[Money$ Money]].
+  * The currency is part of the value (not a phantom): it is carried as data and
+  * is reflected in the type parameter `C`, so amounts of different currencies
+  * cannot be combined - `100.KES + 50.JPY` is a compile error. Equality is
+  * value-based: `Money` amounts compare by numeric value (scale-insensitive) and
+  * currency, so `1.50` and `1.5` of the same currency are equal.
   *
-  * ===How to Create `Money` Instances===
+  * Construction is exact - the amount is stored as given. Arithmetic operations
+  * round to the contextual [[world.money.currency.CurrencyMathContext CurrencyMathContext]];
+  * [[Money$.rounded rounded]] and display round to the currency's minor units.
   *
-  * There are two primary ways to create an instance of `Money`.
+  * Operations are provided as extension methods in [[Money$ Money]].
   *
-  *   1. **Currency-Specific Syntax (Recommended):** The preferred method for
-  *      creating amounts of a known currency is to use the generated syntax
-  *      extensions. This provides a clean, readable, and type-safe DSL.
-  *      {{{
-  * import world.money.*
-  *
-  * val tenShillings = 10.KES
-  * val fiftyRiyals = 50.50.OMR
-  *      }}}
-  *   2. **Generic Factory `Money.apply`:** For generic programming, where the
-  *      currency type `C` is a type parameter, you can use the companion
-  *      object's `apply` method. This requires a `ValueOf[C]` to be available
-  *      in the implicit scope to provide the runtime currency object.
-  *      {{{
-  * import world.money.currency.{Currency, Currencies}
-  *
-  * def createGenericMoney[C <: Currency](value: BigDecimal)(using ValueOf[C]): Money[C] =
-  *   Money(value)
-  *      }}}
-  *
-  * @tparam C The singleton type of the currency, constrained to be a subtype of
-  *   [[world.money.currency.Currency]].
+  * @tparam C The singleton type of this amount's currency.
   */
-opaque type Money[C <: Currency] = CurrencyValue
+final case class Money[C <: Currency](amount: BigDecimal, currency: C) derives CanEqual
 
-/** Provides factory methods and operations for [[Money]] instances. */
+/** Factory methods and operations for [[Money]]. */
 object Money:
 
-  // --- Factory Methods ---
+  // --- Factories ---
 
-  /** Creates a `Money[C]` from a [[CurrencyValue]]. */
-  inline def apply[C <: Currency](value: CurrencyValue)(using @scala.annotation.unused v: ValueOf[C]): Money[C] = value
-
-  /** Creates a `Money[C]` from a `BigDecimal`. */
-  @targetName("apply_bd") inline def apply[C <: Currency](value: BigDecimal)
-      (using @scala.annotation.unused v: ValueOf[C], ctx: CurrencyMathContext): Money[C] =
-    CurrencyValue(value)
-
-  /** Creates a `Money[C]` from a `Long`. */
-  @targetName("apply_long") inline def apply[C <: Currency](value: Long)
-      (using @scala.annotation.unused v: ValueOf[C], ctx: CurrencyMathContext): Money[C] =
-    CurrencyValue(value)
-
-  /** Creates a `Money[C]` from an `Int`. */
-  @targetName("apply_int") inline def apply[C <: Currency](value: Int)
-      (using @scala.annotation.unused v: ValueOf[C], ctx: CurrencyMathContext): Money[C] =
-    CurrencyValue(value)
-
-  /** Creates a `Money[C]` from a `Double`.
+  /** Creates a `Money[C]` from an amount, resolving the currency from context.
     *
-    * @note Using `Double` for financial calculations is strongly discouraged
-    *   due to potential precision inaccuracies.
+    * @tparam C The currency type, whose instance is summoned via `ValueOf`.
     */
-  @targetName("apply_double") inline def apply[C <: Currency](value: Double)
-      (using @scala.annotation.unused v: ValueOf[C], ctx: CurrencyMathContext): Money[C] =
-    CurrencyValue(value)
+  @targetName("applyOfType")
+  def apply[C <: Currency](amount: BigDecimal)(using c: ValueOf[C]): Money[C] =
+    Money(amount, c.value)
 
-  /** Creates a `Money` instance from a runtime currency value.
+  /** Creates a `Money` from a runtime currency, typed to that currency's singleton.
     *
-    * This factory is useful when the currency is not known at compile time
-    * (e.g., when deserialising data or creating amounts from user input). The
-    * returned type is an existential `Money[? <: Currency]` because the
-    * specific currency type `C` cannot be known by the compiler.
+    * Useful when the currency is not known at compile time (e.g. deserialisation).
+    */
+  def from(amount: BigDecimal, currency: Currency): Money[currency.type] = Money(amount, currency)
+
+  /** Parses a decimal string into a `Money` of the given currency.
     *
-    * To compare the currency of the result with a known currency singleton,
-    * use the [[world.money.currency.widen widen]] extension to widen both
-    * sides to [[world.money.currency.CurrencyDetails CurrencyDetails]]:
-    * {{{
-    * val m = Money.from(100, someCurrency)
-    * assert(m.currency.widen == Currencies.KES.widen)
-    * }}}
+    * @return `Right` with the amount, or `Left` with a
+    *   [[world.money.errors.NumberFormattingError]] if the string is not a valid decimal.
     */
-  def from(value: BigDecimal, currency: Currency)(using CurrencyMathContext): Money[currency.type] =
-    given ValueOf[currency.type] = ValueOf(currency)
-    Money[currency.type](CurrencyValue(value))
+  def from(amount: String, currency: Currency): Either[NumberFormattingError, Money[currency.type]] =
+    Try(BigDecimal(amount)).toEither.left
+      .map(t => NumberFormattingError(s"Unable to parse '$amount' as a decimal amount.", Some(t)))
+      .map(Money(_, currency))
 
-  /** Creates a `Money` instance from a `Long` and runtime currency. */
-  @targetName("from_long") def from(value: Long, currency: Currency)(using CurrencyMathContext): Money[currency.type] =
-    from(BigDecimal(value), currency)
+  /** A zero amount of the given currency. */
+  def zero[C <: Currency](using c: ValueOf[C]): Money[C] = Money(BigDecimal(0), c.value)
 
-  /** Creates a `Money` instance from an `Int` and runtime currency. */
-  @targetName("from_int") def from(value: Int, currency: Currency)(using CurrencyMathContext): Money[currency.type] =
-    from(BigDecimal(value), currency)
-
-  /** Creates a `Money` instance from a `Double` and runtime currency. */
-  @targetName("from_double") def from(value: Double, currency: Currency)(using CurrencyMathContext): Money[currency.type] =
-    from(BigDecimal(value), currency)
-
-  /** Creates a `Money` instance from a `CurrencyValue` and runtime currency. */
-  @targetName("from_cv") def from(value: CurrencyValue, currency: Currency)(using CurrencyMathContext): Money[currency.type] =
-    from(CurrencyValue.unwrap(value), currency)
-
-  /** Creates a `Money` instance with an amount of zero for the given currency.
-    * @tparam C The type of the currency (e.g `Currencies.KES`).
-    */
-  inline def zero[C <: Currency](using @scala.annotation.unused v: ValueOf[C]): Money[C] = CurrencyValue.zero
-
-  /** Provides a `given` `Ordering` instance for `Money[C]` instances. */
-  given [C <: Currency]: Ordering[Money[C]] = Ordering.by[Money[C], CurrencyValue](identity)
+  given [C <: Currency]: Ordering[Money[C]] = Ordering.by(_.amount)
   export scala.math.Ordering.Implicits.infixOrderingOps
 
-  given [C <: Currency]: CanEqual[Money[C], Money[C]] = CanEqual.derived
+  // --- Companion aliases for multi-parameter extensions (core convention ss1.4) ---
 
-  // --- Core Extensions ---
+  /** Compares two amounts of the same currency. */
+  def compare[C <: Currency](self: Money[C], that: Money[C]): Int = self.compare(that)
 
-  // ValueOf[C] is used by `.currency` and factory calls; @unused suppresses per-method false positives
-  extension [C <: Currency](self: Money[C])(using @scala.annotation.unused v: ValueOf[C])
+  /** The lesser of two amounts of the same currency. */
+  def min[C <: Currency](self: Money[C], that: Money[C]): Money[C] = self.min(that)
 
-    /** The numeric value of this monetary amount. */
-    def value: CurrencyValue = self
+  /** The greater of two amounts of the same currency. */
+  def max[C <: Currency](self: Money[C], that: Money[C]): Money[C] = self.max(that)
 
-    /** The currency of this monetary amount. */
-    def currency: C = v.value
+  /** Divides an amount by a scalar. */
+  def divide[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
+    self / divisor
 
-    // --- Addition ---
+  /** Computes the remainder of dividing an amount by a scalar. */
+  def remainder[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
+    self.remainder(divisor)
 
-    /** Adds another `Money` of the same currency. */
-    @targetName("plus_money") def +(augend: Money[C])(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, CurrencyValue.unwrap(augend))
+  /** Divides an amount by a scalar, returning the integer quotient. */
+  def divideToIntegralValue[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError,
+                                                                                                                   Money[C]] =
+    self.divideToIntegralValue(divisor)
 
-    /** Adds a `BigDecimal` to this amount. */
-    @targetName("plus_bd") def +(augend: BigDecimal)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, augend)
+  /** Divides an amount by a scalar, returning quotient and remainder. */
+  def divideAndRemainder[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError,
+                                                                                                                (quotient: Money[C],
+                                                                                                                 remainder: Money[C])] =
+    self.divideAndRemainder(divisor)
 
-    /** Adds a `Long` to this amount. */
-    @targetName("plus_long") def +(augend: Long)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, augend)
+  /** Distributes an amount proportionally by ratios. */
+  def allocate[C <: Currency](self: Money[C], ratios: Seq[BigDecimal])(using CurrencyMathContext): Either[ArithmeticError, Seq[Money[C]]] =
+    self.allocate(ratios)
 
-    /** Adds an `Int` to this amount. */
-    @targetName("plus_int") def +(augend: Int)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, augend)
+  // --- Operations ---
 
-    /** Adds a `Double` to this amount. */
-    @targetName("plus_double") def +(augend: Double)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, augend)
+  extension [C <: Currency](self: Money[C])
 
-    /** Adds a `CurrencyValue` to this amount. */
-    @targetName("plus_cv") def +(augend: CurrencyValue)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.add(self, CurrencyValue.unwrap(augend))
+    /** The numeric value of this amount. */
+    def value: BigDecimal = self.amount
 
-    // --- Subtraction ---
+    /** Adds another amount of the same currency. */
+    @targetName("plus")
+    def +(that: Money[C])(using CurrencyMathContext): Money[C] = Money(add(self.amount, that.amount), self.currency)
 
-    /** Subtracts another `Money` of the same currency. */
-    @targetName("minus_money") def -(subtrahend: Money[C])(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, CurrencyValue.unwrap(subtrahend))
+    /** Subtracts another amount of the same currency. */
+    @targetName("minus")
+    def -(that: Money[C])(using CurrencyMathContext): Money[C] = Money(subtract(self.amount, that.amount), self.currency)
 
-    /** Subtracts a `BigDecimal` from this amount. */
-    @targetName("minus_bd") def -(subtrahend: BigDecimal)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, subtrahend)
+    /** Scales this amount by a multiplier. */
+    @targetName("times")
+    def *(multiplier: BigDecimal)(using CurrencyMathContext): Money[C] = Money(multiply(self.amount, multiplier), self.currency)
 
-    /** Subtracts a `Long` from this amount. */
-    @targetName("minus_long") def -(subtrahend: Long)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, subtrahend)
-
-    /** Subtracts an `Int` from this amount. */
-    @targetName("minus_int") def -(subtrahend: Int)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, subtrahend)
-
-    /** Subtracts a `Double` from this amount. */
-    @targetName("minus_double") def -(subtrahend: Double)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, subtrahend)
-
-    /** Subtracts a `CurrencyValue` from this amount. */
-    @targetName("minus_cv") def -(subtrahend: CurrencyValue)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.subtract(self, CurrencyValue.unwrap(subtrahend))
-
-    // --- Negation ---
-
-    /** Negates this `Money` amount. */
-    @targetName("negate")
-    def unary_-(using CurrencyMathContext): Money[C] = self.negate
-
-    // --- Multiplication ---
-
-    /** Multiplies this amount by a `BigDecimal` scalar. */
-    @targetName("multiply_bd") def *(multiplicand: BigDecimal)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.multiply(self, multiplicand)
-
-    /** Multiplies this amount by a `Long` scalar. */
-    @targetName("multiply_long") def *(multiplicand: Long)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.multiply(self, multiplicand)
-
-    /** Multiplies this amount by an `Int` scalar. */
-    @targetName("multiply_int") def *(multiplicand: Int)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.multiply(self, multiplicand)
-
-    /** Multiplies this amount by a `Double` scalar. */
-    @targetName("multiply_double") def *(multiplicand: Double)(using CurrencyMathContext): Money[C] =
-      CurrencyValue.multiply(self, multiplicand)
-
-    // --- Division ---
-
-    /** Divides this amount by a `BigDecimal` scalar. */
-    @targetName("divide_bd") def /(divisor: BigDecimal)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      CurrencyValue.divide(self, divisor).map(identity)
-
-    /** Divides this amount by a `Long` scalar. */
-    @targetName("divide_long") def /(divisor: Long)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      CurrencyValue.divide(self, divisor).map(identity)
-
-    /** Divides this amount by an `Int` scalar. */
-    @targetName("divide_int") def /(divisor: Int)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      CurrencyValue.divide(self, divisor).map(identity)
-
-    /** Divides this amount by a `Double` scalar. */
-    @targetName("divide_double") def /(divisor: Double)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      CurrencyValue.divide(self, divisor).map(identity)
-
-    /** Divides this amount by a `BigDecimal` scalar. */
-    def divide(divisor: BigDecimal)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      self / divisor
-
-    /** Divides this amount by an `Int` scalar. */
-    @targetName("divide_int_named") def divide(divisor: Int)(using CurrencyMathContext): Either[errors.ArithmeticError, Money[C]] =
-      self / divisor
-
-    // --- Comparison ---
-
-    /** Compares this `Money` instance to another of the same currency. */
-    def compare(that: Money[C]): Int = CurrencyValue.unwrap(self).compare(CurrencyValue.unwrap(that))
-
-    /** Returns the absolute value of this amount. */
-    def abs(using ctx: CurrencyMathContext): Money[C] =
-      Money[C](CurrencyValue(CurrencyValue.unwrap(self).abs(CurrencyMathContext.unwrap(ctx))))
-
-    /** Returns the sign of this amount's value (-1, 0, or 1). */
-    def signum: Int = CurrencyValue.unwrap(self).signum
-
-    /** Returns the minimum of this amount and another. */
-    def min(that: Money[C]): Money[C] =
-      if CurrencyValue.unwrap(self) <= CurrencyValue.unwrap(that) then self else that
-
-    /** Returns the maximum of this amount and another. */
-    def max(that: Money[C]): Money[C] =
-      if CurrencyValue.unwrap(self) >= CurrencyValue.unwrap(that) then self else that
-
-    // --- Allocation ---
-
-    /** Allocates this money amount proportionally according to the given
-      * ratios.
+    /** Divides this amount by a scalar.
       *
-      * This method divides the total amount among multiple parts based on their
-      * relative proportions, handling any remainder by distributing it to the
-      * first portions. This ensures that the sum of allocated amounts equals
-      * the original amount exactly.
-      *
-      * @param ratios A sequence of positive BigDecimal values representing
-      *   relative proportions. Ratios need not sum to 1; they are normalised
-      *   internally.
-      * @param context The math context for division operations.
-      * @return A sequence of Money amounts proportional to the ratios, or an
-      *   ArithmeticError if allocation fails.
+      * @return `Right` with the quotient, or `Left` if `divisor` is zero.
       */
-    def allocate(ratios: Seq[BigDecimal])(using context: CurrencyMathContext): Either[errors.ArithmeticError, Seq[Money[C]]] =
-      if ratios.isEmpty then Left(errors.ArithmeticError("Cannot allocate with empty ratios"))
-      else if ratios.exists(_ < 0) then Left(errors.ArithmeticError("Cannot allocate with negative ratios"))
+    @targetName("dividedBy")
+    def /(divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
+      divide(self.amount, divisor).map(Money(_, self.currency))
+
+    /** Negates this amount. */
+    @targetName("negate")
+    def unary_- : Money[C] = Money(-self.amount, self.currency)
+
+    /** The remainder after dividing this amount by a scalar. */
+    @targetName("remainderExt")
+    def remainder(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, Money[C]] =
+      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
+      else Right(Money(BigDecimal(self.amount.bigDecimal.remainder(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))), self.currency))
+
+    /** The integer quotient of dividing this amount by a scalar (truncated towards zero). */
+    @targetName("divideToIntegralValueExt")
+    def divideToIntegralValue(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, Money[C]] =
+      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
+      else
+        Right
+          (Money
+            (BigDecimal(self.amount.bigDecimal.divideToIntegralValue(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))), self.currency))
+
+    /** Divides this amount by a scalar, yielding both integer quotient and remainder. */
+    @targetName("divideAndRemainderExt")
+    def divideAndRemainder(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError,
+                                                                                        (quotient: Money[C], remainder: Money[C])] =
+      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
+      else
+        val parts = self.amount.bigDecimal.divideAndRemainder(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))
+        Right((quotient = Money(BigDecimal(parts(0)), self.currency), remainder = Money(BigDecimal(parts(1)), self.currency)))
+
+    /** Compares this amount to another of the same currency. */
+    @targetName("compareExt")
+    def compare(that: Money[C]): Int = self.amount.compare(that.amount)
+
+    /** The lesser of this and another amount of the same currency. */
+    @targetName("minExt")
+    def min(that: Money[C]): Money[C] = if self.amount <= that.amount then self else that
+
+    /** The greater of this and another amount of the same currency. */
+    @targetName("maxExt")
+    def max(that: Money[C]): Money[C] = if self.amount >= that.amount then self else that
+
+    /** The absolute value of this amount. */
+    def abs: Money[C] = Money(self.amount.abs, self.currency)
+
+    /** The sign of this amount: -1, 0, or 1. */
+    def signum: Int = self.amount.signum
+
+    /** `true` if this amount is exactly zero. */
+    def isZero: Boolean = self.amount.signum == 0
+
+    /** `true` if this amount is strictly positive. */
+    def isPositive: Boolean = self.amount.signum > 0
+
+    /** `true` if this amount is strictly negative. */
+    def isNegative: Boolean = self.amount.signum < 0
+
+    /** `true` if this amount is zero or positive. */
+    def isPositiveOrZero: Boolean = self.amount.signum >= 0
+
+    /** `true` if this amount is zero or negative. */
+    def isNegativeOrZero: Boolean = self.amount.signum <= 0
+
+    /** Rounds to the currency's minor units using `HALF_UP`. */
+    def rounded: Money[C] = self.rounded(RoundingMode.HALF_UP)
+
+    /** Rounds to the currency's minor units using the given mode. */
+    @targetName("roundedMode")
+    def rounded(mode: RoundingMode.RoundingMode): Money[C] = self.currency.digits match
+      case Some(scale) => Money(self.amount.setScale(scale, mode), self.currency)
+      case None        => self
+
+    /** Distributes this amount proportionally according to the given ratios.
+      *
+      * The sum of the results always equals this amount exactly; any rounding
+      * remainder is distributed one minor unit at a time to the leading portions.
+      *
+      * @param ratios Non-negative proportions; they need not sum to one.
+      * @return `Right` with the distributed amounts, or `Left` if the ratios are
+      *   empty, negative, or sum to zero.
+      */
+    @targetName("allocateExt")
+    def allocate(ratios: Seq[BigDecimal])(using ctx: CurrencyMathContext): Either[ArithmeticError, Seq[Money[C]]] =
+      if ratios.isEmpty then Left(ArithmeticError("Cannot allocate with empty ratios."))
+      else if ratios.exists(_ < 0) then Left(ArithmeticError("Cannot allocate with negative ratios."))
       else
         val total = ratios.sum
-        if total == 0 then Left(errors.ArithmeticError("Cannot allocate when sum of ratios is zero"))
+        if total == 0 then Left(ArithmeticError("Cannot allocate when the sum of ratios is zero."))
         else
           import scala.util.boundary, boundary.break
-
-          boundary[Either[errors.ArithmeticError, Seq[Money[C]]]]:
-            val amounts = ratios.map { ratio =>
-              CurrencyValue.divide(self.value * ratio, total) match
+          boundary[Either[ArithmeticError, Seq[Money[C]]]]:
+            val portions = ratios.map { ratio =>
+              divide(multiply(self.amount, ratio), total) match
                 case Left(err) => break(Left(err))
                 case Right(v)  => v
             }
-
-            val rounded = amounts.map { amt =>
-              self.currency.minorUnit match
-                case Some(decimals) =>
-                  Money[C](CurrencyValue(amt.unwrap.setScale(decimals, BigDecimal.RoundingMode.DOWN)))
-                case None => Money[C](amt)
-            }
-
-            val allocatedSum = rounded.map(_.value).fold(CurrencyValue.zero)((a, b) => CurrencyValue.add(a, CurrencyValue.unwrap(b)))
-            val remainder = CurrencyValue.subtract(self.value, CurrencyValue.unwrap(allocatedSum))
-
-            if remainder.unwrap == 0 then Right(rounded)
+            val scale = self.currency.digits
+            val rounded = scale match
+              case Some(d) => portions.map(_.setScale(d, RoundingMode.DOWN))
+              case None    => portions
+            val leftover = self.amount - rounded.foldLeft(BigDecimal(0))(_ + _)
+            if leftover == 0 then Right(rounded.map(Money(_, self.currency)))
             else
-              val minorUnit = self.currency.minorUnit.getOrElse(0)
-              val unitValue = CurrencyValue(BigDecimal(1) / BigDecimal(10).pow(minorUnit))
-
-              // Hotpath: mutable builder avoids List concatenation overhead during
-              // remainder distribution across potentially many allocations
+              val unit = BigDecimal(BigInt(1), scale.getOrElse(0))
+              // Distribute the rounding remainder one minor unit at a time to leading portions.
               val adjusted = rounded
-                .foldLeft((List.newBuilder[Money[C]], remainder)) { case ((builder, remaining), amount) =>
-                  if remaining.unwrap != 0 then
-                    val adj = if remaining.unwrap > 0 then unitValue else -unitValue
-                    val adjBd = CurrencyValue.unwrap(adj)
-                    (builder += Money[C](CurrencyValue.add(amount, adjBd)), CurrencyValue.subtract(remaining, adjBd))
-                  else (builder += amount, remaining)
+                .foldLeft((leftover, Vector.empty[Money[C]])) { case ((remaining, acc), amt) =>
+                  if remaining != 0 then
+                    val adjustment = if remaining > 0 then unit else -unit
+                    (remaining - adjustment, acc :+ Money(amt + adjustment, self.currency))
+                  else (remaining, acc :+ Money(amt, self.currency))
                 }
-                ._1
-                .result()
-
+                ._2
               Right(adjusted)
             end if
         end if
 
-    // --- Rounding ---
-
-    /** Returns a `Money` instance rounded to the currency's minor units using HALF_UP. */
-    def rounded: Money[C] = self.rounded(BigDecimal.RoundingMode.HALF_UP)
-
-    /** Returns a `Money` instance rounded to the currency's minor units
-      * using the specified rounding mode.
-      */
-    def rounded(mode: BigDecimal.RoundingMode.RoundingMode): Money[C] = self.currency.minorUnit match
-      case Some(scale) => Money[C](self.value.withScale(scale, mode))
-      case None        => self
-
-    // --- Conversion ---
-
-    /** Converts this monetary amount to another currency.
-      *
-      * Requires a `given` [[world.money.conversion.ExchangeRateProvider ExchangeRateProvider]].
-      *
-      * @tparam T The singleton type of the target currency.
-      */
-    def convertTo[T <: Currency](using provider: ExchangeRateProvider, target: ValueOf[T]): Either[ConversionError, Money[T]] =
-      if (self.currency == target.value) Right(Money[T](self.value)(using target).rounded)
+    /** Converts this amount to another currency using a contextual provider. */
+    def convertTo[T <: Currency](using provider: ExchangeRateProvider, target: ValueOf[T], ctx: CurrencyMathContext): Either[
+      ConversionError,
+      Money[T]] =
+      if self.currency == target.value then Right(Money(self.amount, target.value).rounded)
       else
-        provider.get(ConversionQuery(self.currency, target.value)).map { rate =>
-          val convertedValue = CurrencyValue.multiply(self.value, rate.rate)
-          Money[T](convertedValue)(using target).rounded
-        }
+        provider
+          .get(ConversionQuery(self.currency, target.value))
+          .map(rate => Money(multiply(self.amount, rate.rate), target.value).rounded)
 
   end extension
-
-  // --- Collection Extensions ---
 
   extension [C <: Currency](amounts: Iterable[Money[C]])
-    /** Sums all monetary amounts in the collection. */
+
+    /** Sums all amounts, returning zero for an empty collection. */
     def total(using ValueOf[C], CurrencyMathContext): Money[C] =
-      amounts.foldLeft(Money.zero[C])((acc, m) => Money[C](CurrencyValue.add(acc, CurrencyValue.unwrap(m))))
+      amounts.foldLeft(Money.zero[C])((acc, m) => Money(add(acc.amount, m.amount), acc.currency))
 
-    /** Computes the arithmetic mean of all monetary amounts. */
+    /** The arithmetic mean of all amounts, or `None` if the collection is empty. */
     def average(using ValueOf[C], CurrencyMathContext): Option[Money[C]] =
-      if amounts.isEmpty then None
-      else
-        val sum = amounts.total
-        sum.divide(amounts.size).toOption
+      if amounts.isEmpty then None else (amounts.total / BigDecimal(amounts.size)).toOption
 
-  end extension
+  // --- Private context-aware arithmetic on raw amounts ---
+
+  private def add(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
+    BigDecimal(a.bigDecimal.add(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
+
+  private def subtract(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
+    BigDecimal(a.bigDecimal.subtract(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
+
+  private def multiply(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
+    BigDecimal(a.bigDecimal.multiply(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
+
+  private def divide(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, BigDecimal] =
+    if b.signum == 0 then Left(ArithmeticError("Division by zero."))
+    else Right(BigDecimal(a.bigDecimal.divide(b.bigDecimal, CurrencyMathContext.unwrap(ctx))))
 
 end Money

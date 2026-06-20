@@ -1,89 +1,30 @@
 import sbt.*
-import com.github.tototoshi.csv.*
-import _root_.io.circe.*
-import _root_.io.circe.generic.auto.*
-import _root_.io.circe.yaml.parser
-import java.nio.charset.StandardCharsets
+
 import java.time.Instant
 import scala.collection.immutable.SortedSet
-import scala.io.Source
-import scala.util.{Try, Using}
 
+/** Generates Countries.scala from CLDR data.
+  *
+  * Sources:
+  *   - `data/cldr/common/validity/region.xml` (valid alpha-2 codes)
+  *   - `data/cldr/common/supplemental/supplementalData.xml` (alpha-3, M49)
+  *   - `data/cldr/common/main/en.xml` (English country names)
+  */
 object CountriesPopulator {
 
-  private case class ParsedCountryData(name: String, alpha2: String, alpha3: String, m49: Int)
-  private case class SupplementalCountry(name: String, alpha2: String, alpha3: String, m49: Int)
-  private case class SupplementalRoot(countries: List[SupplementalCountry])
-  private object UNSDFormat extends DefaultCSVFormat { override val delimiter: Char = ';' }
-
-  def generate(projectRootDir: File, targetDir: File, log: Logger): (String, File) = {
+  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) = {
     val targetFile = targetDir / "Countries.scala"
-    val sourceCsvFile = projectRootDir / "countries-iso3166.csv"
-    val supplementalYamlFile = projectRootDir / "supplemental-countries.yml"
-    if (!sourceCsvFile.exists()) sys.error(s"CountriesPopulator: Source CSV file does not exist at: ${sourceCsvFile.getAbsolutePath}")
-    implicit val countryOrdering: Ordering[ParsedCountryData] = Ordering.by(_.alpha2)
-    val baseCountries = Try(Using.resource(CSVReader.open(sourceCsvFile)(UNSDFormat)) { r =>
-      r.iteratorWithHeaders.zipWithIndex
-        .flatMap { case (rowMap, index) => fromCsvRow(rowMap, sourceCsvFile.getName, index + 2) }
-        .to[SortedSet]
-    }).getOrElse(sys.error(s"Could not load or parse ${sourceCsvFile.getName}."))
-    val supplementalCountries = parseYaml[SupplementalRoot](supplementalYamlFile, log).map(_.countries).getOrElse(Nil)
-    val baseCountryMap = baseCountries.map(c => c.alpha2 -> c).toMap
-    val supplementalMap = supplementalCountries.map(c => c.alpha2 -> ParsedCountryData(c.name, c.alpha2, c.alpha3, c.m49)).toMap
-    val finalCountries = (baseCountryMap ++ supplementalMap).values.to[SortedSet]
-    log.info(s"Loaded ${finalCountries.size} total unique country records.")
-    val countrySource = generateCountriesFileSource(finalCountries)
-    (countrySource, targetFile)
+    val countries = CldrParser.parseCountries(cldrDir, log)
+    log.info(s"CountriesPopulator: Parsed ${countries.size} countries from CLDR.")
+    val source = generateSource(countries)
+    (source, targetFile)
   }
 
-  private def escapeScalaString(raw: String): String =
-    if (raw == null) "null"
-    else "\"" + raw.flatMap {
-      case '"'  => "\\\""
-      case '\\' => "\\\\"
-      case '\n' => "\\n"
-      case '\r' => "\\r"
-      case '\t' => "\\t"
-      case c    => c.toString
-    } + "\""
+  private def generateSource(countries: Seq[CldrParser.CountryData]): String = {
+    val sorted = countries.sortBy(_.alpha2)
 
-  private def fromCsvRow(rowMap: Map[String, String], fileName: String, lineNum: Int): Option[ParsedCountryData] = {
-    val name = rowMap.getOrElse("Country or Area", "").trim
-    val m49Str = rowMap.getOrElse("M49 Code", "").trim
-    val alpha2 = rowMap.getOrElse("ISO-alpha2 Code", "").trim.toUpperCase
-    val alpha3 = rowMap.getOrElse("ISO-alpha3 Code", "").trim.toUpperCase
-    if (name.isEmpty && m49Str.isEmpty && alpha2.isEmpty && alpha3.isEmpty) return None
-    if (name.isEmpty) sys.error(s"Validation failed in $fileName (Line $lineNum): 'Country or Area' cannot be empty. Row: $rowMap")
-    if (!alpha2.matches("^[A-Z]{2}$"))
-      sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha2 Code' ('$alpha2') is not 2 uppercase letters. Row: $rowMap")
-    if (!alpha3.matches("^[A-Z]{3}$"))
-      sys.error(s"Validation failed in $fileName (Line $lineNum): 'ISO-alpha3 Code' ('$alpha3') is not 3 uppercase letters. Row: $rowMap")
-    if (!m49Str.matches("^[0-9]+$"))
-      sys.error(s"Validation failed in $fileName (Line $lineNum): 'M49 Code' ('$m49Str') is not a valid number. Row: $rowMap")
-    val m49 = Try(m49Str.toInt).getOrElse(sys.error(s"Critical error parsing M49 code '$m49Str' to Int."))
-    if (m49 < 1 || m49 > 999)
-      sys.error(s"Validation failed in $fileName (Line $lineNum): M49 code '$m49' is out of the valid range (1-999). Row: $rowMap")
-    Some(ParsedCountryData(name, alpha2, alpha3, m49))
-  }
-  private def parseYaml[A: Decoder](file: File, log: Logger): Option[A] = {
-    if (!file.exists()) {
-      log.info(s"Optional data file not found: ${file.getAbsolutePath}. Skipping.")
-      return None
-    }
-    val yamlString = Using.resource(Source.fromFile(file, StandardCharsets.UTF_8.name()))(_.mkString)
-    parser.parse(yamlString) match {
-      case Left(e)     => sys.error(s"YAML parsing failed for ${file.getName}: ${e.getMessage}")
-      case Right(json) =>
-        json.as[A] match {
-          case Left(e)     => sys.error(s"YAML decoding failed for ${file.getName}: ${e.getMessage}\n${e.history.mkString("\n")}")
-          case Right(data) => Some(data)
-        }
-    }
-  }
-
-  private def generateCountriesFileSource(countries: SortedSet[ParsedCountryData]): String = {
     val sb = new StringBuilder()
-    sb.append(s"""// DO NOT EDIT - FILE AUTOMATICALLY GENERATED BY `CountriesPopulator.scala` at ${Instant.now}.
+    sb.append(s"""// DO NOT EDIT - Generated from CLDR by CountriesPopulator.scala at ${Instant.now}.
 package world.locale.country
 
 import world.locale.errors.{DuplicateCountryData, LocaleError}
@@ -103,29 +44,23 @@ private[country] final case class GenericCountry(
     m49: M49Code)
     extends Country
 
-/** Provides a factory for creating custom `Country` instances. */
+/** Factory for custom `Country` instances. */
 object Country:
-  /** The default `given` instance for the set of countries used for validation.
-    * By default, this is the complete set of predefined countries from the [[Countries]] object.
-    */
-  given Set[Country] = Countries.all
+  import scala.annotation.targetName
 
-  /** Creates a custom `Country` instance if the provided data is valid and does not
-    * conflict with any of the countries in the contextual `existingCountries` set.
+  /** Creates a custom [[Country]] that conflicts with no predefined country.
     *
-    * @param existingCountries The set of countries to check for duplicates against.
-    * A default is provided, but users can supply their own `given Set[Country]` to
-    * validate against a custom universe of countries.
-    * @return A `Right` containing a new [[GenericCountry]], or a `Left` with a [[world.locale.errors.LocaleError]].
+    * @return `Right` with the new country, or `Left` with a [[world.locale.errors.LocaleError]]
+    *   if a code is malformed or already in use.
     */
-  def generic(
-      name: String,
-      alpha2: String,
-      alpha3: String,
-      m49: Int
-  )(using Set[Country]): Either[LocaleError, Country] =
+  def generic(name: String, alpha2: String, alpha3: String, m49: Int): Either[LocaleError, Country] =
+    generic(name, alpha2, alpha3, m49, Countries.all)
+
+  /** Creates a custom [[Country]] that conflicts with no country in `existing`. */
+  @targetName("genericIn")
+  def generic(name: String, alpha2: String, alpha3: String, m49: Int, existing: Set[Country]): Either[LocaleError, Country] =
     def unique[A](label: String, value: A)(predicate: Country => Boolean): Either[LocaleError, Unit] =
-      Either.cond(!summon[Set[Country]].exists(predicate), (), DuplicateCountryData(s"$$label '$${value.toString}' is already in use."))
+      Either.cond(!existing.exists(predicate), (), DuplicateCountryData(s"$$label '$${value.toString}' is already in use."))
     for
       a2   <- Alpha2Code.from(alpha2)
       a3   <- Alpha3Code.from(alpha3)
@@ -135,51 +70,45 @@ object Country:
       _    <- unique("M49 code", m49c)(_.m49 == m49c)
     yield GenericCountry(name, a2, a3, m49c)
 
-/** Provides predefined singleton instances for all countries/areas and lookup methods.
-  * @note This file is automatically generated. Data sourced from UNSD.
+/** Predefined singleton instances for all countries/areas and lookup methods.
+  *
+  * Generated from CLDR data.
   */
 object Countries:
 
 """)
 
-    countries.foreach { c =>
-      val objectName = c.alpha2
-      val escapedNameLiteral = escapeScalaString(c.name)
+    sorted.foreach { c =>
       sb.append(s"""  /** A singleton instance of [[Country]] for '''${c.name.trim}'''. */
-  case object $objectName extends Country:
-    val name: String = $escapedNameLiteral
-    val alpha2: Alpha2Code = Alpha2Code.unsafeFrom("${c.alpha2}")
-    val alpha3: Alpha3Code = Alpha3Code.unsafeFrom("${c.alpha3}")
-    val m49: M49Code = M49Code.unsafeFrom(${c.m49})
+  case object ${c.alpha2} extends Country:
+    val name: String = ${CldrParser.escapeScalaString(c.name)}
+    val alpha2: Alpha2Code = Alpha2Code("${c.alpha2}")
+    val alpha3: Alpha3Code = Alpha3Code("${c.alpha3}")
+    val m49: M49Code = M49Code(${c.m49})
 
 """)
     }
 
-    val countrySetElements = countries.map(_.alpha2).mkString(",\n    ")
+    val countrySetElements = sorted.map(_.alpha2).mkString(",\n    ")
     sb.append(
       s"""  /** A `Set` containing all defined [[Country]] instances in this object. */
   val all: Set[Country] = Set(\n    $countrySetElements\n  )\n\n""" +
         s"""  import scala.annotation.targetName
 
-  def from(code: Alpha2Code)(using Set[Country]): Option[Country] = summon[Set[Country]].find(_.alpha2 == code)
-  @targetName("fromAlpha3Code") def from(code: Alpha3Code)(using Set[Country]): Option[Country] = summon[Set[Country]].find(_.alpha3 == code)
-  @targetName("fromM49Code") def from(code: M49Code)(using Set[Country]): Option[Country] = summon[Set[Country]].find(_.m49 == code)
-  @targetName("fromCountryName") def from(name: String)(using Set[Country]): Option[Country] = summon[Set[Country]].find(_.name.equalsIgnoreCase(name.trim))
+  def from(code: Alpha2Code): Option[Country] = byAlpha2.get(Alpha2Code.unwrap(code))
+  @targetName("fromAlpha3") def from(code: Alpha3Code): Option[Country] = byAlpha3.get(Alpha3Code.unwrap(code))
+  def from(code: M49Code): Option[Country] = byM49.get(M49Code.unwrap(code))
+  @targetName("fromString") def from(value: String): Option[Country] =
+    val trimmed = value.trim
+    trimmed.length match
+      case 2 => byAlpha2.get(trimmed.toUpperCase)
+      case 3 => byAlpha3.get(trimmed.toUpperCase)
+      case _ => byName.get(trimmed.toLowerCase)
+  @targetName("fromNumeric") def from(value: Int): Option[Country] = byM49.get(value)
 
-  def fromAlpha2(code: String): Option[Country] = byAlpha2.get(code.trim.toUpperCase.nn)
-  def fromAlpha3(code: String): Option[Country] = byAlpha3.get(code.trim.toUpperCase.nn)
-  def fromM49(code: Int): Option[Country] = byM49.get(code)
-  def fromName(name: String): Option[Country] = byName.get(name.trim.toLowerCase.nn)
-  def apply(identifier: String): Option[Country] =
-    val trimmed = identifier.trim.nn
-    if trimmed.length == 2 then fromAlpha2(trimmed)
-    else if trimmed.length == 3 then fromAlpha3(trimmed)
-    else fromName(trimmed)
-  def apply(identifier: Int): Option[Country] = fromM49(identifier)
-
-  private lazy val byAlpha2: Map[String, Country] = all.map(c => c.alpha2.value -> c).toMap
-  private lazy val byAlpha3: Map[String, Country] = all.map(c => c.alpha3.value -> c).toMap
-  private lazy val byM49: Map[Int, Country] = all.map(c => c.m49.value -> c).toMap
+  private lazy val byAlpha2: Map[String, Country] = all.map(c => Alpha2Code.unwrap(c.alpha2) -> c).toMap
+  private lazy val byAlpha3: Map[String, Country] = all.map(c => Alpha3Code.unwrap(c.alpha3) -> c).toMap
+  private lazy val byM49: Map[Int, Country] = all.map(c => M49Code.unwrap(c.m49) -> c).toMap
   private lazy val byName: Map[String, Country] = all.map(c => c.name.toLowerCase -> c).toMap
 
 end Countries

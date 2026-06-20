@@ -4,188 +4,83 @@ title: Countries
 
 # Countries
 
-The [[world.locale.country.Country]] trait represents ISO 3166-1 country data. Predefined instances are provided via the [[world.locale.country.Countries$]] object.
+[[world.locale.country.Country]] is ISO 3166-1 country data. Predefined instances for every
+country are singletons in [[world.locale.country.Countries]].
 
-## Accessing Countries
+## Accessing countries
 
-### Predefined Singleton Objects
-
-Access countries directly using their ISO 3166-1 Alpha-2 codes:
-
-```scala
+```scala sc:nocompile
 import world.locale.country.Countries
+import boilerplate.*
 
 val kenya = Countries.KE
-val uk = Countries.GB
-val oman = Countries.OM
+kenya.name           // "Kenya"
+kenya.alpha2.unwrap  // "KE"
+kenya.alpha3.unwrap  // "KEN"
+kenya.m49.unwrap     // 404
 ```
 
-### Country Properties
+## Code types
 
-Each country provides access to its ISO 3166-1 codes:
+Three opaque types validate the ISO 3166-1 identifiers via `from` (or `apply` for known-valid input):
 
-```scala
-import world.locale.country.Countries
-
-val kenya = Countries.KE
-
-kenya.name            // "Kenya"
-kenya.alpha2.value    // "KE"
-kenya.alpha3.value    // "KEN"
-kenya.m49.value       // 404
-```
-
-**Note**: Country codes are opaque types. Access their underlying values via the `.value` extension method.
-
-## Country Code Types
-
-The library defines three opaque types for country codes:
-
-```scala
+```scala sc:nocompile
 import world.locale.country.*
 
-opaque type Alpha2Code = String
-opaque type Alpha3Code = String
-opaque type M49Code = Int
+Alpha2Code.from("KE")   // Right(Alpha2Code)
+Alpha2Code.from("k")    // Left(InvalidAlpha2CodeFormat)
+Alpha3Code.from("KEN")  // Right(Alpha3Code)
+M49Code.from(404)       // Right(M49Code)
+M49Code.from(0)         // Left(InvalidM49Code)
 ```
 
-All codes are validated upon construction and expose their values via `.value`:
+Input is trimmed and upper-cased before validation. `fromUnsafe` throws for pre-validated data.
 
-```scala
-val code: Alpha2Code = kenya.alpha2
-val stringValue: String = code.value  // "KE"
+## Lookup
+
+`Countries.from` is overloaded by argument type. A raw `String` dispatches on length
+(2 -> alpha-2, 3 -> alpha-3, otherwise name); a raw `Int` is an M49 code:
+
+```scala sc:nocompile
+import world.locale.country.*
+
+Countries.from(Alpha2Code("KE"))  // Some(Countries.KE)
+Countries.from(Alpha3Code("KEN")) // Some(Countries.KE)
+Countries.from(M49Code(404))      // Some(Countries.KE)
+
+Countries.from("KE")     // Some(Countries.KE)  (alpha-2)
+Countries.from("KEN")    // Some(Countries.KE)  (alpha-3)
+Countries.from("Kenya")  // Some(Countries.KE)  (name, case-insensitive)
+Countries.from(404)      // Some(Countries.KE)  (M49)
+Countries.from("XX")     // None
 ```
 
-## Lookup Methods
-
-Look up countries using various identifiers:
-
-```scala
-import world.locale.country.Countries
-
-// By alpha-2 code
-Countries.fromAlpha2("KE")  // Some(Countries.KE)
-Countries.fromAlpha2("XX")  // None
-
-// By alpha-3 code
-Countries.fromAlpha3("KEN") // Some(Countries.KE)
-Countries.fromAlpha3("XXX") // None
-
-// By M49 numeric code
-Countries.fromM49(404)      // Some(Countries.KE)
-Countries.fromM49(999)      // None
-
-// By country name (case-insensitive)
-Countries.fromName("Kenya")   // Some(Countries.KE)
-Countries.fromName("Unknown") // None
-
-// Generic apply method (tries alpha-2, then alpha-3, then name)
-Countries("KE")               // Some(Countries.KE)
-Countries("KEN")              // Some(Countries.KE)
-Countries("kenya")            // Some(Countries.KE)
-
-// By numeric code
-Countries(404)                // Some(Countries.KE)
-```
-
-All lookup methods return `Option[Country]`.
+All lookups are backed by `Map` and run in constant time over the full ISO dataset.
 
 ## Formatting
 
-Countries integrate with [[world.format.Formatter]]:
-
-```scala
+```scala sc:nocompile
 import world.locale.country.Countries
-import world.format.Formatter
+import world.locale.format.given
 
-val kenya = Countries.KE
-val text = kenya.formatted  // Uses Formatter[Country]
+Countries.KE.display         // "Kenya"
+Countries.KE.alpha2.display  // "KE"
+Countries.KE.m49.display     // "404"
 ```
 
-**Note**: The method is `formatted`, not `format`.
+## Custom countries
 
-## All Countries
+`Country.generic` creates a country that conflicts with no predefined country (or no country in
+a supplied set):
 
-Access the complete set of countries:
+```scala sc:nocompile
+import world.locale.country.Country
 
-```scala
-import world.locale.country.Countries
-
-val allCountries: Set[Country] = Countries.all
-
-allCountries.size  // 249 (as of current ISO 3166-1 data)
-
-// Check membership
-allCountries.contains(Countries.KE)  // true
+Country.generic("Wakanda", "WK", "WKD", 999) match
+  case Right(country) => println(country.name)
+  case Left(error)    => println(error.getMessage)
 ```
 
-## Equality
+## API reference
 
-Countries use reference equality (singleton objects):
-
-```scala
-import world.locale.country.Countries
-
-val kenya1 = Countries.KE
-val kenya2 = Countries.KE
-
-kenya1 eq kenya2  // true
-kenya1 == kenya2  // true
-```
-
-## Pattern Matching
-
-Pattern match on specific countries:
-
-```scala
-import world.locale.country.{Country, Countries}
-
-def continent(country: Country): String = country match
-  case Countries.GB => "Europe"
-  case Countries.KE => "Africa"
-  case Countries.OM => "Asia"
-  case _ => "Other"
-
-continent(Countries.KE)  // "Africa"
-```
-
-## Working with Collections
-
-```scala
-import world.locale.country.Countries
-
-val eastAfrica = Set(
-  Countries.KE,  // Kenya
-  Countries.UG,  // Uganda
-  Countries.TZ,  // Tanzania
-  Countries.RW,  // Rwanda
-  Countries.BI   // Burundi
-)
-
-eastAfrica.contains(Countries.KE)  // true
-eastAfrica.contains(Countries.GB)  // false
-
-// Filter by property
-val countriesStartingWithK = Countries.all.filter(_.name.startsWith("K"))
-// Includes Kenya, Kuwait, etc.
-```
-
-## Standards Compliance
-
-The country codes are generated from official ISO 3166-1 data and include:
-- All officially assigned codes
-- Official country names
-- M49 numeric codes
-- Alpha-2 and alpha-3 codes
-
-## Implementation Details
-
-Country codes are generated at compile-time from authoritative sources, ensuring:
-- Type safety
-- Zero runtime overhead for country access
-- Compile-time verification of country codes
-- Opaque type safety for code values
-
-## API Reference
-
-See [[world.locale.country.Country]] and [[world.locale.country.Countries$]] for the complete API.
+See [[world.locale.country.Country]] and [[world.locale.country.Countries$]].

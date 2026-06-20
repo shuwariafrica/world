@@ -1,201 +1,191 @@
 import sbt.*
-import com.github.tototoshi.csv.*
-import _root_.io.circe.*
-import _root_.io.circe.generic.auto.*
-import _root_.io.circe.yaml.parser
-import java.nio.charset.StandardCharsets
-import java.time.{Instant, YearMonth}
-import scala.io.Source
-import scala.util.{Try, Using}
 
+import java.time.Instant
+
+/** Generates currency source files from CLDR data.
+  *
+  * Sources:
+  *   - `data/cldr/common/validity/currency.xml` (active + deprecated codes)
+  *   - `data/cldr/common/supplemental/supplementalData.xml` (numeric codes, fractions, territory mappings)
+  *   - `data/cldr/common/main/en.xml` (English currency names)
+  */
 object CurrenciesPopulator {
-  private case class CurrencyEntry
-    (code: String, numericCode: Option[Int], name: String, minorUnit: Option[Int], withdrawalDate: Option[YearMonth])
-  private case class CurrenciesRoot(activeCurrencies: List[CurrencyEntry], historicCurrencies: List[CurrencyEntry])
-  private case class UsageEntry(code: String, source: String, countries: List[String])
-  private case class UsageRoot(activeUsageMappings: List[UsageEntry], historicUsageMappings: List[UsageEntry])
-  private case class SupplementalCountry(alpha2: String)
-  private case class SupplementalRoot(countries: List[SupplementalCountry])
-  implicit private val yearMonthDecoder: Decoder[YearMonth] =
-    Decoder.decodeString.emap(str => Try(YearMonth.parse(str)).toEither.left.map(e => s"Invalid YearMonth format: ${e.getMessage}"))
 
   /** Generates Currencies.scala and CurrencyFactorySyntax.scala for the money module. */
-  def generateCurrencies(projectRootDir: File, outputDir: File, log: Logger): Map[File, String] = {
-    val currenciesYamlFile = projectRootDir / "currencies.yml"
+  def generateCurrencies(cldrDir: File, outputDir: File, log: Logger): Map[File, String] = {
+    val active = CldrParser.parseActiveCurrencies(cldrDir, log)
+    val historic = CldrParser.parseHistoricCurrencies(cldrDir, log)
+    log.info(s"CurrenciesPopulator: Parsed ${active.size} active + ${historic.size} historic currencies from CLDR.")
+    val clashingCodes = active.map(_.code).toSet.intersect(historic.map(_.code).toSet)
     val currencyTargetDir = outputDir / "currency"
-    val currenciesTargetFile = currencyTargetDir / "Currencies.scala"
-    val factorySyntaxTargetFile = outputDir / "CurrencyFactorySyntax.scala"
-    val currenciesRoot = parseYaml[CurrenciesRoot](currenciesYamlFile, log).getOrElse(
-      sys.error(s"Required file ${currenciesYamlFile.getName} not found or failed to parse."))
-    val activeCurrencies = currenciesRoot.activeCurrencies
-    val historicCurrencies = currenciesRoot.historicCurrencies
-    val clashingCodes = activeCurrencies.map(_.code).toSet.intersect(historicCurrencies.map(_.code).toSet)
-    val currenciesSource = generateCurrenciesFileSource(activeCurrencies, historicCurrencies, clashingCodes)
-    val factorySyntaxSource = generateFactorySyntaxSource(activeCurrencies)
-    Map(currenciesTargetFile -> currenciesSource, factorySyntaxTargetFile -> factorySyntaxSource)
+    val currenciesSource = generateCurrenciesSource(active, historic, clashingCodes)
+    val factorySyntaxSource = generateFactorySyntaxSource(active)
+    Map(
+      (currencyTargetDir / "Currencies.scala") -> currenciesSource,
+      (outputDir / "syntax" / "CurrencyFactorySyntax.scala") -> factorySyntaxSource
+    )
   }
 
   /** Generates CurrencyUsageInstances.scala for the money-usage module. */
-  def generateUsage(projectRootDir: File, outputDir: File, log: Logger): Map[File, String] = {
-    val countriesCsvFile = projectRootDir / "countries-iso3166.csv"
-    val supplementalCountriesFile = projectRootDir / "supplemental-countries.yml"
-    val currenciesYamlFile = projectRootDir / "currencies.yml"
-    val usageYamlFile = projectRootDir / "currency-usage.yml"
-    val instancesTargetFile = outputDir / "usage" / "CurrencyUsageInstances.scala"
-    val baseCountryCodes = loadCountryAlpha2Codes(countriesCsvFile, log)
-    val supplementalCountryCodes = loadSupplementalCountryAlpha2Codes(supplementalCountriesFile, log)
-    val validAlpha2Codes = baseCountryCodes ++ supplementalCountryCodes
-    val currenciesRoot = parseYaml[CurrenciesRoot](currenciesYamlFile, log).getOrElse(
-      sys.error(s"Required file ${currenciesYamlFile.getName} not found or failed to parse."))
-    val activeCurrencies = currenciesRoot.activeCurrencies
-    val historicCurrencies = currenciesRoot.historicCurrencies
-    val usageRoot =
-      parseYaml[UsageRoot](usageYamlFile, log).getOrElse(sys.error(s"Required file ${usageYamlFile.getName} not found or failed to parse."))
-    val activeUsageMap = usageRoot.activeUsageMappings.map(u => u.code -> u).toMap
-    val historicUsageMap = usageRoot.historicUsageMappings.map(u => u.code -> u).toMap
-    val clashingCodes = activeCurrencies.map(_.code).toSet.intersect(historicCurrencies.map(_.code).toSet)
-    val instancesSource = generateUsageInstancesSource(activeCurrencies, historicCurrencies, activeUsageMap, historicUsageMap, clashingCodes, validAlpha2Codes, log)
-    Map(instancesTargetFile -> instancesSource)
+  def generateUsage(cldrDir: File, outputDir: File, log: Logger): Map[File, String] = {
+    val active = CldrParser.parseActiveCurrencies(cldrDir, log)
+    val historic = CldrParser.parseHistoricCurrencies(cldrDir, log)
+    val usage = CldrParser.parseActiveCurrencyUsage(cldrDir, log)
+    // Only include territories that have country singletons (i.e. have alpha-3 and M49 codes)
+    val countryAlpha2s = CldrParser.parseCountries(cldrDir, log).map(_.alpha2).toSet
+    val validRegions = countryAlpha2s
+    log.info(s"CurrenciesPopulator: Parsed ${usage.size} active currency-territory mappings from CLDR.")
+
+    val clashingCodes = active.map(_.code).toSet.intersect(historic.map(_.code).toSet)
+    val activeCodes = active.map(_.code).toSet
+    val historicCodes = historic.map(_.code).toSet
+
+    // Group usage by currency code
+    val usageByCode: Map[String, Seq[String]] = usage.groupBy(_.currencyCode).map { case (k, v) => k -> v.map(_.territoryAlpha2) }
+
+    val instancesSource = generateUsageInstancesSource(activeCodes, historicCodes, usageByCode, clashingCodes, validRegions)
+    Map((outputDir / "usage" / "CurrencyUsageInstances.scala") -> instancesSource)
   }
 
-  private def parseYaml[A: Decoder](file: File, log: Logger): Option[A] = {
-    if (!file.exists()) {
-      log.info(s"Data file not found: ${file.getAbsolutePath}. This may be acceptable for optional files.")
-      return None
-    }
-    val yamlString = Using.resource(Source.fromFile(file, StandardCharsets.UTF_8.name()))(_.mkString)
-    parser.parse(yamlString) match {
-      case Left(e)     => sys.error(s"YAML parsing failed for ${file.getName}: ${e.getMessage}")
-      case Right(json) =>
-        json.as[A] match {
-          case Left(e)     => sys.error(s"YAML decoding failed for ${file.getName}: ${e.getMessage}\n${e.history.mkString("\n")}")
-          case Right(data) => Some(data)
-        }
-    }
-  }
-  private def loadCountryAlpha2Codes(file: File, log: Logger): Set[String] = {
-    if (!file.exists()) sys.error(s"Required country data file not found: ${file.getAbsolutePath}")
-    object UNSDFormat extends DefaultCSVFormat { override val delimiter: Char = ';' }
-    Try(Using.resource(CSVReader.open(file)(UNSDFormat)) { r =>
-      r.iteratorWithHeaders.flatMap(_.get("ISO-alpha2 Code").map(_.trim.toUpperCase).filter(_.matches("^[A-Z]{2}$"))).toSet
-    }).getOrElse {
-      log.error(s"Failed to load country codes from ${file.getName}.")
-      Set.empty
-    }
-  }
-  private def loadSupplementalCountryAlpha2Codes(file: File, log: Logger): Set[String] =
-    parseYaml[SupplementalRoot](file, log).map(_.countries.map(_.alpha2.toUpperCase).toSet).getOrElse(Set.empty)
-
-  private def escapeScalaString(raw: String): String =
-    if (raw == null) "null"
-    else "\"" + raw.flatMap {
-      case '"'  => "\\\""
-      case '\\' => "\\\\"
-      case '\n' => "\\n"
-      case '\r' => "\\r"
-      case '\t' => "\\t"
-      case c    => c.toString
-    } + "\""
-
-  private def generateCurrenciesFileSource
-      (active: List[CurrencyEntry], historic: List[CurrencyEntry], clashingCodes: Set[String]): String = {
-    def generateObject(objectName: String, entries: List[CurrencyEntry], isHistoric: Boolean): String = {
-      val traitName = if (isHistoric) "HistoricCurrency" else "Currency"
-      val objHeader = s"\nobject $objectName:"
-      val valAndTypeBlocks = entries.sortBy(_.code).map { c =>
-        val objectName = if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code
-        val typeAlias = objectName
+  private def generateCurrenciesSource
+      (
+        active: Seq[CldrParser.CurrencyData],
+        historic: Seq[CldrParser.HistoricCurrencyData],
+        clashingCodes: Set[String]
+      ): String = {
+    def generateActiveObject(entries: Seq[CldrParser.CurrencyData]): String = {
+      val valAndTypeBlocks = entries.map { c =>
         val fields = new StringBuilder
-        fields.append(s"""    val code: CcyCode = CcyCode.unsafeFrom("${c.code}")""")
-        fields.append(s"""\n    val name: String = ${escapeScalaString(c.name)}""")
-        if (isHistoric) {
-          fields.append(s"""\n    val numericCode: Option[NumericCode] = ${c.numericCode
-              .map(nc => s"Some(NumericCode.unsafeFrom($nc))")
-              .getOrElse("None")}""")
-          fields.append(
-            s"""\n    val withdrawalDate: YearMonth = YearMonth.of(${c.withdrawalDate.get.getYear}, ${c.withdrawalDate.get.getMonthValue}).nn""")
-        } else {
-          val numericCodeVal = c.numericCode.getOrElse(sys.error(s"Active currency ${c.code} is missing a numericCode in currencies.yml."))
-          fields.append(s"""\n    val numericCode: NumericCode = NumericCode.unsafeFrom($numericCodeVal)""")
-          fields.append(s"""\n    val minorUnit: Option[Int] = ${c.minorUnit}""")
-        }
-        s"\n  case object $objectName extends $traitName:\n${fields.toString}\n\n  type $typeAlias = $objectName.type"
+        fields.append(s"""    val code: CcyCode = CcyCode("${c.code}")""")
+        fields.append(s"""\n    val name: String = ${CldrParser.escapeScalaString(c.name)}""")
+        fields.append(s"""\n    val numericCode: NumericCode = NumericCode(${c.numericCode})""")
+        fields.append(s"""\n    val digits: Option[Int] = ${c.digits}""")
+        fields.append(s"""\n    val cashDigits: Option[Int] = ${c.cashDigits}""")
+        fields.append(s"""\n    val cashRounding: Option[Int] = ${c.cashRounding}""")
+        s"\n  case object ${c.code} extends Currency:\n${fields.toString}\n"
       }
-      val allObjectNames = entries.map(c => if (isHistoric && clashingCodes.contains(c.code)) s"${c.code}_H" else c.code).mkString(", ")
-      val sets = s"\n\n  val all: Set[$traitName] = Set($allObjectNames)"
-      val lookupMaps = if (isHistoric) {
-        s"""\n  private final val codeToCurrencyMap: Map[CcyCode, HistoricCurrency] = all.map(c => c.code -> c).toMap\n  private final val numericToCurrencyMap: Map[NumericCode, HistoricCurrency] = all.flatMap(c => c.numericCode.map(nc => nc -> c)).toMap"""
-      } else {
-        s"""\n  private final val codeToCurrencyMap: Map[CcyCode, Currency] = all.map(c => c.code -> c).toMap\n  private final val numericToCurrencyMap: Map[NumericCode, Currency] = all.map(c => c.numericCode -> c).toMap"""
-      }
+
+      val allNames = entries.map(_.code).mkString(", ")
+      val lookups =
+        s"""\n  private final val codeToCurrencyMap: Map[CcyCode, Currency] = all.map(c => c.code -> c).toMap
+  private final val numericToCurrencyMap: Map[NumericCode, Currency] = all.map(c => c.numericCode -> c).toMap"""
+
       val functions =
-        s"\n\n  def fromCode(code: String): Option[$traitName] = Option(code).map(_.toUpperCase.nn).flatMap(c => CcyCode.from(c).toOption.flatMap(codeToCurrencyMap.get))\n\n  def fromNumericCode(code: Int): Option[$traitName] = NumericCode.from(code).toOption.flatMap(numericToCurrencyMap.get)"
-      s"$objHeader${valAndTypeBlocks.mkString}\n$sets\n$lookupMaps\n$functions\nend $objectName"
+        s"""\n\n  def from(code: CcyCode): Option[Currency] = codeToCurrencyMap.get(code)
+  def from(code: NumericCode): Option[Currency] = numericToCurrencyMap.get(code)
+  @targetName("fromString") def from(code: String): Option[Currency] = CcyCode.from(code).toOption.flatMap(codeToCurrencyMap.get)
+  @targetName("fromNumeric") def from(code: Int): Option[Currency] = NumericCode.from(code).toOption.flatMap(numericToCurrencyMap.get)"""
+
+      s"""
+object Currencies:${valAndTypeBlocks.mkString}
+
+  val all: Set[Currency] = Set($allNames)
+$lookups
+$functions
+end Currencies"""
     }
-    s"// DO NOT EDIT - Generated by CurrenciesPopulator.scala at ${Instant.now()}\npackage world.money.currency\n\nimport java.time.YearMonth\n${generateObject("Currencies", active, isHistoric = false)}\n${generateObject("HistoricCurrencies", historic, isHistoric = true)}\n"
+
+    def generateHistoricObject(entries: Seq[CldrParser.HistoricCurrencyData]): String = {
+      val valAndTypeBlocks = entries.map { c =>
+        val objectName = if (clashingCodes.contains(c.code)) s"${c.code}_H" else c.code
+        val fields = new StringBuilder
+        fields.append(s"""    val code: CcyCode = CcyCode("${c.code}")""")
+        fields.append(s"""\n    val name: String = ${CldrParser.escapeScalaString(c.name)}""")
+        fields.append(
+          s"""\n    val numericCode: Option[NumericCode] = ${c.numericCode.map(nc => s"Some(NumericCode($nc))").getOrElse("None")}""")
+        fields.append(s"""\n    val withdrawalDate: YearMonth = YearMonth.of(${c.withdrawalYear}, ${c.withdrawalMonth})""")
+        s"\n  case object $objectName extends HistoricCurrency:\n${fields.toString}\n"
+      }
+
+      val allNames = entries.map(c => if (clashingCodes.contains(c.code)) s"${c.code}_H" else c.code).mkString(", ")
+      // Historic currencies may share an ISO numeric code; sort by alphabetic code so the
+      // numeric lookup is deterministic (last by sorted code wins) rather than Set-iteration order.
+      val lookups =
+        s"""\n  private final val codeToCurrencyMap: Map[CcyCode, HistoricCurrency] = all.map(c => c.code -> c).toMap
+  private final val numericToCurrencyMap: Map[NumericCode, HistoricCurrency] =
+    all.toSeq.sortBy(c => CcyCode.unwrap(c.code)).flatMap(c => c.numericCode.map(nc => nc -> c)).toMap"""
+
+      val functions =
+        s"""\n\n  def from(code: CcyCode): Option[HistoricCurrency] = codeToCurrencyMap.get(code)
+  def from(code: NumericCode): Option[HistoricCurrency] = numericToCurrencyMap.get(code)
+  @targetName("fromString") def from(code: String): Option[HistoricCurrency] = CcyCode.from(code).toOption.flatMap(codeToCurrencyMap.get)
+  @targetName("fromNumeric") def from(code: Int): Option[HistoricCurrency] = NumericCode.from(code).toOption.flatMap(numericToCurrencyMap.get)"""
+
+      s"""
+object HistoricCurrencies:${valAndTypeBlocks.mkString}
+
+  val all: Set[HistoricCurrency] = Set($allNames)
+$lookups
+$functions
+end HistoricCurrencies"""
+    }
+
+    s"""// DO NOT EDIT - Generated from CLDR by CurrenciesPopulator.scala at ${Instant.now()}
+package world.money.currency
+
+import java.time.YearMonth
+
+import scala.annotation.targetName
+${generateActiveObject(active)}
+${generateHistoricObject(historic)}
+"""
   }
+
   private def generateUsageInstancesSource
-      (activeEntries: List[CurrencyEntry],
-       historicEntries: List[CurrencyEntry],
-       activeUsageMap: Map[String, UsageEntry],
-       historicUsageMap: Map[String, UsageEntry],
-       clashingCodes: Set[String],
-       validAlpha2Codes: Set[String],
-       log: Logger): String = {
-    def generateGivens(entries: List[CurrencyEntry], usageMap: Map[String, UsageEntry], isHistoric: Boolean): String =
-      entries
-        .sortBy(_.code)
-        .flatMap { entry =>
-          val valName = if (isHistoric && clashingCodes.contains(entry.code)) s"${entry.code}_H" else entry.code
+      (
+        activeCodes: Set[String],
+        historicCodes: Set[String],
+        usageByCode: Map[String, Seq[String]],
+        clashingCodes: Set[String],
+        validRegions: Set[String]
+      ): String = {
+    def generateGivens(codes: Set[String], isHistoric: Boolean): String =
+      codes.toSeq.sorted.flatMap { code =>
+        usageByCode.get(code).map { territories =>
+          val valName = if (isHistoric && clashingCodes.contains(code)) s"${code}_H" else code
           val typeLocation = if (isHistoric) "HistoricCurrencies" else "Currencies"
           val typeName = s"$typeLocation.$valName.type"
-          usageMap.get(entry.code).map { usageEntry =>
-            val validUsageCountries = usageEntry.countries.map { alpha2 =>
-              if (!validAlpha2Codes.contains(alpha2))
-                sys.error(
-                  s"Validation failed in currency-usage.yml: Currency '${entry.code}' lists usage of '$alpha2', which is not a known country code.")
-              alpha2
-            }
-            val countryRefs = validUsageCountries.map(a2 => s"Countries.$a2").mkString(", ")
+          val validTerritories = territories.filter(validRegions.contains)
+          if (validTerritories.isEmpty) ""
+          else {
+            val countryRefs = validTerritories.sorted.map(a2 => s"Countries.$a2").mkString(", ")
             s"""\n  given CurrencyUsage[$typeName] with\n    def territories: Set[Country] = Set($countryRefs)"""
           }
         }
-        .mkString
-    (activeUsageMap.keySet ++ historicUsageMap.keySet).foreach { ccyCode =>
-      if (!activeEntries.exists(_.code == ccyCode) && !historicEntries.exists(_.code == ccyCode))
-        sys.error(
-          s"Validation failed in currency-usage.yml: A mapping was found for '$ccyCode', but this currency is not defined in currencies.yml.")
-    }
-    s"// DO NOT EDIT - Generated by `CurrenciesPopulator.scala` at ${Instant.now}\npackage world.money.usage\n\nimport world.locale.country.{Country, Countries}\nimport world.money.currency.{Currencies, HistoricCurrencies}\n\ntrait CurrencyUsageInstances:${generateGivens(activeEntries, activeUsageMap, isHistoric = false)}${generateGivens(historicEntries, historicUsageMap, isHistoric = true)}\nend CurrencyUsageInstances\n"
-  }
-  private def generateFactorySyntaxSource(active: List[CurrencyEntry]): String = {
-    val sb = new StringBuilder
-    sb ++= s"""// DO NOT EDIT - Generated by CurrenciesPopulator.scala at ${Instant.now()}
-package world.money
+      }.mkString
 
-import world.money.currency.{CurrencyValue, Currencies}
+    s"""// DO NOT EDIT - Generated from CLDR by CurrenciesPopulator.scala at ${Instant.now}
+package world.money.usage
+
+import world.locale.country.{Country, Countries}
+import world.money.currency.{Currencies, HistoricCurrencies}
+
+trait CurrencyUsageInstances:${generateGivens(activeCodes, isHistoric = false)}${generateGivens(historicCodes, isHistoric = true)}
+end CurrencyUsageInstances
+"""
+  }
+
+  private def generateFactorySyntaxSource(active: Seq[CldrParser.CurrencyData]): String = {
+    val sb = new StringBuilder
+    sb ++= s"""// DO NOT EDIT - Generated from CLDR by CurrenciesPopulator.scala at ${Instant.now()}
+package world.money.syntax
+
+import world.money.Money
+import world.money.currency.Currencies
+
+/** Currency factory syntax.
+  *
+  * Provides `10.KES`, `50.USD` etc. on numeric amounts. `Int` and `Long` widen
+  * to `BigDecimal`. Import `world.money.syntax.*` to bring these into scope.
+  */
 
 """
 
-    // Consolidated extension blocks - one per numeric type (F21)
     val sortedCurrencies = active.sortBy(_.code)
-    val numericTypes = List("BigDecimal", "Long", "Int")
 
-    numericTypes.foreach { typeName =>
-      sb ++= s"extension (value: $typeName)\n"
-      sortedCurrencies.foreach { currency =>
-        val ccyCode = currency.code
-        sb ++= s"  transparent inline def $ccyCode: Money[Currencies.$ccyCode.type] = Money(CurrencyValue(value))(using ValueOf(Currencies.$ccyCode))\n"
-      }
-      sb ++= "\n"
-    }
-
-    // CurrencyValue extension block - @targetName resolves erasure clash with BigDecimal
-    sb ++= "import scala.annotation.targetName\n\n"
-    sb ++= "extension (value: CurrencyValue)\n"
+    sb ++= "extension (amount: BigDecimal)\n"
     sortedCurrencies.foreach { currency =>
-      val ccyCode = currency.code
-      sb ++= s"""  @targetName("cv_$ccyCode") transparent inline def $ccyCode: Money[Currencies.$ccyCode.type] = Money(value)(using ValueOf(Currencies.$ccyCode))\n"""
+      sb ++= s"  def ${currency.code}: Money[Currencies.${currency.code}.type] = Money(amount, Currencies.${currency.code})\n"
     }
     sb ++= "\n"
 

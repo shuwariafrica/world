@@ -26,9 +26,10 @@
   *   {{{
   * import world.money.currency.*
   * import world.money.usage.*
+  * import boilerplate.*
   *
   * val countriesUsingKES = Currencies.KES.usage
-  * assert(countriesUsingKES.exists(_.alpha2.value == "KE"))
+  * assert(countriesUsingKES.exists(_.alpha2.unwrap == "KE"))
   *
   * val territories = CurrencyUsage(Currencies.EUR)
   * assert(territories.size > 1)

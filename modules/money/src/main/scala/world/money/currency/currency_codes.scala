@@ -18,7 +18,8 @@
 package world.money.currency
 
 import world.money.errors.CurrencyError
-import world.money.errors.InternalError as MoneyInternalError
+
+import boilerplate.OpaqueType
 
 /** A type-safe 3-letter uppercase ISO 4217 alphabetic currency code.
   *
@@ -26,68 +27,63 @@ import world.money.errors.InternalError as MoneyInternalError
   * code conforms to the standard's format, preventing the use of arbitrary
   * strings in monetary contexts.
   *
+  * Instances are constructed via [[CcyCode$ CcyCode]].
+  *
   * @example
   *   {{{
   * import world.money.currency.CcyCode
+  * import boilerplate.*
   *
-  * def printCode(code: CcyCode): Unit = println(s"Processing code: ${code.value}")
+  * def printCode(code: CcyCode): Unit = println(s"Processing code: ${code.unwrap}")
   *
   * CcyCode.from("KES") match
-  * case Right(kesCode) => printCode(kesCode)
-  * case Left(error)    => println(error.getMessage)
+  *   case Right(kesCode) => printCode(kesCode)
+  *   case Left(error)    => println(error.getMessage)
   *   }}}
   * @see [[https://www.iso.org/iso-4217-currency-codes.html ISO 4217 Standard]]
   */
 opaque type CcyCode = String
 
-/** Provides factory methods for creating instances of [[CcyCode]]. */
-object CcyCode:
+/** Provides factory methods for [[CcyCode]].
+  *
+  * Extends [[boilerplate.OpaqueType OpaqueType]] to provide the standard
+  * `from`, `fromUnsafe`, `wrap`, and `unwrap` contract.
+  */
+object CcyCode extends OpaqueType[CcyCode, String], OpaqueType.Eq[CcyCode]:
+
+  type Error = CurrencyError
+
   private transparent inline def normalise(value: String): Option[String] =
     Option(value)
-      .map(_.trim.nn)
+      .map(_.trim)
       .filter(_.nonEmpty)
-      .map(_.toUpperCase.nn)
+      .map(_.toUpperCase)
 
   /** Validates that a string is exactly 3 uppercase ASCII letters.
     *
     * Manual validation avoids Regex instantiation and ensures consistent
-    * behavior across JVM, JS, and Native platforms.
+    * behaviour across JVM, JS, and Native platforms.
     */
   private transparent inline def isValidFormat(s: String): Boolean =
     s.length == 3 && s.forall(c => c >= 'A' && c <= 'Z')
 
-  /** Returns a [[CcyCode]] if the input `String` matches the required format.
-    *
-    * @note The input is trimmed and converted to uppercase before validation.
-    *   This method only validates that the input is a `String` of exactly three
-    *   uppercase ASCII letters. It does not check if the code corresponds to a
-    *   known currency.
-    * @param value The `String` to validate, e.g., "USD".
-    * @return `Right` with a valid [[CcyCode]] on success, or `Left` with a
-    *   [[errors.CurrencyError]] on failure.
-    */
-  inline def from(value: String): Either[CurrencyError, CcyCode] =
+  inline def wrap(value: String): CcyCode =
+    normalise(value).getOrElse(value)
+
+  inline def unwrap(code: CcyCode): String = code
+
+  protected inline def validate(value: String): Option[Error] =
     normalise(value) match
-      case Some(normalised) if isValidFormat(normalised) => Right(normalised: CcyCode)
-      case Some(invalid)                                 => Left(CurrencyError.InvalidCcyCodeFormat(invalid))
-      case None                                          => Left(CurrencyError.InvalidCcyCodeFormat(Option(value).fold("null")(_.trim.nn)))
+      case Some(normalised) if isValidFormat(normalised) => None
+      case Some(invalid)                                 => Some(CurrencyError.InvalidCcyCodeFormat(invalid))
+      case None                                          => Some(CurrencyError.InvalidCcyCodeFormat(Option(value).fold("null")(_.trim)))
 
-  /** Creates a [[CcyCode]] from a `String` assumed to be valid.
-    * @note This method skips validation. Use [[from]] for untrusted input.
-    * @throws world.money.errors.InternalError if `value` is `null` or
-    *   not a valid currency code format.
+  /** Direct construction. Throws on invalid input.
+    *
+    * @note Use [[from]] for untrusted input.
     */
-  private[money] inline def unsafeFrom(value: String): CcyCode =
-    normalise(value).filter(isValidFormat).getOrElse {
-      throw MoneyInternalError(s"Precondition failed in CcyCode.unsafeFrom: Received null or invalid value '$value'") // scalafix:ok
-    }
+  inline def apply(inline value: String): CcyCode = fromUnsafe(value)
 
-  /** Provides compile-time safe equality checking for [[CcyCode]] instances. */
-  given CanEqual[CcyCode, CcyCode] = CanEqual.derived
-
-  extension (code: CcyCode)
-    /** The raw 3-character `String` representation of the currency code. */
-    inline def value: String = code
 end CcyCode
 
 /** A type-safe 3-digit ISO 4217 numeric currency code.
@@ -95,45 +91,39 @@ end CcyCode
   * This type ensures that any `Int` representing a currency's numeric code
   * falls within the standard's valid range.
   *
+  * Instances are constructed via [[NumericCode$ NumericCode]].
+  *
   * @see [[https://www.iso.org/iso-4217-currency-codes.html ISO 4217 Standard]]
   */
 opaque type NumericCode = Int
 
-/** Provides factory methods for creating instances of [[NumericCode]]. */
-object NumericCode:
+/** Provides factory methods for [[NumericCode]].
+  *
+  * Extends [[boilerplate.OpaqueType OpaqueType]] to provide the standard
+  * `from`, `fromUnsafe`, `wrap`, and `unwrap` contract.
+  */
+object NumericCode extends OpaqueType[NumericCode, Int], OpaqueType.Eq[NumericCode]:
+
+  type Error = CurrencyError
+
   /** Minimum valid value for an ISO 4217 numeric code. */
   private inline val MinValue = 0
 
   /** Maximum valid value for an ISO 4217 numeric code. */
   private inline val MaxValue = 999
 
-  /** Returns a [[NumericCode]] if the input `Int` is within the valid range.
+  inline def wrap(value: Int): NumericCode = value
+
+  inline def unwrap(code: NumericCode): Int = code
+
+  protected inline def validate(value: Int): Option[Error] =
+    if value >= MinValue && value <= MaxValue then None
+    else Some(CurrencyError.InvalidNumericCodeRange(value))
+
+  /** Direct construction. Throws on invalid input.
     *
-    * @note Only the range is checked (0-999). This method does not validate if
-    *   the code corresponds to a known currency.
-    * @param value An `Int` between 0 and 999 (inclusive).
-    * @return `Right` with a valid `NumericCode` on success, or `Left` with a
-    *   [[errors.CurrencyError]] on failure.
+    * @note Use [[from]] for untrusted input.
     */
-  inline def from(value: Int): Either[CurrencyError, NumericCode] =
-    if (value >= MinValue && value <= MaxValue) Right(value)
-    else Left(CurrencyError.InvalidNumericCodeRange(value))
+  inline def apply(inline value: Int): NumericCode = fromUnsafe(value)
 
-  /** Creates a [[NumericCode]] from an `Int` assumed to be valid.
-    * @note This method skips validation. Use [[from]] for untrusted input.
-    * @throws world.money.errors.InternalError if `value` is outside
-    *   the valid range (0-999).
-    */
-  private[money] inline def unsafeFrom(value: Int): NumericCode =
-    if (value >= MinValue && value <= MaxValue) value
-    else throw MoneyInternalError(s"Precondition failed in NumericCode.unsafeFrom: Invalid value $value") // scalafix:ok
-
-  /** Provides compile-time safe equality checking for [[NumericCode]]
-    * instances.
-    */
-  given CanEqual[NumericCode, NumericCode] = CanEqual.derived
-
-  extension (code: NumericCode)
-    /** The raw `Int` representation of the numeric currency code. */
-    def value: Int = code
 end NumericCode

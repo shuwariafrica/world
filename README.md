@@ -1,120 +1,61 @@
-# `world` – Real-World Domain Concepts for Scala
+# `world` - Real-World Domain Concepts for Scala
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
-A collection of Scala libraries for type-safe modelling and manipulation of real-world domain concepts.
+Type-safe Scala libraries for modelling real-world domain concepts. Cross-platform (JVM, Scala.js, Scala Native).
 
 ---
 
-## Documentation
+## Modules
 
-- Users should refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and
-  usage guides.
-- Contributors should also refer to the [contributor documentation page](https://dev.shuwari.africa/world/docs/contributing.html)
-  detailed contributor guidelines.
+| Module | Coordinates | Purpose |
+| - | - | - |
+| `world-locale` | `"africa.shuwari" %%% "world-locale"` | ISO 3166-1 country codes and locale primitives |
+| `world-money` | `"africa.shuwari" %%% "world-money"` | ISO 4217 currencies, type-safe monetary values, arithmetic |
+| `world-money-usage` | `"africa.shuwari" %%% "world-money-usage"` | Currency-to-country usage territory mappings |
+| `world-common` | `"africa.shuwari" %%% "world-common"` | Shared formatting and utility abstractions |
 
----
+Add to your `build.sbt`:
 
-## Data Management
-
-### Country Data
-
-- **Sources:**
-    - `countries-iso3166.csv` (ISO 3166-1, UN Statistics Division)
-    - `supplemental-countries.yml` (additional/reserved codes)
-- **Generated output:**
-    - `modules/locale/src/main/scala/africa/shuwari/locale/country/Countries.scala`
-
-**Update process:**
-
-1. Download latest ISO 3166 data.
-2. Update `countries-iso3166.csv` and/or `supplemental-countries.yml`.
-3. Run:
-    ```bash
-    sbt locale/compile
-    ```
-
-### Currency Data
-
-- **Sources:**
-    - `currencies.yml` (ISO 4217, SIX Group)
-    - `currency-usage.yml` (currency-to-country mappings)
-- **Generated output:**
-    - `modules/money/src/main/scala/africa/shuwari/money/currency/Currencies.scala`
-    - `modules/money/src/main/scala/africa/shuwari/money/currency/HistoricCurrencies.scala`
-    - `modules/money/src/main/scala/africa/shuwari/money/currency/CurrencyUsageInstances.scala`
-    - `modules/money/src/main/scala/africa/shuwari/money/CurrencyFactorySyntax.scala`
-
-**Update process:**
-
-1. Download latest ISO 4217 and mapping data.
-2. Update `currencies.yml` and `currency-usage.yml` (validate country codes).
-3. Run:
-    ```bash
-    sbt money/compile
-    ```
-
----
-
-## Documentation
-
-- **Scaladoc 3** for API documentation
-- **mdoc** guides for usage examples and developer notes
-
-Generate documentation:
-
-```bash
-sbt generateUnidoc
-cd target/scala-3.7.3/unidoc # Or current Scala specific target directory
-python3 -m http.server 8000
+```scala
+libraryDependencies += "africa.shuwari" %%% "world-money" % "<version>"
 ```
 
 ---
 
-## Adding Domain Data
+## Quick Start
 
-#### Currencies
+```scala
+import world.money.*
+import world.money.syntax.*
 
-1. Update `currencies.yml`.
-2. Update `currency-usage.yml`.
-3. `sbt money/compile`
-4. Add relevant tests.
-5. Update documentation if needed.
-
-#### Countries
-
-1. Update `countries-iso3166.csv` (or `supplemental-countries.yml`).
-2. `sbt locale/compile`
-3. Add relevant tests.
-4. Update currency usage if applicable.
+val price   = 100.KES
+val total   = price + 50.KES                     // 150.00 KES
+val halved  = price / 2                          // Right(50.00 KES)
+val rounded = BigDecimal("123.456").KES.rounded  // 123.46 KES
+```
 
 ---
 
-## Project Resources
+## Documentation
 
-- **Project Documentation Site**: https://dev.shuwari.africa/world/docs
-- **API Reference**: https://dev.shuwari.africa/world
-- **Souce Code Repository**: https://github.com/shuwariafrica/world
-- **ISO 3166 (Countries)**: https://unstats.un.org/unsd/methodology/m49/
-- **ISO 4217 (Currencies)**: https://www.six-group.com/en/products-services/financial-information/data-standards.html#iso-4217
-- **IMF Exchange Rates**: https://data.imf.org/?sk=E6A5467B-4675-438A-862A-05A490D65A40
-- **ECB Eurozone**: https://www.ecb.europa.eu/euro/intro/html/index.en.html
+Refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and usage guides.
 
 ---
 
-## License
+## Resources
 
-Copyright © 2023–2025 Shuwari Africa Ltd.
+- **Documentation**: <https://dev.shuwari.africa/world/docs>
+- **API Reference**: <https://dev.shuwari.africa/world>
+- **Source Code**: <https://github.com/shuwariafrica/world>
+- **ISO 3166 (Countries)**: <https://unstats.un.org/unsd/methodology/m49/>
+- **ISO 4217 (Currencies)**: <https://www.six-group.com/en/products-services/financial-information/data-standards.html#iso-4217>
 
-Licensed under the Apache License, Version 2.0 (the "Licence");<br />
-you may not use this file except in compliance with the Licence.<br />
-You may obtain a copy of the Licence at:
+---
 
-[`https://www.apache.org/licenses/LICENSE-2.0`](https://www.apache.org/licenses/LICENSE-2.0)
+## Licence
 
-Unless required by applicable law or agreed to in writing, software<br />
-distributed under the Licence is distributed on an "AS IS" BASIS,<br />
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,<br />
-either express or implied. See the Licence for the specific language<br />
-governing permissions and limitations under the Licence.
+Copyright 2023-2026 Shuwari Africa Ltd.
+
+Licensed under the Apache Licence, Version 2.0. See [LICENCE](https://www.apache.org/licenses/LICENSE-2.0) for details.

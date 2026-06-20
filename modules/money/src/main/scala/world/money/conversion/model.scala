@@ -21,7 +21,6 @@ import java.time.Instant
 
 import world.money.currency.Currency
 import world.money.currency.CurrencyMathContext
-import world.money.currency.CurrencyValue
 import world.money.errors.ArithmeticError
 
 /** Represents the conversion rate between two currencies.
@@ -46,19 +45,17 @@ object ConversionRate:
   def withContext(base: Currency, term: Currency, rate: BigDecimal, context: ConversionContext): ConversionRate =
     new ConversionRate(base, term, rate, Some(context))
 
-  /** Creates the inverse of this exchange rate (from term to base).
+  /** The inverse of this exchange rate (from term to base).
     *
-    * @param context A [[world.money.currency.CurrencyMathContext]]
-    *   given instance for division.
-    * @return Right with the inverted rate, or Left with an
-    *   [[world.money.errors.ArithmeticError]] if the rate is zero and
-    *   cannot be inverted.
+    * @return `Right` with the inverted rate, or `Left` with an
+    *   [[world.money.errors.ArithmeticError]] if the rate is zero.
     */
   extension (self: ConversionRate)
-    def inverse(using CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
-      CurrencyValue.divide(CurrencyValue(1), self.rate).map { inverseRate =>
-        ConversionRate(self.term, self.base, inverseRate.unwrap, self.context)
-      }
+    def inverse(using ctx: CurrencyMathContext): Either[ArithmeticError, ConversionRate] =
+      if self.rate.signum == 0 then Left(ArithmeticError("Cannot invert a zero exchange rate."))
+      else
+        val inverted = BigDecimal(BigDecimal(1).bigDecimal.divide(self.rate.bigDecimal, CurrencyMathContext.unwrap(ctx)))
+        Right(ConversionRate(self.term, self.base, inverted, self.context))
 end ConversionRate
 
 /** Encapsulates metadata about a currency conversion or exchange rate.

@@ -35,23 +35,53 @@ sealed trait CurrencyDetails extends Product with Serializable:
   /** The common, human-readable name of the currency. */
   val name: String
 
+/** Provides a `CanEqual` instance for [[CurrencyDetails]]. */
+object CurrencyDetails:
+  given CanEqual[CurrencyDetails, CurrencyDetails] = CanEqual.derived
+
 /** Represents an actively circulating currency.
   *
   * All active currencies known to this library are available as predefined
   * singleton objects within the [[Currencies$ Currencies]] object.
   *
   * @example {{{ import world.money.currency.Currencies
+  * import boilerplate.*
   *
-  * val kenyanShilling = Currencies.KES assert(kenyanShilling.name == "Kenyan
-  * Shilling") assert(kenyanShilling.numericCode.value == 404)
-  * assert(kenyanShilling.minorUnit == Some(2)) }}}
+  * val kes = Currencies.KES
+  * assert(kes.name == "Kenyan Shilling")
+  * assert(kes.numericCode.unwrap == 404)
+  * assert(kes.digits == Some(2)) }}}
   */
 trait Currency extends CurrencyDetails derives CanEqual:
   /** The 3-digit [[NumericCode]]. */
   val numericCode: NumericCode
 
-  /** The number of decimal places for the currency's minor unit. */
-  val minorUnit: Option[Int]
+  /** The number of decimal places for this currency, as used in practice.
+    *
+    * Sourced from CLDR `fractions/@digits`, which reflects common circulation
+    * usage and may differ from the ISO 4217 minor-unit count (for example, CLDR
+    * records 0 digits for some currencies that ISO 4217 lists with 2). Most
+    * currencies have `Some(2)`; subunit-less currencies (JPY, KRW) have `Some(0)`.
+    * This is the precision used by [[world.money.Money]] rounding.
+    */
+  val digits: Option[Int]
+
+  /** The number of decimal places used in cash transactions.
+    *
+    * Sourced from CLDR `fractions/@cashDigits`. When present, indicates that
+    * cash transactions use fewer decimal places than electronic ones
+    * (e.g. CZK uses 2 digits electronically but 0 in cash).
+    */
+  val cashDigits: Option[Int]
+
+  /** The cash rounding increment for this currency.
+    *
+    * Sourced from CLDR `fractions/@cashRounding`. When present, indicates that
+    * cash amounts are rounded to a multiple of this value in the minor unit
+    * (e.g. CAD rounds to nearest 5 cents, DKK to nearest 50 ore).
+    */
+  val cashRounding: Option[Int]
+end Currency
 
 /** Represents a historic currency that is no longer in circulation.
   *
@@ -66,88 +96,38 @@ trait HistoricCurrency extends CurrencyDetails derives CanEqual:
   /** The month and year the currency was withdrawn. */
   val withdrawalDate: YearMonth
 
-/** Provides compile-time access to currency precision (minor unit) information.
-  *
-  * This object exposes a match type [[PrecisionOf]] that maps currency
-  * singleton types to their precision values, enabling compile-time validation
-  * and optimisation of monetary calculations.
-  *
-  * The `precisionOf` method provides a total function that returns precision at
-  * compile-time when the currency type is known, falling back to runtime lookup
-  * for generic cases.
+/** Provides precision utilities for [[Currency]] types.
   *
   * @example
   *   {{{
   * import world.money.currency.{Currencies, Currency}
   *
-  * // Compile-time precision for known currencies
-  * val jpyPrecision = Currency.precisionOf[Currencies.JPY.type]  // 0
-  * val kesPrecision = Currency.precisionOf[Currencies.KES.type]  // 2
-  * val omrPrecision = Currency.precisionOf[Currencies.OMR.type]  // 3
-  *
-  * // Works with generic currency types at runtime
-  * def showPrecision[C <: Currency](using ValueOf[C]): Int =
-  *   Currency.precisionOf[C]
+  * val kesPrecision = Currency.precisionOf[Currencies.KES.type]  // Some(2)
+  * val jpyPrecision = Currency.precisionOf[Currencies.JPY.type]  // Some(0)
   *   }}}
   */
 object Currency:
-  /** Match type that maps currency singleton types to their precision values.
-    *
-    * This type-level function encodes the number of decimal places (minor
-    * units) for each currency. It provides compile-time knowledge of precision
-    * for known currency types.
-    *
-    * Common precision values:
-    *   - 0: Currencies like JPY (Japanese Yen), KRW (Korean Won)
-    *   - 2: Most currencies including KES, EUR, GBP
-    *   - 3: Currencies like OMR (Omani Riyal), KWD (Kuwaiti Dinar)
-    *   - None: Precious metals and currencies without defined minor units
-    *
-    * @tparam C The currency singleton type (e.g., Currencies.KES.type)
-    */
-  type PrecisionOf[C <: Currency] <: Option[Int] = C match
-    case Currencies.JPY.type => Some[0]
-    case Currencies.KRW.type => Some[0]
-    case Currencies.BHD.type => Some[3]
-    case Currencies.KWD.type => Some[3]
-    case Currencies.OMR.type => Some[3]
-    case Currencies.TND.type => Some[3]
-    case _                   => Option[Int]
-
-  /** Returns the precision (number of minor units) for a currency type.
-    *
-    * This method provides compile-time constant folding when the currency type
-    * is statically known, while maintaining totality by falling back to runtime
-    * lookup for generic currency parameters.
+  /** Returns the precision (number of decimal digits) for a currency type.
     *
     * @tparam C The currency type whose precision is requested
     * @return The number of decimal places for the currency, or None if not
     *   defined
     */
   transparent inline def precisionOf[C <: Currency](using currency: ValueOf[C]): Option[Int] =
-    currency.value.minorUnit
+    currency.value.digits
 
   /** Validates that a BigDecimal value has precision suitable for a currency.
     *
     * Checks whether the scale (number of decimal places) of the value does not
-    * exceed the currency's defined minor unit precision.
+    * exceed the currency's defined digit precision.
     *
     * @tparam C The currency type
     * @param value The BigDecimal value to validate
     * @return true if the value's scale is within the currency's precision,
     *   false otherwise
-    * @example
-    *   {{{
-    * import world.money.currency.{Currencies, Currency}
-    *
-    * Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100"))    // true
-    * Currency.validatePrecision[Currencies.JPY.type](BigDecimal("100.5"))  // false
-    * Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.99"))  // true
-    * Currency.validatePrecision[Currencies.KES.type](BigDecimal("10.999")) // false
-    *   }}}
     */
   transparent inline def validatePrecision[C <: Currency](value: BigDecimal)(using currency: ValueOf[C]): Boolean =
-    currency.value.minorUnit match
+    currency.value.digits match
       case Some(precision) => value.scale <= precision
-      case None            => true // No precision constraint
+      case None            => true
 end Currency

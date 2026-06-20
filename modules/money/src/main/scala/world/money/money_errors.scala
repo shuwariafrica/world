@@ -19,7 +19,9 @@ package world.money // Base package for money-related functionalities
 
 import scala.util.control.NoStackTrace
 
-import world.money.conversion.ConversionQuery // For creating lightweight error objects
+import world.money.conversion.ConversionQuery
+
+import boilerplate.*
 
 /** Defines the hierarchy of errors for money-related operations.
   *
@@ -34,7 +36,7 @@ object errors:
     * It extends [[scala.util.control.NoStackTrace]] to improve performance by
     * avoiding stack trace generation for errors used in control flow.
     */
-  sealed trait MoneyError extends Throwable with NoStackTrace
+  sealed trait MoneyError extends Throwable with NoStackTrace with Product with Serializable derives CanEqual
 
   /** Returned when an unexpected internal error occurs within the money module.
     *
@@ -74,8 +76,7 @@ object errors:
 
   /** Returned when a `String` cannot be parsed into a numeric representation.
     *
-    * This error is returned by factories like
-    * [[world.money.currency.CurrencyValue$.fromString]].
+    * This error is returned by [[Money$.from Money.from(String, Currency)]].
     *
     * @param message A description of the formatting or parsing error.
     * @param cause An optional underlying `Throwable`, typically a
@@ -145,7 +146,7 @@ object errors:
       *   that failed.
       */
     final case class RateNotFound(query: ConversionQuery) extends ConversionError:
-      override def getMessage: String = s"Exchange rate not found for ${query.base.code.value} -> ${query.term.code.value}."
+      override def getMessage: String = s"Exchange rate not found for ${query.base.code.unwrap} -> ${query.term.code.unwrap}."
 
     /** Returned if an error occurs within an
       * [[world.money.conversion.ExchangeRateProvider]].

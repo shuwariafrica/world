@@ -4,86 +4,37 @@ title: Locale Formatting
 
 # Locale Formatting
 
-The `world-locale` provides formatting capabilities for country codes and locale-specific operations.
+The `world-locale` module provides [[world.format.Formatter]] instances for country types, enabling display-ready string representations via the `display` extension method.
 
 ## Country Formatting
 
-Countries implement the [[world.format.Formatter]] trait:
+Default `given` instances are provided in `world.locale.format`:
 
-```scala
-import world.locale.country.Country
+```scala sc:nocompile
+import world.locale.country.Countries
+import world.locale.format.given
 
-val uk = Country.GB
-uk.format  // "GB"
+Countries.KE.display          // "Kenya" (country name)
+Countries.KE.alpha2.display   // "KE"
+Countries.KE.alpha3.display   // "KEN"
+Countries.KE.m49.display      // "404"
 ```
-
-The default format uses the ISO 3166-1 alpha-2 code.
 
 ## Custom Country Formatting
 
-Implement custom formatters for different display requirements:
-
-```scala
-import world.locale.country.Country
-import world.format.Formatter
-
-// Full name formatter
-given Formatter[Country] with
-  extension (country: Country)
-    def format: String = country.name
-
-val usa = Country.US
-usa.format  // "United States of America"
-
-// Alpha-3 formatter
-given Formatter[Country] with
-  extension (country: Country)
-    def format: String = country.alpha3
-
-val japan = Country.JP
-japan.format  // "JPN"
-```
-
-Note that providing multiple given instances in the same scope will cause ambiguity. Structure your code to have only one Formatter instance in scope at a time, or use explicit formatter parameters.
-
-## Locale-Aware Formatting Patterns
-
-For applications requiring locale-specific formatting (numbers, dates, currencies), consider:
-
-1. **Java Interoperability**: Use `java.text.NumberFormat` with locale support (JVM only)
-2. **Custom Implementations**: Implement locale-specific formatters using [[world.format.Formatter]]
-3. **External Libraries**: Consider libraries like `scala-java-time` for date/time formatting
-
-### Example: Locale-Aware Number Formatting
+Override the default formatter by providing your own `given` in a narrower scope:
 
 ```scala sc:nocompile
 import world.locale.country.Country
-import java.text.NumberFormat
-import java.util.Locale
+import world.format.Formatter
 
-def formatNumber(value: Double, country: Country): String =
-  val locale = country.alpha2 match
-    case "GB" => Locale.UK
-    case "US" => Locale.US
-    case "FR" => Locale.FRANCE
-    case code => new Locale("", code)
-  
-  val formatter = NumberFormat.getInstance(locale)
-  formatter.format(value)
+// Alpha-3 formatter for a specific scope
+import boilerplate.*
+given Formatter[Country] = Formatter[Country](_.alpha3.unwrap)
 
-formatNumber(1234.56, Country.GB)  // "1,234.56"
-formatNumber(1234.56, Country.FR)  // "1 234,56"
+Countries.JP.display  // "JPN"
 ```
-
-## Future Enhancements
-
-Future releases may include:
-- Built-in locale-aware number formatting
-- Date and time formatting with locale rules
-- Collation and sorting support
-- Language code support
-- Currency formatting (see Money module for currency-specific formatting)
 
 ## API Reference
 
-See [[world.locale.format]] for formatting-related types and functions.
+See [[world.locale.format]] for formatting-related types and instances.

@@ -32,7 +32,7 @@ object errors:
     * overhead of stack trace generation, as these errors are typically used for
     * control flow rather than debugging deep call stacks.
     */
-  sealed trait LocaleError extends Throwable with NoStackTrace with Product with Serializable
+  sealed trait LocaleError extends Throwable with NoStackTrace with Product with Serializable derives CanEqual
 
   /** Returned if an ISO 3166-1 Alpha-2 country code does not conform to the
     * required 2-uppercase-letter format.
@@ -72,6 +72,30 @@ object errors:
       * @param message A message detailing which field caused the conflict.
       */
   final case class DuplicateCountryData(message: String) extends LocaleError
+
+  /** Returned if an ISO 639 language code does not conform to the required format.
+    *
+    * @param value The input that failed validation.
+    */
+  final case class InvalidLanguageCodeFormat(value: String) extends LocaleError:
+    override def getMessage: String =
+      s"Invalid ISO 639 language code format: '$value'. Must be 2-3 lowercase letters [a-z]."
+
+  /** Returned if an ISO 15924 script code does not conform to the required format.
+    *
+    * @param value The input that failed validation.
+    */
+  final case class InvalidScriptCodeFormat(value: String) extends LocaleError:
+    override def getMessage: String =
+      s"Invalid ISO 15924 script code format: '$value'. Must be 4 letters, title case (e.g. 'Latn')."
+
+  /** Returned if a BCP 47 language tag cannot be parsed.
+    *
+    * @param tag The input that failed parsing.
+    */
+  final case class InvalidLocaleTag(tag: String) extends LocaleError:
+    override def getMessage: String =
+      s"Invalid BCP 47 language tag: '$tag'."
 
   /** Returned when an unexpected internal error occurs within the locale
     * module.

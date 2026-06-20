@@ -21,6 +21,7 @@ import world.locale.errors.*
 
 import munit.ScalaCheckSuite
 
+import boilerplate.*
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 
@@ -56,7 +57,7 @@ class CountryCodeSuite extends ScalaCheckSuite:
     val cases = Seq(" ke " -> "KE", "us" -> "US", "  Gb" -> "GB")
     cases.foreach { (input, expected) =>
       Alpha2Code.from(input) match
-        case Right(code) => assertEquals(code.value, expected)
+        case Right(code) => assertEquals(code.unwrap, expected)
         case Left(err)   => fail(s"Expected Right for '$input' but got $err")
     }
   }
@@ -79,7 +80,7 @@ class CountryCodeSuite extends ScalaCheckSuite:
     val cases = Seq(" ken " -> "KEN", "tza" -> "TZA", "  gBr" -> "GBR")
     cases.foreach { (input, expected) =>
       Alpha3Code.from(input) match
-        case Right(code) => assertEquals(code.value, expected)
+        case Right(code) => assertEquals(code.unwrap, expected)
         case Left(err)   => fail(s"Expected Right for '$input' but got $err")
     }
   }
@@ -99,19 +100,19 @@ class CountryCodeSuite extends ScalaCheckSuite:
   }
 
   // --- Opaque Type Extension Tests ---
-  test("Alpha2Code.value should expose the underlying string") {
+  test("Alpha2Code.unwrap exposes the underlying string") {
     val code = Alpha2Code.from("KE").toOption.get
-    assertEquals(code.value, "KE")
+    assertEquals(code.unwrap, "KE")
   }
 
-  test("Alpha3Code.value should expose the underlying string") {
+  test("Alpha3Code.unwrap exposes the underlying string") {
     val code = Alpha3Code.from("KEN").toOption.get
-    assertEquals(code.value, "KEN")
+    assertEquals(code.unwrap, "KEN")
   }
 
-  test("M49Code.value should expose the underlying int") {
+  test("M49Code.unwrap exposes the underlying int") {
     val code = M49Code.from(404).toOption.get
-    assertEquals(code.value, 404)
+    assertEquals(code.unwrap, 404)
   }
 
   test("Alpha2Code should maintain equality semantics") {
@@ -139,48 +140,47 @@ class CountriesSuite extends munit.FunSuite:
   test("Generated Countries object should contain correct data for known countries") {
     val kenya = Countries.KE
     assertEquals(kenya.name, "Kenya")
-    assertEquals(kenya.alpha2.value, "KE")
-    assertEquals(kenya.alpha3.value, "KEN")
-    assertEquals(kenya.m49.value, 404)
+    assertEquals(kenya.alpha2.unwrap, "KE")
+    assertEquals(kenya.alpha3.unwrap, "KEN")
+    assertEquals(kenya.m49.unwrap, 404)
 
     val uk = Countries.GB
-    assertEquals(uk.name, "United Kingdom of Great Britain and Northern Ireland")
-    assertEquals(uk.alpha2.value, "GB")
-    assertEquals(uk.alpha3.value, "GBR")
-    assertEquals(uk.m49.value, 826)
+    assertEquals(uk.name, "United Kingdom")
+    assertEquals(uk.alpha2.unwrap, "GB")
+    assertEquals(uk.alpha3.unwrap, "GBR")
+    assertEquals(uk.m49.unwrap, 826)
   }
 
   test("Countries 'all' set should contain known countries") {
     assert(Countries.all.nonEmpty)
-    assert(Countries.all.exists(_.alpha2.value == "US"))
-    assert(Countries.all.exists(_.alpha2.value == "DE"))
+    assert(Countries.all.exists(_.alpha2.unwrap == "US"))
+    assert(Countries.all.exists(_.alpha2.unwrap == "DE"))
   }
 
-  test("Lookup methods should find countries by different codes") {
-    assertEquals(Countries.fromAlpha2("KE"), Some(Countries.KE))
-    assertEquals(Countries.fromAlpha2("ke"), Some(Countries.KE), "fromAlpha2 should be case-insensitive")
-    assertEquals(Countries.fromAlpha3("KEN"), Some(Countries.KE))
-    assertEquals(Countries.fromAlpha3("ken"), Some(Countries.KE), "fromAlpha3 should be case-insensitive")
-    assertEquals(Countries.fromM49(404), Some(Countries.KE))
+  test("from finds countries by typed code") {
+    assertEquals(Countries.from(Alpha2Code("KE")), Some(Countries.KE))
+    assertEquals(Countries.from(Alpha3Code("KEN")), Some(Countries.KE))
+    assertEquals(Countries.from(M49Code(404)), Some(Countries.KE))
   }
 
-  test("Lookup fromName should find a country by its common name (case-insensitive)") {
-    assertEquals(Countries.fromName("Kenya"), Some(Countries.KE))
-    assertEquals(Countries.fromName("kenya"), Some(Countries.KE))
-    assertEquals(Countries.fromName("  kenya  "), Some(Countries.KE), "should handle whitespace")
+  test("from finds countries by raw string (dispatching on length) and numeric code") {
+    assertEquals(Countries.from("KE"), Some(Countries.KE)) // alpha-2
+    assertEquals(Countries.from("ke"), Some(Countries.KE), "case-insensitive alpha-2")
+    assertEquals(Countries.from("KEN"), Some(Countries.KE)) // alpha-3
+    assertEquals(Countries.from("ken"), Some(Countries.KE), "case-insensitive alpha-3")
+    assertEquals(Countries.from(404), Some(Countries.KE)) // M49
   }
 
-  test("Generic apply method should correctly delegate to other lookup methods") {
-    assertEquals(Countries("KE"), Some(Countries.KE)) // Alpha-2
-    assertEquals(Countries("KEN"), Some(Countries.KE)) // Alpha-3
-    assertEquals(Countries(404), Some(Countries.KE)) // M49
-    assertEquals(Countries("Kenya"), Some(Countries.KE)) // Name
+  test("from finds a country by its common name (case-insensitive, trimmed)") {
+    assertEquals(Countries.from("Kenya"), Some(Countries.KE))
+    assertEquals(Countries.from("kenya"), Some(Countries.KE))
+    assertEquals(Countries.from("  kenya  "), Some(Countries.KE))
   }
 
-  test("Lookup methods should return None for unknown identifiers") {
-    assertEquals(Countries.fromAlpha2("XX"), None)
-    assertEquals(Countries.fromAlpha3("XYZ"), None)
-    assertEquals(Countries.fromM49(9999), None)
-    assertEquals(Countries.fromName("Unknown Country"), None)
+  test("from returns None for unknown identifiers") {
+    assertEquals(Countries.from("XX"), None)
+    assertEquals(Countries.from("XYZ"), None)
+    assertEquals(Countries.from(9999), None)
+    assertEquals(Countries.from("Unknown Country"), None)
   }
 end CountriesSuite

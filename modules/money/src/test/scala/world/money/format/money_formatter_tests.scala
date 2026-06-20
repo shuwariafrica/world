@@ -21,13 +21,14 @@ import world.format.Formatter
 import world.money.*
 import world.money.currency.*
 import world.money.format.given
+import world.money.syntax.*
 
 import munit.FunSuite
 
 class MoneyFormatterSuite extends FunSuite:
 
   test("Money formatter should format with currency code and rounded value") {
-    val amount = Money[Currencies.KES.type](123.456)
+    val amount = Money[Currencies.KES.type](BigDecimal("123.456"))
     // Should round to 2 decimal places (KES minor units)
     assertEquals(amount.display, "KES 123.46")
   }
@@ -38,13 +39,13 @@ class MoneyFormatterSuite extends FunSuite:
   }
 
   test("Money formatter should handle three-decimal currencies") {
-    val amount = Money[Currencies.OMR.type](123.4567)
+    val amount = Money[Currencies.OMR.type](BigDecimal("123.4567"))
     // OMR has 3 decimal places
     assertEquals(amount.display, "OMR 123.457")
   }
 
   test("Money formatter should handle negative amounts") {
-    val amount = Money[Currencies.EUR.type](-50.50)
+    val amount = Money[Currencies.EUR.type](BigDecimal("-50.50"))
     assertEquals(amount.display, "EUR -50.50")
   }
 
@@ -54,7 +55,7 @@ class MoneyFormatterSuite extends FunSuite:
   }
 
   test("Money formatter should work with factory syntax") {
-    val amount = 999.99.KES
+    val amount = BigDecimal("999.99").KES
     assertEquals(amount.display, "KES 999.99")
   }
 
@@ -64,7 +65,7 @@ class MoneyFormatterSuite extends FunSuite:
   }
 
   test("Money formatter should handle small fractional values") {
-    val amount = Money[Currencies.KES.type](0.01)
+    val amount = Money[Currencies.KES.type](BigDecimal("0.01"))
     assertEquals(amount.display, "KES 0.01")
   }
 
@@ -80,32 +81,12 @@ class MoneyFormatterSuite extends FunSuite:
 
   test("HistoricCurrency formatter should display code and name") {
     val historic: HistoricCurrency = HistoricCurrencies.DEM
-    assertEquals(historic.display, "DEM (Deutsche Mark)")
-  }
-
-  test("CurrencyValue formatter should display raw BigDecimal") {
-    val value = CurrencyValue(123.45)
-    assertEquals(value.display, "123.45")
-  }
-
-  test("CurrencyValue formatter should handle precision") {
-    val value = CurrencyValue(BigDecimal("0.123456789"))
-    assertEquals(value.display, "0.123456789")
-  }
-
-  test("CurrencyValue formatter should handle negative values") {
-    val value = CurrencyValue(-999.99)
-    assertEquals(value.display, "-999.99")
-  }
-
-  test("CurrencyValue formatter should handle zero") {
-    val value = CurrencyValue(0)
-    assertEquals(value.display, "0")
+    assertEquals(historic.display, "DEM (German Mark)")
   }
 
   test("Multiple Money instances with different currencies should format correctly") {
     assertEquals(100.KES.display, "KES 100.00")
-    assertEquals(50.50.EUR.display, "EUR 50.50")
+    assertEquals(BigDecimal("50.50").EUR.display, "EUR 50.50")
     assertEquals(1000.JPY.display, "JPY 1000")
     assertEquals(25.OMR.display, "OMR 25.000")
   }

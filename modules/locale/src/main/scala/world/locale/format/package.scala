@@ -17,28 +17,43 @@
  ****************************************************************/
 package world.locale.format
 
+import world.format.Formatter
 import world.format.Formatter.given
+import world.locale.Locale
 import world.locale.country.Alpha2Code
 import world.locale.country.Alpha3Code
 import world.locale.country.Country
 import world.locale.country.M49Code
+import world.locale.language.Language
+import world.locale.language.LanguageCode
+import world.locale.script.Script
+import world.locale.script.ScriptCode
 
-/** Alias for [[world.format.Formatter]] */
-type Formatter[A] = world.format.Formatter[A]
-
-/** Alias for
-  * [[world.format.Formatter world.format.Formatter]]
-  */
-val Formatter = world.format.Formatter
+import boilerplate.*
 
 /** Default formatter for Country: full name */
-given Formatter[Country] = world.format.Formatter[Country](_.name)
+given Formatter[Country] = Formatter[Country](_.name)
 
 /** Default formatter for Alpha2Code: uppercase code */
-given Formatter[Alpha2Code] = world.format.Formatter[Alpha2Code](_.value)
+given Formatter[Alpha2Code] = Formatter[Alpha2Code](_.unwrap)
 
 /** Default formatter for Alpha3Code: uppercase code */
-given Formatter[Alpha3Code] = world.format.Formatter[Alpha3Code](_.value)
+given Formatter[Alpha3Code] = Formatter[Alpha3Code](_.unwrap)
 
 /** Default formatter for M49Code: numeric string */
-given Formatter[M49Code] = world.format.Formatter[M49Code](code => code.value.display)
+given Formatter[M49Code] = Formatter[M49Code](code => code.unwrap.display)
+
+/** Default formatter for Language: full name */
+given Formatter[Language] = Formatter[Language](_.name)
+
+/** Default formatter for LanguageCode: lowercase code */
+given Formatter[LanguageCode] = Formatter[LanguageCode](_.unwrap)
+
+/** Default formatter for Script: full name */
+given Formatter[Script] = Formatter[Script](_.name)
+
+/** Default formatter for ScriptCode: title case code */
+given Formatter[ScriptCode] = Formatter[ScriptCode](_.unwrap)
+
+/** Default formatter for Locale: BCP 47 tag */
+given Formatter[Locale] = Formatter[Locale](_.toBcp47)

@@ -15,32 +15,12 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package world.money.format
+package world.money
 
-import world.format.Formatter
-import world.money.Money
-import world.money.currency.Currency
-import world.money.currency.CurrencyDetails
-import world.money.currency.HistoricCurrency
-
-import boilerplate.*
-
-/** Default formatter for Money: "KES 100.50"
-  *
-  * This is a neutral, technical representation using the ISO currency code.
-  */
-given [C <: Currency]: Formatter[Money[C]] =
-  Formatter[Money[C]] { money =>
-    val rounded = money.rounded
-    s"${rounded.currency.code.unwrap} ${rounded.value}"
-  }
-
-given Formatter[CurrencyDetails] =
-  Formatter[CurrencyDetails](details => s"${details.code.unwrap} (${details.name})")
-
-/** Default formatter for Currency: "KES (Kenyan Shilling)" */
-given Formatter[Currency] =
-  Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].display(currency))
-
-given Formatter[HistoricCurrency] =
-  Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].display(currency))
+export world.money.currency.Currency
+export world.money.currency.Currencies
+export world.money.currency.HistoricCurrency
+export world.money.currency.HistoricCurrencies
+export world.money.currency.CcyCode
+export world.money.currency.NumericCode
+export world.money.currency.CurrencyMathContext

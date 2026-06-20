@@ -15,32 +15,21 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package world.money.format
+package world.locale
 
-import world.format.Formatter
-import world.money.Money
-import world.money.currency.Currency
-import world.money.currency.CurrencyDetails
-import world.money.currency.HistoricCurrency
+import munit.FunSuite
 
-import boilerplate.*
+class DirectionSuite extends FunSuite:
 
-/** Default formatter for Money: "KES 100.50"
-  *
-  * This is a neutral, technical representation using the ISO currency code.
-  */
-given [C <: Currency]: Formatter[Money[C]] =
-  Formatter[Money[C]] { money =>
-    val rounded = money.rounded
-    s"${rounded.currency.code.unwrap} ${rounded.value}"
+  test("Direction enum should have LTR and RTL values") {
+    assertEquals(Direction.values.length, 2)
+    assert(Direction.values.contains(Direction.LTR))
+    assert(Direction.values.contains(Direction.RTL))
   }
 
-given Formatter[CurrencyDetails] =
-  Formatter[CurrencyDetails](details => s"${details.code.unwrap} (${details.name})")
+  test("Direction should support equality") {
+    assertEquals(Direction.LTR, Direction.LTR)
+    assertNotEquals(Direction.LTR, Direction.RTL)
+  }
 
-/** Default formatter for Currency: "KES (Kenyan Shilling)" */
-given Formatter[Currency] =
-  Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].display(currency))
-
-given Formatter[HistoricCurrency] =
-  Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].display(currency))
+end DirectionSuite

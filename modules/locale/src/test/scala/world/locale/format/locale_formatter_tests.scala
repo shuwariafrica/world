@@ -29,7 +29,7 @@ class LocaleFormatterSuite extends FunSuite:
     assertEquals(kenya.display, "Kenya")
 
     val uk = Countries.GB
-    assertEquals(uk.display, "United Kingdom of Great Britain and Northern Ireland")
+    assertEquals(uk.display, "United Kingdom")
   }
 
   test("Alpha2Code formatter should display uppercase code") {
@@ -71,7 +71,7 @@ class LocaleFormatterSuite extends FunSuite:
     import world.locale.country.Countries
 
     val formatted = Countries.GB.display
-    assertEquals(formatted, "United Kingdom of Great Britain and Northern Ireland")
+    assertEquals(formatted, "United Kingdom")
   }
 
   test("All Country singletons should format correctly") {
@@ -80,7 +80,7 @@ class LocaleFormatterSuite extends FunSuite:
       (
         Countries.KE -> "Kenya",
         Countries.CA -> "Canada",
-        Countries.GB -> "United Kingdom of Great Britain and Northern Ireland",
+        Countries.GB -> "United Kingdom",
         Countries.DE -> "Germany",
         Countries.JP -> "Japan"
       )

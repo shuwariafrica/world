@@ -4,6 +4,7 @@
 !.github/
 !.gitattributes
 !.gitignore
+!.gitmodules
 !.sbtopts
 !.scalafix.conf
 !.scalafmt.conf
@@ -16,3 +17,6 @@ target/
 null/
 PowerShell*/
 metals.sbt
+*.md
+!README.md
+!docs/**/*.md

@@ -1,0 +1,4 @@
+[submodule "data/cldr"]
+	path = data/cldr
+	url = https://github.com/unicode-org/cldr.git
+	shallow = true
