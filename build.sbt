@@ -131,6 +131,48 @@ val `world-root` =
       ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`world-js`, `world-native`)
     )
 
+<<<<<<< HEAD
+||||||| 568ce7f
+inThisBuild(
+  List(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := List("3.7.3"),
+    organization := "africa.shuwari",
+    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
+    homepage := Some(url("https://github.com/shuwarifrica/world")),
+    startYear := Some(2023),
+    semanticdbEnabled := true,
+    sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
+    publishCredentials,
+    scmInfo := ScmInfo(
+      url("https://dev.shuwari.africa/world"),
+      "scm:git:https://github.com/shuwariafrica/world.git",
+      Some("scm:git:git@github.com:shuwariafrica/world.git")
+    ).some
+  ) ++ formattingSettings
+)
+
+=======
+inThisBuild(
+  List(
+    scalaVersion := crossScalaVersions.value.head,
+    crossScalaVersions := List("3.7.4"),
+    organization := "africa.shuwari",
+    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
+    homepage := Some(url("https://github.com/shuwarifrica/world")),
+    startYear := Some(2023),
+    semanticdbEnabled := true,
+    sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
+    publishCredentials,
+    scmInfo := ScmInfo(
+      url("https://dev.shuwari.africa/world"),
+      "scm:git:https://github.com/shuwariafrica/world.git",
+      Some("scm:git:git@github.com:shuwariafrica/world.git")
+    ).some
+  ) ++ formattingSettings
+)
+
+>>>>>>> upstream/main
 def unitTestSettings: List[Setting[?]] = List(
   libraryDependencies += libraries.munit.value % Test,
   testFrameworks += new TestFramework("munit.Framework")

@@ -41,7 +41,7 @@ jobs:
             java: 17
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -55,7 +55,7 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Setup Coursier Cache
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
 
       - name: Set up Node.js
         if: matrix.platform == 'js'
@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -101,7 +101,7 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Setup Coursier Cache
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
 
       - name: Verify Formatting
         id: scalafmt-check
@@ -139,7 +139,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -153,7 +153,7 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Setup Coursier Cache
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
 
       - name: Compile Documentation
         run: sbt -Dsbt.ci=true generateUnidoc
@@ -169,13 +169,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: 'Setup GPG Key and Agent'
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.OSS_PUBLISH_USER_SIGNING_KEY }}
           git_user_signingkey: true
@@ -193,7 +193,7 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Setup Coursier Cache
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
 
       - name: Publish Release Artefacts (jvm/js/native)
         env:
@@ -216,7 +216,7 @@ jobs:
       url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -230,7 +230,7 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Setup Coursier Cache
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
 
       - name: Build Site (generateUnidoc)
         id: build-site
@@ -247,16 +247,16 @@ jobs:
           touch "${{ steps.build-site.outputs.site_dir }}/.nojekyll"
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ steps.build-site.outputs.site_dir }}
 
       - name: Deploy to GitHub Pages
         id: deploy-pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
