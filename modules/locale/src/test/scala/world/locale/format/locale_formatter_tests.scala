@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -26,52 +26,52 @@ class LocaleFormatterSuite extends FunSuite:
 
   test("Country formatter should display full name") {
     val kenya = Countries.KE
-    assertEquals(kenya.formatted, "Kenya")
+    assertEquals(kenya.display, "Kenya")
 
     val uk = Countries.GB
-    assertEquals(uk.formatted, "United Kingdom of Great Britain and Northern Ireland")
+    assertEquals(uk.display, "United Kingdom")
   }
 
   test("Alpha2Code formatter should display uppercase code") {
     val code = Alpha2Code.from("ke").toOption.get
-    assertEquals(code.formatted, "KE")
+    assertEquals(code.display, "KE")
   }
 
   test("Alpha2Code formatter should work after normalisation") {
     val code = Alpha2Code.from(" gb ").toOption.get
-    assertEquals(code.formatted, "GB")
+    assertEquals(code.display, "GB")
   }
 
   test("Alpha3Code formatter should display uppercase code") {
     val code = Alpha3Code.from("ken").toOption.get
-    assertEquals(code.formatted, "KEN")
+    assertEquals(code.display, "KEN")
   }
 
   test("Alpha3Code formatter should work with different cases") {
     val code = Alpha3Code.from("GBR").toOption.get
-    assertEquals(code.formatted, "GBR")
+    assertEquals(code.display, "GBR")
   }
 
   test("M49Code formatter should display numeric string") {
     val code = M49Code.from(404).toOption.get
-    assertEquals(code.formatted, "404")
+    assertEquals(code.display, "404")
   }
 
   test("M49Code formatter should handle leading zeros correctly") {
     val code = M49Code.from(4).toOption.get
-    assertEquals(code.formatted, "4")
+    assertEquals(code.display, "4")
   }
 
   test("M49Code formatter should handle large numbers") {
     val code = M49Code.from(999).toOption.get
-    assertEquals(code.formatted, "999")
+    assertEquals(code.display, "999")
   }
 
   test("Formatters should be available via import") {
     import world.locale.country.Countries
 
-    val formatted = Countries.GB.formatted
-    assertEquals(formatted, "United Kingdom of Great Britain and Northern Ireland")
+    val formatted = Countries.GB.display
+    assertEquals(formatted, "United Kingdom")
   }
 
   test("All Country singletons should format correctly") {
@@ -80,13 +80,13 @@ class LocaleFormatterSuite extends FunSuite:
       (
         Countries.KE -> "Kenya",
         Countries.CA -> "Canada",
-        Countries.GB -> "United Kingdom of Great Britain and Northern Ireland",
+        Countries.GB -> "United Kingdom",
         Countries.DE -> "Germany",
         Countries.JP -> "Japan"
       )
 
     samples.foreach { case (country, expected) =>
-      assertEquals(country.formatted, expected)
+      assertEquals(country.display, expected)
     }
   }
 

@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -18,7 +18,8 @@
 package world.locale.country
 
 import world.locale.errors
-import world.locale.errors.InternalError as LocaleInternalError
+
+import boilerplate.OpaqueType
 
 /** A type-safe ISO 3166-1 Alpha-2 country code.
   *
@@ -26,73 +27,64 @@ import world.locale.errors.InternalError as LocaleInternalError
   * standard's two-letter format, preventing the use of arbitrary strings where
   * a two-letter code is required.
   *
+  * Instances are constructed via [[Alpha2Code$ Alpha2Code]].
+  *
   * @example
   *   {{{
   * import world.locale.country.Alpha2Code
   * import world.locale.errors
+  * import boilerplate.*
   *
-  * def processCountryCode(code: Alpha2Code) = s"Processing valid code: ${code.value}"
+  * def processCountryCode(code: Alpha2Code) = s"Processing valid code: ${code.unwrap}"
   *
-  * Alpha2Code.from("KE") match {
-  * case Right(code) => processCountryCode(code)
-  * case Left(error: errors.InvalidAlpha2CodeFormat) => println(s"Invalid format for code: '${error.value}'")
-  * case Left(_) => println("An unexpected locale error occurred.")
-  * }
+  * Alpha2Code.from("KE") match
+  *   case Right(code) => processCountryCode(code)
+  *   case Left(error: errors.InvalidAlpha2CodeFormat) => println(s"Invalid format for code: '${error.value}'")
+  *   case Left(_) => println("An unexpected locale error occurred.")
   *   }}}
   * @see [[https://www.iso.org/iso-3166-country-codes.html ISO 3166-1 Standard]]
   */
 opaque type Alpha2Code = String
 
-/** Provides factory methods for creating instances of [[Alpha2Code]]. */
-object Alpha2Code:
+/** Provides factory methods and extensions for [[Alpha2Code]].
+  *
+  * Extends [[boilerplate.OpaqueType OpaqueType]] to provide the standard
+  * `from`, `fromUnsafe`, `wrap`, and `unwrap` contract.
+  */
+object Alpha2Code extends OpaqueType[Alpha2Code, String], OpaqueType.Eq[Alpha2Code]:
+
+  type Error = errors.LocaleError
+
   private transparent inline def normalise(value: String): Option[String] =
     Option(value)
-      .map(_.trim.nn)
+      .map(_.trim)
       .filter(_.nonEmpty)
-      .map(_.toUpperCase.nn)
+      .map(_.toUpperCase)
 
   /** Validates that a string is exactly 2 uppercase ASCII letters.
     *
     * Manual validation avoids Regex instantiation and ensures consistent
-    * behavior across JVM, JS, and Native platforms.
+    * behaviour across JVM, JS, and Native platforms.
     */
   private transparent inline def isValidFormat(s: String): Boolean =
     s.length == 2 && s.forall(c => c >= 'A' && c <= 'Z')
 
-  /** Returns an [[Alpha2Code]] if the input string matches the Alpha-2 code
-    * format.
-    *
-    * @note The input is trimmed and converted to uppercase before validation.
-    *   Only the format is checked: exactly two uppercase ASCII letters. This
-    *   method does not validate if the code corresponds to an existing country.
-    * @param value A string of two uppercase ASCII letters.
-    * @return Either a `Right` with a valid [[Alpha2Code]] or a `Left` with a
-    *   [[errors.LocaleError]].
-    */
-  inline def from(value: String): Either[errors.LocaleError, Alpha2Code] =
+  inline def wrap(value: String): Alpha2Code =
+    normalise(value).getOrElse(value)
+
+  inline def unwrap(code: Alpha2Code): String = code
+
+  protected inline def validate(value: String): Option[Error] =
     normalise(value) match
-      case Some(normalised) if isValidFormat(normalised) => Right(normalised)
-      case Some(invalid)                                 => Left(errors.InvalidAlpha2CodeFormat(invalid))
-      case None                                          => Left(errors.InvalidAlpha2CodeFormat(Option(value).fold("null")(_.trim.nn)))
+      case Some(normalised) if isValidFormat(normalised) => None
+      case Some(invalid)                                 => Some(errors.InvalidAlpha2CodeFormat(invalid))
+      case None                                          => Some(errors.InvalidAlpha2CodeFormat(Option(value).fold("null")(_.trim)))
 
-  /** Creates an [[Alpha2Code]] from a string assumed to be valid.
+  /** Direct construction. Throws on invalid input.
     *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
-    * @throws world.locale.errors.InternalError if `value` is `null` or
-    *   not a valid Alpha-2 code format.
+    * @note Use [[from]] for untrusted input.
     */
-  private[locale] inline def unsafeFrom(value: String): Alpha2Code =
-    normalise(value).filter(isValidFormat).getOrElse {
-      throw LocaleInternalError(s"Precondition failed in Alpha2Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
-    }
-
-  /** Provides compile-time safe equality checking for [[Alpha2Code]] instances. */
-  given CanEqual[Alpha2Code, Alpha2Code] = CanEqual.derived
-
-  extension (code: Alpha2Code)
-    /** The raw 2-character `String` representation of the Alpha-2 code. */
-    inline def value: String = code
+  inline def apply(inline value: String): Alpha2Code = fromUnsafe(value)
 end Alpha2Code
 
 /** A type-safe ISO 3166-1 Alpha-3 country code.
@@ -100,59 +92,51 @@ end Alpha2Code
   * Ensures that a `String` intended to be a country code conforms to the
   * standard's three-letter format.
   *
+  * Instances are constructed via [[Alpha3Code$ Alpha3Code]].
+  *
   * @see [[https://www.iso.org/iso-3166-country-codes.html ISO 3166-1 Standard]]
   */
 opaque type Alpha3Code = String
 
-/** Provides factory methods for creating instances of [[Alpha3Code]]. */
-object Alpha3Code:
+/** Provides factory methods and extensions for [[Alpha3Code]].
+  *
+  * Extends [[boilerplate.OpaqueType OpaqueType]] to provide the standard
+  * `from`, `fromUnsafe`, `wrap`, and `unwrap` contract.
+  */
+object Alpha3Code extends OpaqueType[Alpha3Code, String], OpaqueType.Eq[Alpha3Code]:
+
+  type Error = errors.LocaleError
+
   private transparent inline def normalise(value: String): Option[String] =
     Option(value)
-      .map(_.trim.nn)
+      .map(_.trim)
       .filter(_.nonEmpty)
-      .map(_.toUpperCase.nn)
+      .map(_.toUpperCase)
 
   /** Validates that a string is exactly 3 uppercase ASCII letters.
     *
     * Manual validation avoids Regex instantiation and ensures consistent
-    * behavior across JVM, JS, and Native platforms.
+    * behaviour across JVM, JS, and Native platforms.
     */
   private transparent inline def isValidFormat(s: String): Boolean =
     s.length == 3 && s.forall(c => c >= 'A' && c <= 'Z')
 
-  /** Returns an [[Alpha3Code]] if the input string matches the Alpha-3 code
-    * format.
-    *
-    * @note The input is trimmed and converted to uppercase before validation.
-    *   Only the format is checked: exactly three uppercase ASCII letters.
-    * @param value A string of three uppercase ASCII letters.
-    * @return Either a `Right` with a valid [[Alpha3Code]] or a `Left` with a
-    *   [[errors.LocaleError]].
-    */
-  inline def from(value: String): Either[errors.LocaleError, Alpha3Code] =
+  inline def wrap(value: String): Alpha3Code =
+    normalise(value).getOrElse(value)
+
+  inline def unwrap(code: Alpha3Code): String = code
+
+  protected inline def validate(value: String): Option[Error] =
     normalise(value) match
-      case Some(normalised) if isValidFormat(normalised) => Right(normalised)
-      case Some(invalid)                                 => Left(errors.InvalidAlpha3CodeFormat(invalid))
-      case None                                          => Left(errors.InvalidAlpha3CodeFormat(Option(value).fold("null")(_.trim.nn)))
+      case Some(normalised) if isValidFormat(normalised) => None
+      case Some(invalid)                                 => Some(errors.InvalidAlpha3CodeFormat(invalid))
+      case None                                          => Some(errors.InvalidAlpha3CodeFormat(Option(value).fold("null")(_.trim)))
 
-  /** Creates an [[Alpha3Code]] from a `String` assumed to be valid.
+  /** Direct construction. Throws on invalid input.
     *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
-    * @throws world.locale.errors.InternalError if `value` is `null` or
-    *   not a valid Alpha-3 code format.
+    * @note Use [[from]] for untrusted input.
     */
-  private[locale] inline def unsafeFrom(value: String): Alpha3Code =
-    normalise(value).filter(isValidFormat).getOrElse {
-      throw LocaleInternalError(s"Precondition failed in Alpha3Code.unsafeFrom: Invalid or null value '$value'") // scalafix:ok
-    }
-
-  /** Provides compile-time safe equality checking for [[Alpha3Code]] instances. */
-  given CanEqual[Alpha3Code, Alpha3Code] = CanEqual.derived
-
-  extension (code: Alpha3Code)
-    /** The raw 3-character `String` representation of the Alpha-3 code. */
-    inline def value: String = code
+  inline def apply(inline value: String): Alpha3Code = fromUnsafe(value)
 end Alpha3Code
 
 /** A type-safe UN M49 numeric code for a country or area.
@@ -160,45 +144,38 @@ end Alpha3Code
   * Ensures that an `Int` intended to be a geographic code conforms to the
   * standard's numeric format (a value between 1 and 999).
   *
+  * Instances are constructed via [[M49Code$ M49Code]].
+  *
   * @see [[https://unstats.un.org/unsd/methodology/m49/ UN M49 Standard]]
   */
 opaque type M49Code = Int
 
-/** Provides factory methods for creating instances of [[M49Code]]. */
-object M49Code:
+/** Provides factory methods and extensions for [[M49Code]].
+  *
+  * Extends [[boilerplate.OpaqueType OpaqueType]] to provide the standard
+  * `from`, `fromUnsafe`, `wrap`, and `unwrap` contract.
+  */
+object M49Code extends OpaqueType[M49Code, Int], OpaqueType.Eq[M49Code]:
+
+  type Error = errors.LocaleError
+
   /** Minimum valid value for an M49 code. */
   private inline val MinValue = 1
 
   /** Maximum valid value for an M49 code. */
   private inline val MaxValue = 999
 
-  /** Returns an [[M49Code]] if the input integer matches the M49 code format.
+  inline def wrap(value: Int): M49Code = value
+
+  inline def unwrap(code: M49Code): Int = code
+
+  protected inline def validate(value: Int): Option[Error] =
+    if value >= MinValue && value <= MaxValue then None
+    else Some(errors.InvalidM49Code(value))
+
+  /** Direct construction. Throws on invalid input.
     *
-    * @note Only the format is checked: an integer between 1 and 999
-    *   (inclusive).
-    * @param value An `Int` between 1 and 999 (inclusive).
-    * @return Either a `Right` with a valid [[M49Code]] or a `Left` with a
-    *   [[errors.LocaleError]].
+    * @note Use [[from]] for untrusted input.
     */
-  inline def from(value: Int): Either[errors.LocaleError, M49Code] =
-    if (value >= MinValue && value <= MaxValue) Right(value)
-    else Left(errors.InvalidM49Code(value))
-
-  /** Creates an [[M49Code]] from an `Int` assumed to be valid.
-    *
-    * @note For internal library use only. This method is not part of the public
-    *   API.
-    * @throws world.locale.errors.InternalError if `value` is outside
-    *   the valid range.
-    */
-  private[locale] inline def unsafeFrom(value: Int): M49Code =
-    if (value >= MinValue && value <= MaxValue) value
-    else throw LocaleInternalError(s"Precondition failed in M49Code.unsafeFrom: Invalid value $value") // scalafix:ok
-
-  /** Provides compile-time safe equality checking for [[M49Code]] instances. */
-  given CanEqual[M49Code, M49Code] = CanEqual.derived
-
-  extension (code: M49Code)
-    /** The raw `Int` representation of the M49 code. */
-    inline def value: Int = code
+  inline def apply(inline value: Int): M49Code = fromUnsafe(value)
 end M49Code

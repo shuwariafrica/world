@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -17,39 +17,30 @@
  ****************************************************************/
 package world.money.format
 
-import world.format.Formatter.given
+import world.format.Formatter
 import world.money.Money
 import world.money.currency.Currency
 import world.money.currency.CurrencyDetails
-import world.money.currency.CurrencyValue
 import world.money.currency.HistoricCurrency
 
-type Formatter[A] = world.format.Formatter[A]
-val Formatter = world.format.Formatter
+import boilerplate.*
 
 /** Default formatter for Money: "KES 100.50"
   *
   * This is a neutral, technical representation using the ISO currency code.
-  * TODO: locale-specific formatting (symbols, separators), via
-  * `world.locale`.
   */
-given [C <: Currency](using ValueOf[C]): Formatter[Money[C]] =
-  world.format.Formatter[Money[C]]
-    (money =>
-      val rounded = money.rounded
-      // Use summon to get BigDecimal formatter to avoid String.formatted deprecation
-      s"${rounded.currency.code.value} ${summon[Formatter[BigDecimal]].formatted(rounded.value.unwrap)}")
+given [C <: Currency]: Formatter[Money[C]] =
+  Formatter[Money[C]] { money =>
+    val rounded = money.rounded
+    s"${rounded.currency.code.unwrap} ${rounded.value}"
+  }
 
 given Formatter[CurrencyDetails] =
-  world.format.Formatter[CurrencyDetails](details => s"${details.code.value} (${details.name})")
+  Formatter[CurrencyDetails](details => s"${details.code.unwrap} (${details.name})")
 
 /** Default formatter for Currency: "KES (Kenyan Shilling)" */
 given Formatter[Currency] =
-  world.format.Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].formatted(currency))
+  Formatter[Currency](currency => summon[Formatter[CurrencyDetails]].display(currency))
 
 given Formatter[HistoricCurrency] =
-  world.format.Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].formatted(currency))
-
-/** Default formatter for CurrencyValue: raw BigDecimal representation */
-given Formatter[CurrencyValue] =
-  world.format.Formatter[CurrencyValue](value => value.unwrap.formatted)
+  Formatter[HistoricCurrency](currency => summon[Formatter[CurrencyDetails]].display(currency))

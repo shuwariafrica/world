@@ -17,7 +17,7 @@ subsection:
             page: modules/locale/concepts.md
           - title: Countries
             page: modules/locale/countries.md
-          - title: Locale Formatting
+          - title: Formatting
             page: modules/locale/formatting.md
 
       - title: "world-money"
@@ -39,8 +39,6 @@ subsection:
         subsection:
           - title: Core Concepts
             page: modules/common/concepts.md
-          - title: Utilities
-            page: modules/common/utilities.md
           - title: Formatting
             page: modules/common/formatting.md
 

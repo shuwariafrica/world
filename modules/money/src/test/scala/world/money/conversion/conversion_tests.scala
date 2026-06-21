@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -21,12 +21,11 @@ import java.time.Instant
 
 import world.money.currency.Currencies
 import world.money.currency.CurrencyMathContext
-import world.money.currency.CurrencyValue
 
 import munit.FunSuite
 
 class ConversionModelSuite extends FunSuite:
-  import CurrencyMathContext.given // for CurrencyValue arithmetic
+  import CurrencyMathContext.given // for rate inversion
 
   test("ConversionContext and ConversionQuery should be instantiated correctly") {
     val context = ConversionContext("ECB", Some(Instant.now()))
@@ -48,12 +47,9 @@ class ConversionModelSuite extends FunSuite:
       assertEquals(inverseRate.term, Currencies.KES)
 
       // Check that the inverse rate is mathematically correct (1 / 10.50)
-      val expectedInverseValue = CurrencyValue(1) / CurrencyValue(BigDecimal("10.50"))
-      assert(expectedInverseValue.isRight)
-      expectedInverseValue.foreach { expected =>
-        // Allow for a small tolerance due to precision of division
-        assert((inverseRate.rate - expected.unwrap).abs < BigDecimal("0.000000000000001"))
-      }
+      val expected = BigDecimal(1) / BigDecimal("10.50")
+      // Allow for a small tolerance due to precision of division
+      assert((inverseRate.rate - expected).abs < BigDecimal("0.000000000000001"))
     }
   }
 

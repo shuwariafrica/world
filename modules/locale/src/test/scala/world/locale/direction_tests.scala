@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -15,25 +15,21 @@
  * language governing permissions and limitations under the     *
  * License.                                                     *
  ****************************************************************/
-package world.money
+package world.locale
 
-/** Internal utility extensions for the `world.money` library.
-  *
-  * This object re-exports canonical null handling utilities from the common
-  * module for use within the money module.
-  *
-  * @note These utilities are not intended for public API usage.
-  */
-private[money] object internal:
+import munit.FunSuite
 
-  // Re-export nullable utilities from common module with descriptive names
-  export world.common.nullable.{
-    flatMapFlattenNull as nullableFlatMapFlattenNull,
-    flatMapOption as nullableFlatMapOption,
-    flattenNull as nullableFlattenNull,
-    mapFlattenNull as nullableMapFlattenNull,
-    mapOption as nullableMapOption,
-    toEither as nullableToEither,
-    toOption as nullableToOption
+class DirectionSuite extends FunSuite:
+
+  test("Direction enum should have LTR and RTL values") {
+    assertEquals(Direction.values.length, 2)
+    assert(Direction.values.contains(Direction.LTR))
+    assert(Direction.values.contains(Direction.RTL))
   }
-end internal
+
+  test("Direction should support equality") {
+    assertEquals(Direction.LTR, Direction.LTR)
+    assertNotEquals(Direction.LTR, Direction.RTL)
+  }
+
+end DirectionSuite

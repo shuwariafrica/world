@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -19,7 +19,9 @@ package world.money // Base package for money-related functionalities
 
 import scala.util.control.NoStackTrace
 
-import world.money.conversion.ConversionQuery // For creating lightweight error objects
+import world.money.conversion.ConversionQuery
+
+import boilerplate.*
 
 /** Defines the hierarchy of errors for money-related operations.
   *
@@ -34,7 +36,7 @@ object errors:
     * It extends [[scala.util.control.NoStackTrace]] to improve performance by
     * avoiding stack trace generation for errors used in control flow.
     */
-  sealed trait MoneyError extends Throwable with NoStackTrace
+  sealed trait MoneyError extends Throwable with NoStackTrace with Product with Serializable derives CanEqual
 
   /** Returned when an unexpected internal error occurs within the money module.
     *
@@ -45,9 +47,9 @@ object errors:
     * @param cause An optional underlying `Throwable` that caused this error.
     */
   final case class InternalError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause) // Initialize the cause of this error if provided
     override def getMessage: String =
       s"Internal Money Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object InternalError:
     def apply(message: String, cause: Option[Throwable]): InternalError = new InternalError(message, cause)
@@ -63,9 +65,9 @@ object errors:
     *   [[java.lang.ArithmeticException]]).
     */
   final case class ArithmeticError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause) // Initialize the cause of this error if provi
     override def getMessage: String =
       s"Arithmetic Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object ArithmeticError:
     def apply(message: String, cause: Option[Throwable]): ArithmeticError = new ArithmeticError(message, cause)
@@ -74,17 +76,16 @@ object errors:
 
   /** Returned when a `String` cannot be parsed into a numeric representation.
     *
-    * This error is returned by factories like
-    * [[world.money.currency.CurrencyValue$.fromString]].
+    * This error is returned by [[Money$.from Money.from(String, Currency)]].
     *
     * @param message A description of the formatting or parsing error.
     * @param cause An optional underlying `Throwable`, typically a
     *   `NumberFormatException`.
     */
   final case class NumberFormattingError private (message: String, cause: Option[Throwable]) extends MoneyError:
-    cause.foreach(initCause)
     override def getMessage: String =
       s"Number Formatting Error: $message" + cause.map(c => s" | Caused by: ${c.getMessage}").getOrElse("")
+    override def getCause: Throwable | Null = cause.orNull
 
   object NumberFormattingError:
     def apply(message: String, cause: Option[Throwable]): NumberFormattingError = new NumberFormattingError(message, cause)
@@ -145,7 +146,7 @@ object errors:
       *   that failed.
       */
     final case class RateNotFound(query: ConversionQuery) extends ConversionError:
-      override def getMessage: String = s"Exchange rate not found for ${query.base.code.value} -> ${query.term.code.value}."
+      override def getMessage: String = s"Exchange rate not found for ${query.base.code.unwrap} -> ${query.term.code.unwrap}."
 
     /** Returned if an error occurs within an
       * [[world.money.conversion.ExchangeRateProvider]].
@@ -157,8 +158,8 @@ object errors:
       * @param cause An optional underlying `Throwable` that caused this error.
       */
     final case class ProviderError private (message: String, cause: Option[Throwable]) extends ConversionError:
-      cause.foreach(initCause)
       override def getMessage: String = s"Exchange rate provider error: $message"
+      override def getCause: Throwable | Null = cause.orNull
 
     object ProviderError:
       def apply(message: String, cause: Option[Throwable]): ProviderError = new ProviderError(message, cause)

@@ -1,5 +1,5 @@
 /****************************************************************
- * Copyright © Shuwari Africa Ltd.                              *
+ * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
  *                                                              *
  * This file is licensed to you under the terms of the Apache   *
  * License Version 2.0 (the "License"); you may not use this    *
@@ -19,6 +19,7 @@ package world.money.currency
 
 import munit.ScalaCheckSuite
 
+import boilerplate.*
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 
@@ -50,14 +51,14 @@ class CcyCodeSuite extends ScalaCheckSuite:
     val cases = Seq(" kes " -> "KES", "jpy" -> "JPY", "  oMr" -> "OMR")
     cases.foreach { (input, expected) =>
       CcyCode.from(input) match
-        case Right(code) => assertEquals(code.value, expected)
+        case Right(code) => assertEquals(code.unwrap, expected)
         case Left(err)   => fail(s"Expected Right for '$input' but got $err")
     }
   }
 
-  test("CcyCode.value should expose the underlying string") {
+  test("CcyCode.unwrap exposes the underlying string") {
     val code = CcyCode.from("KES").toOption.get
-    assertEquals(code.value, "KES")
+    assertEquals(code.unwrap, "KES")
   }
 
   test("CcyCode should maintain equality semantics") {
@@ -82,9 +83,9 @@ class NumericCodeSuite extends ScalaCheckSuite:
     }
   }
 
-  test("NumericCode.value should expose the underlying int") {
+  test("NumericCode.unwrap exposes the underlying int") {
     val code = NumericCode.from(404).toOption.get
-    assertEquals(code.value, 404)
+    assertEquals(code.unwrap, 404)
   }
 
   test("NumericCode should maintain value equality") {
@@ -95,10 +96,10 @@ class NumericCodeSuite extends ScalaCheckSuite:
 
   test("NumericCode should handle edge values correctly") {
     val zero = NumericCode.from(0).toOption.get
-    assertEquals(zero.value, 0)
+    assertEquals(zero.unwrap, 0)
 
     val max = NumericCode.from(999).toOption.get
-    assertEquals(max.value, 999)
+    assertEquals(max.unwrap, 999)
   }
 
 end NumericCodeSuite

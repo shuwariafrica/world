@@ -1,110 +1,107 @@
-val libraries = new {
-  val munit = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
-  val `munit-scalacheck` = munit(_.withName("munit-scalacheck"))
-  val `scala-java-time` = Def.setting("io.github.cquiroz" %%% "scala-java-time" % "2.6.0")
-  val `scala-java-time-tzdb` = `scala-java-time`.apply(_.withName("scala-java-time-tzdb"))
-}
+organization := "africa.shuwari"
+description := "Scala toolkit for representation and manipulation of real-world domain concepts"
+homepage := Some(url("https://github.com/shuwariafrica/world"))
+startYear := Some(2023)
+semanticdbEnabled := true
+scmInfo := ScmInfo(
+  url("https://dev.shuwari.africa/world"),
+  "scm:git:https://github.com/shuwariafrica/world.git",
+  Some("scm:git:git@github.com:shuwariafrica/world.git")
+).some
+apacheLicensed
+Shuwari.organisationSettings
+formattingSettings
 
 val `world-common` =
-  crossProject(JVMPlatform, JSPlatform, NativePlatform)
-    .crossType(CrossType.Pure)
-    .withoutSuffixFor(JVMPlatform)
+  projectMatrix
     .in(file("modules/common"))
+    .jvmPlatform(Seq(Dependencies.scalaVersion))
+    .jsPlatform(Seq(Dependencies.scalaVersion))
+    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .dependsOn(libraries.`munit-scalacheck`(_ % Test))
+    .settings(libraryDependencies += Dependencies.boilerplate)
+    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
 
 val `world-locale` =
-  crossProject(JVMPlatform, JSPlatform, NativePlatform)
-    .crossType(CrossType.Pure)
-    .withoutSuffixFor(JVMPlatform)
+  projectMatrix
     .in(file("modules/locale"))
+    .jvmPlatform(Seq(Dependencies.scalaVersion))
+    .jsPlatform(Seq(Dependencies.scalaVersion))
+    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
     .dependsOn(`world-common`)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .dependsOn(libraries.`munit-scalacheck`(_ % Test))
+    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
     .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.languagesGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.scriptsGeneratorTask)
+    .settings(Compile / sourceGenerators += SourceGenerators.likelySubtagsGeneratorTask)
 
 val `world-money` =
-  crossProject(JVMPlatform, JSPlatform, NativePlatform)
-    .crossType(CrossType.Pure)
-    .withoutSuffixFor(JVMPlatform)
+  projectMatrix
     .in(file("modules/money"))
-    .dependsOn(`world-locale`)
+    .jvmPlatform(Seq(Dependencies.scalaVersion))
+    .jsPlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting)
+    .nativePlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting ++ nativeSettings)
+    .dependsOn(`world-common`)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .dependsOn(libraries.`munit-scalacheck`(_ % Test))
+    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
     .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
-    .jsSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
-    .jsSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
-    .nativeSettings(libraryDependency(libraries.`scala-java-time`(_ % Provided)))
-    .nativeSettings(libraryDependency(libraries.`scala-java-time-tzdb`(_ % Provided)))
 
-val `world-jvm` =
-  project
-    .in(file(".jvm"))
-    .notPublished
-    .aggregate(
-      `world-common`.jvm,
-      `world-locale`.jvm,
-      `world-money`.jvm
-    )
+val `world-money-usage` =
+  projectMatrix
+    .in(file("modules/money-usage"))
+    .jvmPlatform(Seq(Dependencies.scalaVersion))
+    .jsPlatform(Seq(Dependencies.scalaVersion))
+    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
+    .in(file("modules/money-usage"))
+    .dependsOn(`world-locale`, `world-money`)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
+    .settings(Compile / sourceGenerators += SourceGenerators.currencyUsageGeneratorTask)
 
-val `world-native` =
+val `world-site` =
   project
-    .in(file(".native"))
+    .in(file("docs"))
     .notPublished
-    .aggregate(
-      `world-common`.native,
-      `world-locale`.native,
-      `world-money`.native
-    )
-
-val `world-js` =
-  project
-    .in(file(".js"))
-    .notPublished
-    .aggregate(
-      `world-common`.js,
-      `world-locale`.js,
-      `world-money`.js
-    )
-
-val `world-root` =
-  project
-    .in(file("."))
-    .shuwariProject
-    .notPublished
-    .apacheLicensed
-    .enablePlugins(ScalaUnidocPlugin, WorldUnidocPlugin)
-    .aggregate(`world-jvm`, `world-js`, `world-native`)
-    .settings(sonatypeProfileSetting)
+    .enablePlugins(WorldUnidocPlugin)
     .settings(
-      // Aggregate ScalaUnidoc from JVM projects only
-      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`world-js`, `world-native`)
+      ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+        `world-common`.jvm(Dependencies.scalaVersion),
+        `world-locale`.jvm(Dependencies.scalaVersion),
+        `world-money`.jvm(Dependencies.scalaVersion),
+        `world-money-usage`.jvm(Dependencies.scalaVersion)
+      )
     )
 
-inThisBuild(
-  List(
-    scalaVersion := crossScalaVersions.value.head,
-    crossScalaVersions := List("3.7.4"),
-    organization := "africa.shuwari",
-    description := "Scala toolkit for representation and manipulation of real-world domain concepts",
-    homepage := Some(url("https://github.com/shuwarifrica/world")),
-    startYear := Some(2023),
-    semanticdbEnabled := true,
-    sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
-    publishCredentials,
-    scmInfo := ScmInfo(
-      url("https://dev.shuwari.africa/world"),
-      "scm:git:https://github.com/shuwariafrica/world.git",
-      Some("scm:git:git@github.com:shuwariafrica/world.git")
-    ).some
-  ) ++ formattingSettings
+val `world` =
+  projectMatrix
+    .in(file("."))
+    .jvmPlatform(Seq(Dependencies.scalaVersion))
+    .jsPlatform(Seq(Dependencies.scalaVersion))
+    .nativePlatform(Seq(Dependencies.scalaVersion))
+    .settings(publish / skip := true)
+    .aggregate(
+      `world-common`,
+      `world-locale`,
+      `world-money`,
+      `world-money-usage`
+    )
+
+def javaTimeDependencySetting = List(
+  libraryDependencies += Dependencies.`scala-java-time` % Provided,
+  libraryDependencies += Dependencies.`scala-java-time-tzdb` % Provided
+)
+
+def nativeSettings = List(
+  libraryDependencySchemes += "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.Always
 )
 
 def unitTestSettings: List[Setting[?]] = List(
-  libraryDependencies += libraries.munit.value % Test,
+  libraryDependencies += Dependencies.munit % Test,
   testFrameworks += new TestFramework("munit.Framework")
 )
 
@@ -114,42 +111,23 @@ def formattingSettings =
     scalafmtPrintDiff := true
   )
 
-def libraryDependency(library: Def.Initialize[ModuleID]) = libraryDependencies += library.value
-
-def publishCredentials = credentials := List(
-  Credentials(
-    "Sonatype Nexus Repository Manager",
-    sonatypeCredentialHost.value,
-    System.getenv("PUBLISH_USER"),
-    System.getenv("PUBLISH_USER_PASSPHRASE")
-  )
-)
-
-def publishSettings = publishCredentials +: pgpSettings ++: List(
+def publishSettings = List(
   packageOptions += Package.ManifestAttributes(
     "Created-By" -> "Simple Build Tool",
-    "Built-By" -> System.getProperty("user.name"),
     "Build-Jdk" -> System.getProperty("java.version"),
     "Specification-Title" -> name.value,
     "Specification-Version" -> Keys.version.value,
-    "Specification-Vendor" -> organizationName.value,
-    "Implementation-Title" -> name.value,
-    "Implementation-Version" -> fullVersion.value,
-    "Implementation-Vendor-Id" -> organization.value,
-    "Implementation-Vendor" -> organizationName.value
+    "Specification-Vendor" -> organizationName.value
   ),
-  publishTo := sonatypePublishToBundle.value,
+  publishTo := {
+    if (isSnapshot.value)
+      Some("central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/"))
+    else localStaging.value
+  },
   pomIncludeRepository := (_ => false),
-  publishMavenStyle := true,
-  sonatypeProfileSetting
+  publishMavenStyle := true
 )
 
-def sonatypeProfileSetting = sonatypeProfileName := "africa.shuwari"
+addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
-def pgpSettings = List(
-  usePgpKeyHex(System.getenv("SIGNING_KEY_ID"))
-)
-
-addCommandAlias("format", "project world-jvm; scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
-
-addCommandAlias("analyse", "project world-jvm; scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("check", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
