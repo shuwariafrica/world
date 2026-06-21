@@ -39,8 +39,6 @@ subsection:
         subsection:
           - title: Core Concepts
             page: modules/common/concepts.md
-          - title: Utilities
-            page: modules/common/utilities.md
           - title: Formatting
             page: modules/common/formatting.md
 

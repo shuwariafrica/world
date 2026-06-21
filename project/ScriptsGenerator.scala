@@ -8,17 +8,16 @@ import java.time.Instant
   *   - `data/cldr/common/validity/script.xml` (valid script codes)
   *   - `data/cldr/common/main/en.xml` (English script names)
   */
-object ScriptsGenerator {
+object ScriptsGenerator:
 
-  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) = {
+  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) =
     val targetFile = targetDir / "Scripts.scala"
     val scripts = CldrParser.parseScripts(cldrDir, log)
     log.info(s"ScriptsGenerator: Parsed ${scripts.size} scripts from CLDR.")
     val source = generateSource(scripts)
     (source, targetFile)
-  }
 
-  private def generateSource(scripts: Seq[CldrParser.ScriptData]): String = {
+  private def generateSource(scripts: Seq[CldrParser.ScriptData]): String =
     val sb = new StringBuilder()
     sb.append(s"""// DO NOT EDIT - Generated from CLDR by ScriptsGenerator.scala at ${Instant.now}.
 package world.locale.script
@@ -60,5 +59,5 @@ object Scripts:
 end Scripts
 """)
     sb.toString()
-  }
-}
+  end generateSource
+end ScriptsGenerator

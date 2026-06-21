@@ -9,10 +9,10 @@ import java.time.Instant
   *   - `data/cldr/common/supplemental/supplementalData.xml` (numeric codes, fractions, territory mappings)
   *   - `data/cldr/common/main/en.xml` (English currency names)
   */
-object CurrenciesPopulator {
+object CurrenciesPopulator:
 
   /** Generates Currencies.scala and CurrencyFactorySyntax.scala for the money module. */
-  def generateCurrencies(cldrDir: File, outputDir: File, log: Logger): Map[File, String] = {
+  def generateCurrencies(cldrDir: File, outputDir: File, log: Logger): Map[File, String] =
     val active = CldrParser.parseActiveCurrencies(cldrDir, log)
     val historic = CldrParser.parseHistoricCurrencies(cldrDir, log)
     log.info(s"CurrenciesPopulator: Parsed ${active.size} active + ${historic.size} historic currencies from CLDR.")
@@ -24,10 +24,10 @@ object CurrenciesPopulator {
       (currencyTargetDir / "Currencies.scala") -> currenciesSource,
       (outputDir / "syntax" / "CurrencyFactorySyntax.scala") -> factorySyntaxSource
     )
-  }
+  end generateCurrencies
 
   /** Generates CurrencyUsageInstances.scala for the money-usage module. */
-  def generateUsage(cldrDir: File, outputDir: File, log: Logger): Map[File, String] = {
+  def generateUsage(cldrDir: File, outputDir: File, log: Logger): Map[File, String] =
     val active = CldrParser.parseActiveCurrencies(cldrDir, log)
     val historic = CldrParser.parseHistoricCurrencies(cldrDir, log)
     val usage = CldrParser.parseActiveCurrencyUsage(cldrDir, log)
@@ -45,15 +45,15 @@ object CurrenciesPopulator {
 
     val instancesSource = generateUsageInstancesSource(activeCodes, historicCodes, usageByCode, clashingCodes, validRegions)
     Map((outputDir / "usage" / "CurrencyUsageInstances.scala") -> instancesSource)
-  }
+  end generateUsage
 
   private def generateCurrenciesSource
       (
         active: Seq[CldrParser.CurrencyData],
         historic: Seq[CldrParser.HistoricCurrencyData],
         clashingCodes: Set[String]
-      ): String = {
-    def generateActiveObject(entries: Seq[CldrParser.CurrencyData]): String = {
+      ): String =
+    def generateActiveObject(entries: Seq[CldrParser.CurrencyData]): String =
       val valAndTypeBlocks = entries.map { c =>
         val fields = new StringBuilder
         fields.append(s"""    val code: CcyCode = CcyCode("${c.code}")""")
@@ -83,9 +83,9 @@ object Currencies:${valAndTypeBlocks.mkString}
 $lookups
 $functions
 end Currencies"""
-    }
+    end generateActiveObject
 
-    def generateHistoricObject(entries: Seq[CldrParser.HistoricCurrencyData]): String = {
+    def generateHistoricObject(entries: Seq[CldrParser.HistoricCurrencyData]): String =
       val valAndTypeBlocks = entries.map { c =>
         val objectName = if (clashingCodes.contains(c.code)) s"${c.code}_H" else c.code
         val fields = new StringBuilder
@@ -118,7 +118,7 @@ object HistoricCurrencies:${valAndTypeBlocks.mkString}
 $lookups
 $functions
 end HistoricCurrencies"""
-    }
+    end generateHistoricObject
 
     s"""// DO NOT EDIT - Generated from CLDR by CurrenciesPopulator.scala at ${Instant.now()}
 package world.money.currency
@@ -129,7 +129,7 @@ import scala.annotation.targetName
 ${generateActiveObject(active)}
 ${generateHistoricObject(historic)}
 """
-  }
+  end generateCurrenciesSource
 
   private def generateUsageInstancesSource
       (
@@ -138,7 +138,7 @@ ${generateHistoricObject(historic)}
         usageByCode: Map[String, Seq[String]],
         clashingCodes: Set[String],
         validRegions: Set[String]
-      ): String = {
+      ): String =
     def generateGivens(codes: Set[String], isHistoric: Boolean): String =
       codes.toSeq.sorted.flatMap { code =>
         usageByCode.get(code).map { territories =>
@@ -163,9 +163,9 @@ import world.money.currency.{Currencies, HistoricCurrencies}
 trait CurrencyUsageInstances:${generateGivens(activeCodes, isHistoric = false)}${generateGivens(historicCodes, isHistoric = true)}
 end CurrencyUsageInstances
 """
-  }
+  end generateUsageInstancesSource
 
-  private def generateFactorySyntaxSource(active: Seq[CldrParser.CurrencyData]): String = {
+  private def generateFactorySyntaxSource(active: Seq[CldrParser.CurrencyData]): String =
     val sb = new StringBuilder
     sb ++= s"""// DO NOT EDIT - Generated from CLDR by CurrenciesPopulator.scala at ${Instant.now()}
 package world.money.syntax
@@ -190,5 +190,5 @@ import world.money.currency.Currencies
     sb ++= "\n"
 
     sb.toString()
-  }
-}
+  end generateFactorySyntaxSource
+end CurrenciesPopulator

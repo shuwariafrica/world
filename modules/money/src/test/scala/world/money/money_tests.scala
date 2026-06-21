@@ -332,7 +332,7 @@ class MoneySuite extends ScalaCheckSuite:
   test("convertTo works with a provider and returns rounded result") {
     given mockProvider: ExchangeRateProvider with
       def get(query: ConversionQuery): Either[ConversionError, ConversionRate] =
-        if (query.base == Currencies.KES && query.term == Currencies.JPY)
+        if query.base == Currencies.KES && query.term == Currencies.JPY then
           Right(ConversionRate(Currencies.KES, Currencies.JPY, BigDecimal("10.50")))
         else Left(ConversionError.RateNotFound(query))
 

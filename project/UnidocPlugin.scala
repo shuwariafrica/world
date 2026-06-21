@@ -12,12 +12,12 @@ import mdoc.MdocPlugin.autoImport._
   * This plugin requires MdocPlugin because it uses mdoc to preprocess documentation
   * files before Scaladoc generation, enabling dynamic variable substitution.
   */
-object WorldUnidocPlugin extends AutoPlugin {
+object WorldUnidocPlugin extends AutoPlugin:
 
-  override def requires: Plugins = plugins.JvmPlugin && MdocPlugin
+  override def requires: Plugins = plugins.JvmPlugin && MdocPlugin && ScalaUnidocPlugin
   override def trigger: PluginTrigger = noTrigger // Manual activation required
 
-  object autoImport {
+  object autoImport:
     // Custom keys for documentation
     val documentationSourceLinks = settingKey[String]("Source link configuration for Scaladoc")
     val documentationFooter = settingKey[String]("Footer text for documentation")
@@ -27,9 +27,13 @@ object WorldUnidocPlugin extends AutoPlugin {
     // Version keys for injection into documentation via mdoc
     val scalaJsVersion = settingKey[String]("Scala.js version used in the project")
     val scalaNativeVersion = settingKey[String]("Scala Native version used in the project")
-  }
 
   import autoImport._
+
+  // All generated artefacts are derived from this docs project's own scope, so they
+  // land under its project-scoped `target` (e.g. target/out/jvm/scala-<ver>/world-site).
+  private val processedDocs = Def.setting((ThisProject / target).value / "mdoc-processed")
+  private val documentationSite = Def.setting((ThisProject / target).value / "site")
 
   override def projectSettings: Seq[Setting[?]] = Seq(
     // Default documentation settings
@@ -40,8 +44,8 @@ object WorldUnidocPlugin extends AutoPlugin {
     documentationFooter := s"`world` - v${version.value}",
 
     // Configure mdoc to preprocess documentation with version variables
-    mdocIn := file("docs") / "_docs",
-    mdocOut := target.value / "mdoc-processed" / "_docs",
+    mdocIn := (ThisProject / baseDirectory).value / "_docs",
+    mdocOut := processedDocs.value / "_docs",
     mdocVariables := Map(
       "SCALA3_VERSION" -> scalaVersion.value,
       "SCALAJS_VERSION" -> pluginVersions.value.scalaJS,
@@ -57,14 +61,14 @@ object WorldUnidocPlugin extends AutoPlugin {
     mdocExtraArguments := Seq("--no-link-hygiene"),
 
     // Task to run mdoc and copy non-markdown assets
-    preprocessDocs := {
+    preprocessDocs := Def.uncached {
       val log = streams.value.log
 
       // First run mdoc to process markdown files (mdoc is an InputTask)
       val _ = (Compile / mdoc).toTask("").value
 
-      val docsRoot = file("docs")
-      val mdocOutputRoot = mdocOut.value.getParentFile // target/mdoc-processed
+      val docsRoot = (ThisProject / baseDirectory).value
+      val mdocOutputRoot = mdocOut.value.getParentFile // == processedDocs.value
 
       // Copy sidebar.yml, rootdoc.md, _assets, _layouts if they exist
       val filesToCopy = List(
@@ -99,8 +103,9 @@ object WorldUnidocPlugin extends AutoPlugin {
     // Ensure unidoc depends on preprocessDocs for complete pipeline
     Compile / unidoc := (Compile / unidoc).dependsOn(preprocessDocs).value,
 
-    // Enhanced Scaladoc options - these will be picked up by ScalaUnidoc
-    Compile / doc / scalacOptions ++= {
+    // Enhanced Scaladoc options - these will be picked up by ScalaUnidoc.
+    // Def.uncached because the body drives preprocessDocs (a side-effecting task).
+    Compile / doc / scalacOptions ++= Def.uncached {
       // CRITICAL: Run mdoc (with asset copying) BEFORE generating Scaladoc
       val processedDocsDir = preprocessDocs.value
 
@@ -152,19 +157,26 @@ object WorldUnidocPlugin extends AutoPlugin {
     },
 
     // Generate unified documentation task
-    generateUnidoc := {
+    generateUnidoc := Def.uncached {
       val log = streams.value.log
       log.info("Generating unified API documentation with static site...")
 
       // This uses the ScalaUnidoc plugin
       val docDirs = (Compile / unidoc).value
-      val mainDocDir = docDirs.headOption.getOrElse(target.value / "unidoc")
+      val mainDocDir = docDirs.headOption.getOrElse((ThisProject / target).value / "unidoc")
 
-      // Copy to a stable (scala-version agnostic) site directory for publishing
-      val siteDir = target.value / "site"
+      // Assemble into this project's own scala-version-agnostic site directory
+      val siteDir = documentationSite.value
       if (siteDir.exists()) IO.delete(siteDir)
       IO.copyDirectory(mainDocDir, siteDir)
       log.info(s"Copied unified documentation to: ${siteDir.getAbsolutePath}")
+
+      // Emit the produced path to $GITHUB_OUTPUT so the release workflow does
+      // not need to know sbt's per-axis target/out layout. No-op locally.
+      sys.env.get("GITHUB_OUTPUT").foreach { ghOutput =>
+        IO.append(new File(ghOutput), s"site_dir=${siteDir.getAbsolutePath}\n")
+      }
+
       siteDir
     }
   )
@@ -192,5 +204,4 @@ object WorldUnidocPlugin extends AutoPlugin {
       scalaNative = findVersion(scalaNativeRegex, "sbt-scala-native")
     )
   }
-
-}
+end WorldUnidocPlugin

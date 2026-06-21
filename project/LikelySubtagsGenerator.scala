@@ -6,17 +6,16 @@ import java.time.Instant
   *
   * Source: `data/cldr/common/supplemental/likelySubtags.xml`
   */
-object LikelySubtagsGenerator {
+object LikelySubtagsGenerator:
 
-  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) = {
+  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) =
     val targetFile = targetDir / "LikelySubtags.scala"
     val subtags = CldrParser.parseLikelySubtags(cldrDir)
     log.info(s"LikelySubtagsGenerator: Parsed ${subtags.size} likely subtag mappings from CLDR.")
     val source = generateSource(subtags)
     (source, targetFile)
-  }
 
-  private def generateSource(subtags: Seq[CldrParser.LikelySubtag]): String = {
+  private def generateSource(subtags: Seq[CldrParser.LikelySubtag]): String =
     // Split into chunks to avoid JVM 64KB method limit on <clinit>
     val chunkSize = 500
     val chunks = subtags.grouped(chunkSize).toSeq
@@ -47,5 +46,5 @@ private[locale] object LikelySubtags:
     sb.append(s"""end LikelySubtags
 """)
     sb.toString()
-  }
-}
+  end generateSource
+end LikelySubtagsGenerator

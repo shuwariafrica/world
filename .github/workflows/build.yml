@@ -11,6 +11,10 @@ on:
 env:
   NODE_LTS: 22
   JDK_PUBLISH_LTS: 17
+  SBT_OPTS: >- # Use all available resources
+    -Xmx8G
+    -Xss4M
+    -XX:ReservedCodeCacheSize=512M
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -21,24 +25,21 @@ permissions:
 
 jobs:
   build:
-    name: Build & Test (${{ matrix.platform }} / JDK ${{ matrix.java }} / ${{ matrix.os }})
+    name: "[${{ matrix.platform }} / ${{ matrix.os }} / JDK ${{ matrix.java }}] Build & Test"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        java: [ 17, 21 ]
-        platform: [ jvm, js, native ]
-        os: [ ubuntu-latest ]
         include:
-          - platform: native
-            java: 21
-            os: windows-latest
-        exclude:
-          - platform: js
-            java: 17
-          - platform: native
-            java: 17
+          - { platform: jvm,    project: world,       java: 17, os: ubuntu-26.04 }
+          - { platform: jvm,    project: world,       java: 21, os: ubuntu-26.04 }
+          - { platform: jvm,    project: world,       java: 25, os: ubuntu-26.04 }
+          - { platform: js,     project: worldJS,     java: 21, os: ubuntu-26.04 }
+          - { platform: native, project: worldNative, java: 21, os: ubuntu-26.04 }
+          - { platform: native, project: worldNative, java: 21, os: windows-2025-vs2026 }
+          - { platform: native, project: worldNative, java: 21, os: macos-26 }
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -63,27 +64,31 @@ jobs:
         with:
           node-version: ${{ env.NODE_LTS }}
 
-      - name: Install LLVM/Clang toolchain (Ubuntu)
-        if: matrix.platform == 'native' && startsWith(matrix.os, 'ubuntu')
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang lld llvm libgc-dev
-
-      - name: Install LLVM toolchain (Windows)
-        if: matrix.platform == 'native' && startsWith(matrix.os, 'windows')
+      # vcvarsall imports the MSVC build environment for the target arch; LLVM_BIN points Scala Native's
+      # discovery at MSVCs clang ensuring the correct ABI
+      - name: Set up MSVC toolchain (Windows)
+        if: startsWith(matrix.os, 'windows') && matrix.platform == 'native'
         shell: pwsh
+        env:
+          VSARCH: amd64
         run: |
-          choco install -y llvm
-          "C:\\Program Files\\LLVM\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+                  -latest -property installationPath
+          cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $env:VSARCH && set" |
+            ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" } } |
+            Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $sub = if ($env:VSARCH -eq 'arm64') { 'arm64' } else { 'x64' }
+          "LLVM_BIN=$vs\VC\Tools\Llvm\$sub\bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Build & Test (${{ matrix.platform }} / JDK ${{ matrix.java }} / ${{ matrix.os }})
+      - name: Execute Tests and Packaging
         shell: bash
-        run: sbt -Dsbt.ci=true "world-${{ matrix.platform }}/test"
+        run: |
+          sbt -Dsbt.ci=true "${{ matrix.project }}/test"
+          sbt -Dsbt.ci=true "${{ matrix.project }}/publishLocal"
 
   static-analysis:
     name: Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -133,9 +138,9 @@ jobs:
           fi
           exit 1
 
-  documentation:
+  site:
     name: Compile Documentation Site
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -155,14 +160,28 @@ jobs:
       - name: Setup Coursier Cache
         uses: coursier/cache-action@v8
 
-      - name: Compile Documentation
-        run: sbt -Dsbt.ci=true generateUnidoc
+      - name: Build Site
+        id: build-site
+        run: sbt -Dsbt.ci=true "world-site/generateUnidoc"
+
+      - name: Sanity check site
+        run: test -s "${{ steps.build-site.outputs.site_dir }}/index.html"
+
+      - name: Prepare Pages Artifact (.nojekyll)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: touch "${{ steps.build-site.outputs.site_dir }}/.nojekyll"
+
+      - name: Upload Pages Artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ steps.build-site.outputs.site_dir }}
 
   publish:
     name: Publish Artefacts
-    needs: [ build, static-analysis, documentation ]
+    needs: [ build, static-analysis, site ]
     if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -197,16 +216,15 @@ jobs:
 
       - name: Publish Release Artefacts (jvm/js/native)
         env:
-          PUBLISH_USER: ${{ secrets.OSS_PUBLISH_USER }}
-          PUBLISH_USER_PASSPHRASE: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
-          SIGNING_KEY_ID: ${{ secrets.OSS_PUBLISH_USER_SIGNING_KEY_ID }}
-        run: sbt -Dsbt.ci=true "publishSigned; sonatypeBundleRelease"
+          SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
+        run: sbt -Dsbt.ci=true publishSigned sonaUpload sonaRelease
 
   site-release:
     name: Publish Site & GitHub Release
-    needs: [ publish ]
+    needs: [ publish, site ]
     if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write          # needed to create a release
       pages: write             # deploy to GitHub Pages
@@ -215,55 +233,33 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Setup JDK
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ env.JDK_PUBLISH_LTS }}
-
-      - name: Setup sbt
-        uses: sbt/setup-sbt@v1
-
-      - name: Setup Coursier Cache
-        uses: coursier/cache-action@v8
-
-      - name: Build Site (generateUnidoc)
-        id: build-site
-        run: |
-          sbt -Dsbt.ci=true generateUnidoc
-          echo "site_dir=$(pwd)/target/site" >> $GITHUB_OUTPUT
-
-      - name: Sanity check site
-        run: |
-          test -s "${{ steps.build-site.outputs.site_dir }}/index.html"
-
-      - name: Prepare Pages Artifact (.nojekyll)
-        run: |
-          touch "${{ steps.build-site.outputs.site_dir }}/.nojekyll"
-
+      # Deploys the `github-pages` artefact uploaded by the `site` job
+      # in this same run — no checkout/sbt/rebuild needed.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: ${{ steps.build-site.outputs.site_dir }}
 
       - name: Deploy to GitHub Pages
         id: deploy-pages
         uses: actions/deploy-pages@v5
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Mint Release Bot Token
+        id: release-bot
+        uses: actions/create-github-app-token@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') || startsWith(github.ref_name, 'v0.') }}
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+        run: |
+          prerelease_flag=""
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --verify-tag \
+            $prerelease_flag

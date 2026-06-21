@@ -10,17 +10,16 @@ import scala.collection.immutable.SortedSet
   *   - `data/cldr/common/supplemental/supplementalData.xml` (alpha-3, M49)
   *   - `data/cldr/common/main/en.xml` (English country names)
   */
-object CountriesPopulator {
+object CountriesPopulator:
 
-  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) = {
+  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) =
     val targetFile = targetDir / "Countries.scala"
     val countries = CldrParser.parseCountries(cldrDir, log)
     log.info(s"CountriesPopulator: Parsed ${countries.size} countries from CLDR.")
     val source = generateSource(countries)
     (source, targetFile)
-  }
 
-  private def generateSource(countries: Seq[CldrParser.CountryData]): String = {
+  private def generateSource(countries: Seq[CldrParser.CountryData]): String =
     val sorted = countries.sortBy(_.alpha2)
 
     val sb = new StringBuilder()
@@ -114,5 +113,5 @@ object Countries:
 end Countries
 """)
     sb.toString()
-  }
-}
+  end generateSource
+end CountriesPopulator

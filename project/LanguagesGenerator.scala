@@ -9,27 +9,25 @@ import java.time.Instant
   *   - `data/cldr/common/supplemental/supplementalData.xml` (language-script associations)
   *   - `data/cldr/common/main/en.xml` (English language names)
   */
-object LanguagesGenerator {
+object LanguagesGenerator:
 
-  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) = {
+  def generate(cldrDir: File, targetDir: File, log: Logger): (String, File) =
     val targetFile = targetDir / "Languages.scala"
     val languages = CldrParser.parseLanguages(cldrDir, log)
     log.info(s"LanguagesGenerator: Parsed ${languages.size} languages from CLDR.")
     val source = generateSource(languages)
     (source, targetFile)
-  }
 
   /** Generates a valid Scala identifier from a language code.
     * Some codes start with digits or conflict with Scala keywords.
     */
-  private def toIdentifier(code: String): String = {
+  private def toIdentifier(code: String): String =
     // Language codes are 2-3 lowercase letters, safe as Scala identifiers
     // but backtick-quote if they happen to be Scala keywords
     val keywords = Set("do", "if", "in", "is", "as", "to", "or")
     if (keywords.contains(code)) s"`$code`" else code
-  }
 
-  private def generateSource(languages: Seq[CldrParser.LanguageData]): String = {
+  private def generateSource(languages: Seq[CldrParser.LanguageData]): String =
     val sb = new StringBuilder()
     sb.append(s"""// DO NOT EDIT - Generated from CLDR by LanguagesGenerator.scala at ${Instant.now}.
 package world.locale.language
@@ -79,5 +77,5 @@ object Languages:
 end Languages
 """)
     sb.toString()
-  }
-}
+  end generateSource
+end LanguagesGenerator

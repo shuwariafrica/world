@@ -17,5 +17,4 @@ libraryDependencies += "africa.shuwari" %%% "world-common" % "{{projectVersion}}
 ## Contents
 
 - [Formatting](formatting.md)
-- [Utilities](utilities.md)
 - [Core Concepts](concepts.md)
