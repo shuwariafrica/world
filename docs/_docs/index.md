@@ -4,62 +4,50 @@ title: Introduction
 
 ## Overview
 
-`world` is a collection of Scala 3 libraries for type-safe modelling of real-world domain concepts. All modules support JVM, Scala.js, and Scala Native.
+`world` is a collection of Scala 3 libraries modelling real-world domain concepts: places,
+languages and locales, money and currencies, quantities, trade and business identifiers,
+postal addresses, parties, and civil time. Every runtime module targets the JVM, Scala.js,
+and Scala Native, owns its own data, and delegates to no platform locale, formatting, or
+time library.
 
-### Dependency Resolution
+Modules return errors as values from owned sealed families. Nothing throws.
 
-All libraries are published to Maven Central:
+### Dependency resolution
 
-```scala sc:nocompile
-libraryDependencies += "africa.shuwari" %%% "world-money" % "{{projectVersion}}"
+Artefacts are published to Maven Central under the `africa.shuwari` organisation:
+
+```scala
+libraryDependencies += "africa.shuwari" %%% "world-money" % "@VERSION@"
 ```
 
-See [available modules](modules/index.md) for all artefact coordinates.
+See [available modules](modules/index.md) for the full set and its dependency graph.
 
 ---
 
-## Quick Examples
+## Documentation status
 
-### Countries
+This release carries release infrastructure only. The module set below is wired and
+publishes; the per-module pages are placeholders, and the documented surface arrives with
+the API it describes.
 
-```scala sc:nocompile
-import world.locale.*
-import boilerplate.*
+The example below is compiled as part of the build, so a published page cannot carry an
+example that does not compile.
 
-val kenya = Countries.KE
-kenya.name           // "Kenya"
-kenya.alpha2.unwrap  // "KE"
+```scala mdoc
+val modules =
+  List(
+    "world",
+    "world-money",
+    "world-quantity",
+    "world-id",
+    "world-address",
+    "world-gs1",
+    "world-party",
+    "world-temporal",
+    "world-text"
+  )
 
-Countries.from("GB")              // Some(Countries.GB)
-Countries.from(Alpha2Code("KE"))  // Some(Countries.KE)
-```
-
-### Currencies
-
-```scala sc:nocompile
-import world.money.*
-import boilerplate.*
-
-Currencies.KES.code.unwrap        // "KES"
-Currencies.KES.numericCode.unwrap // 404
-Currencies.KES.digits             // Some(2)
-
-Currencies.from("EUR")  // Some(Currencies.EUR)
-```
-
-### Money
-
-```scala sc:nocompile
-import world.money.*
-import world.money.syntax.*
-
-val price   = 100.KES
-val doubled = price * 2                          // 200.00 KES
-val halved  = price / 2                          // Right(50.00 KES)
-val rounded = BigDecimal("123.456").KES.rounded  // 123.46 KES
-
-// Compile error: different currencies cannot be mixed
-// 100.KES + 50.EUR
+modules.size
 ```
 
 ---

@@ -4,14 +4,15 @@ title: Contributing
 
 ## Overview
 
-`world` is an open-source project that welcomes contributions. This guide outlines technical requirements and workflow for contributors.
+`world` is an open-source project that welcomes contributions. This guide outlines the
+technical requirements and workflow for contributors.
 
 ---
 
 ## Prerequisites
 
 - **JDK 17+**
-- **sbt 1.11+**
+- **sbt 2.0+**
 - **Git**
 
 To allow for cross-platform builds, ensure the following system toolchains are available:
@@ -36,35 +37,47 @@ Verify your environment:
 sbt test
 ```
 
-## Project Structure
+## Project structure
 
 ```text
 world/
   modules/
-    common/         # Shared utilities (Formatter)
-    locale/         # Country and locale primitives (ISO 3166-1)
-    money/          # Currency and monetary values (ISO 4217)
-    money-usage/    # Currency-to-country usage bridge
-  docs/             # Documentation sources
-  project/          # Build configuration and source generators
+    world/            # Core: places, locales, currencies, civil time
+    world-money/      # Monetary amounts and arithmetic
+    world-quantity/   # Measures and quantities
+    world-id/         # Telephone, email, banking, tax and card identifiers
+    world-address/    # Postal addresses
+    world-gs1/        # Trade-item and logistics identification
+    world-party/      # Names, organisations, parties
+    world-temporal/   # Instants, zones, business calendars
+    world-text/       # Cultures, display, messages
+    world-data/       # Curated dataset, build-time only
+    sbt-world/        # The sbt plugin
+  data/               # Pinned upstream sources and their provenance
+  docs/               # Documentation sources
+  project/            # Build configuration
 ```
 
 ---
 
-## Code Guidelines
+## Code guidelines
 
-### Prohibited Language Features
+### Prohibited language features
 
-The following constructs are **forbidden** via Scalafix and compiler flags. Do not use without suitable justification:
+The following constructs are **forbidden** via Scalafix and compiler flags. Do not use them
+without suitable justification:
 
 - **`var`** - use immutable values
-- **`null`** - use `Option`, or `| Null` with `boilerplate.nullable.*` at boundaries
-- **`throw`** - use `Either` or domain error types (exception: `fromUnsafe` methods)
+- **`null`** - use `Option`, or `| Null` confined to platform boundaries
+- **`throw`** - errors are values from owned sealed families
 - **`return`** - use expression-based control flow
 - **`asInstanceOf`/`isInstanceOf`** - use pattern matching or `TypeTest`
 - **Default arguments** - provide explicit overloads
 
-### No Default Arguments
+Every module compiles under `-Yexplicit-nulls -Wunused:all -Wall -Wsafe-init
+-Xfatal-warnings -language:strictEquality`, and carries no external library dependencies.
+
+### No default arguments
 
 Provide overloads instead:
 
@@ -75,89 +88,58 @@ object Config:
   def apply(timeout: Int): Config = apply(timeout, None)
 ```
 
-### Explicit Nulls
+### Multiversal equality
 
-`-Yexplicit-nulls` is always enabled. Use `import boilerplate.nullable.*` at boundaries.
-
-### Multiversal Equality
-
-`-language:strictEquality` is always enabled. All domain types must provide `CanEqual`:
-
-```scala sc:nocompile
-opaque type Email = String
-
-object Email:
-  def apply(raw: String): Either[String, Email] =
-    if raw.contains("@") then Right(raw) else Left("Invalid")
-  extension (e: Email) def value: String = e
-  given CanEqual[Email, Email] = CanEqual.derived
-```
-
-### Formatting
-
-The display formatting extension method is named `display` (via [[world.format.Formatter]]):
-
-```scala sc:nocompile
-import world.money.format.given
-100.KES.display  // "KES 100.00"
-```
+`-language:strictEquality` is always enabled. Every domain type supplies `CanEqual` in its
+companion.
 
 ### Testing
 
-Use **munit** and **munit-scalacheck**:
-
-```scala sc:nocompile
-import munit.FunSuite
-import boilerplate.*
-
-class CurrencySuite extends FunSuite:
-  test("KES has correct code"):
-    assertEquals(Currencies.KES.code.unwrap, "KES")
-
-  test("addition combines amounts"):
-    val sum = 100.EUR + 50.EUR
-    assertEquals(sum.value, BigDecimal(150))
-```
-
-Test all platforms for cross-compiled modules:
+Use **munit**. Cross-compiled modules are tested on every platform:
 
 ```bash
-sbt "world-jvm/test; world-js/test; world-native/test"
+sbt testJVM
+sbt testJS
+sbt testNative
 ```
 
 ---
 
-## Source Generation
+## Quality gates
 
-Country, language, script, and currency sources are generated at build time from the CLDR data in
-the `data/cldr` git submodule (pinned to a release tag). Initialise it before building:
+| Command | Checks |
+|---|---|
+| `sbt fmt` | applies formatting and source headers |
+| `sbt fmtCheck` | verifies formatting and source headers |
+| `sbt lint` | verifies Scalafix conformance |
+| `sbt +Test/compile` | compiles every matrix row |
+| `sbt world-site/mdoc` | compiles the documentation examples |
+| `sbt compatReport` | prints the MiMa and TASTy-MiMa compatibility report |
 
-```bash
-git submodule update --init --depth 1
-```
+The compatibility report is awareness only. It never declines a change.
 
-The generators live in `project/` (`CldrParser.scala` and the per-type populators). To change
-generated output, edit the relevant generator, then regenerate and verify:
+---
 
-```bash
-sbt clean compile test
-```
+## Upstream data
 
-Generated `.scala` files under `target/.../src_managed` must never be edited by hand.
+Curated datasets are pinned per source in `data/upstream-pins.json`, which records the
+pinned version, the date it was taken, and where to check for a newer one. A scheduled
+workflow compares each pin against its published latest and opens an issue when a source
+has moved. It never updates data on its own: a pin moves through a reviewed change.
 
 ---
 
 ## Workflow
 
-### Submitting Pull Requests
+### Submitting pull requests
 
 1. Create a feature branch
 2. Make changes
 3. Write or update tests
 4. Update documentation for API changes
-5. Verify: `sbt clean compile test`
-6. Run formatting: `sbt format`
-7. Push and create pull request
+5. Verify: `sbt clean +Test/compile test`
+6. Run formatting: `sbt fmt`
+7. Push and create a pull request
 
 ---
 

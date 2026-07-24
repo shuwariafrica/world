@@ -8,39 +8,28 @@ subsection:
     index: modules/index.md
     directory: modules
     subsection:
-
-      - title: "world-locale"
-        index: modules/locale/index.md
-        directory: modules/locale
-        subsection:
-          - title: Core Concepts
-            page: modules/locale/concepts.md
-          - title: Countries
-            page: modules/locale/countries.md
-          - title: Formatting
-            page: modules/locale/formatting.md
-
+      - title: "world"
+        page: modules/world.md
       - title: "world-money"
-        index: modules/money/index.md
-        directory: modules/money
-        subsection:
-          - title: Core Concepts
-            page: modules/money/concepts.md
-          - title: Currencies
-            page: modules/money/currencies.md
-          - title: Money Operations
-            page: modules/money/operations.md
-          - title: Currency Conversion
-            page: modules/money/conversion.md
-
-      - title: "world-common"
-        index: modules/common/index.md
-        directory: modules/common
-        subsection:
-          - title: Core Concepts
-            page: modules/common/concepts.md
-          - title: Formatting
-            page: modules/common/formatting.md
+        page: modules/world-money.md
+      - title: "world-quantity"
+        page: modules/world-quantity.md
+      - title: "world-id"
+        page: modules/world-id.md
+      - title: "world-address"
+        page: modules/world-address.md
+      - title: "world-gs1"
+        page: modules/world-gs1.md
+      - title: "world-party"
+        page: modules/world-party.md
+      - title: "world-temporal"
+        page: modules/world-temporal.md
+      - title: "world-text"
+        page: modules/world-text.md
+      - title: "world-data"
+        page: modules/world-data.md
+      - title: "sbt-world"
+        page: modules/sbt-world.md
 
   - title: Contributing
     page: contributing.md

@@ -1,99 +1,112 @@
-organization := "africa.shuwari"
-description := "Scala toolkit for representation and manipulation of real-world domain concepts"
-homepage := Some(url("https://github.com/shuwariafrica/world"))
-startYear := Some(2023)
-semanticdbEnabled := true
-scmInfo := ScmInfo(
-  url("https://dev.shuwari.africa/world"),
-  "scm:git:https://github.com/shuwariafrica/world.git",
-  Some("scm:git:git@github.com:shuwariafrica/world.git")
-).some
+import org.scalajs.sbtplugin.ScalaJSCrossVersion
+import scala.scalanative.sbtplugin.ScalaNativeCrossVersion
+
+ThisBuild / organization := "africa.shuwari"
+ThisBuild / description := "Scala toolkit for representation and manipulation of real-world domain concepts"
+ThisBuild / homepage := Some(uri("https://github.com/shuwariafrica/world"))
+ThisBuild / startYear := Some(2023)
+ThisBuild / semanticdbEnabled := true
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    uri("https://dev.shuwari.africa/world"),
+    "scm:git:https://github.com/shuwariafrica/world.git",
+    Some("scm:git:git@github.com:shuwariafrica/world.git")
+  )
+)
+
 apacheLicensed
 Shuwari.organisationSettings
-formattingSettings
+inThisBuild(Compat.buildSettings)
 
-val `world-common` =
-  projectMatrix
-    .in(file("modules/common"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .settings(unitTestSettings)
+val scala3 = Dependencies.scalaVersion
+
+/* Core */
+lazy val world = worldModule("world")
+
+lazy val `world-money` = worldModule("world-money").dependsOn(world)
+
+lazy val `world-quantity` = worldModule("world-quantity").dependsOn(world, `world-money`)
+
+lazy val `world-id` = worldModule("world-id").dependsOn(world)
+
+lazy val `world-address` = worldModule("world-address").dependsOn(world)
+
+lazy val `world-gs1` = worldModule("world-gs1").dependsOn(world, `world-money`, `world-quantity`)
+
+lazy val `world-party` = worldModule("world-party").dependsOn(world, `world-id`, `world-address`)
+
+lazy val `world-temporal` = worldModule("world-temporal").dependsOn(world)
+
+lazy val `world-text` =
+  worldModule("world-text").dependsOn(world, `world-money`, `world-quantity`, `world-address`, `world-party`)
+
+/* Curated build-time dataset. Never on a runtime classpath - consumers reach it through
+ * sbt-world's hidden configuration. */
+lazy val `world-data` =
+  ProjectMatrix("world-data", file("modules/world-data"), getClass.getClassLoader)
+    .jvmPlatform(Seq(scala3), Compat.moduleSettings(CrossVersion.binary))
+    .settings(strictSettings)
     .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.boilerplate)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
 
-val `world-locale` =
-  projectMatrix
-    .in(file("modules/locale"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .dependsOn(`world-common`)
-    .settings(unitTestSettings)
+/* sbt 2.x plugin. Its Scala version is sbt's own, so the module set's target does not apply. */
+lazy val `sbt-world` =
+  project
+    .in(file("modules/sbt-world"))
+    .enablePlugins(SbtPlugin)
     .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.languagesGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.scriptsGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.likelySubtagsGeneratorTask)
 
-val `world-money` =
-  projectMatrix
-    .in(file("modules/money"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting)
-    .nativePlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting ++ nativeSettings)
-    .dependsOn(`world-common`)
-    .settings(unitTestSettings)
-    .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
+lazy val runtimeModules: Seq[ProjectMatrix] =
+  Seq(
+    world,
+    `world-money`,
+    `world-quantity`,
+    `world-id`,
+    `world-address`,
+    `world-gs1`,
+    `world-party`,
+    `world-temporal`,
+    `world-text`
+  )
 
-val `world-money-usage` =
-  projectMatrix
-    .in(file("modules/money-usage"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .in(file("modules/money-usage"))
-    .dependsOn(`world-locale`, `world-money`)
-    .settings(unitTestSettings)
-    .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.currencyUsageGeneratorTask)
-
-val `world-site` =
+lazy val `world-site` =
   project
     .in(file("docs"))
     .notPublished
     .enablePlugins(WorldUnidocPlugin)
+    .dependsOn(runtimeModules.map(m => (m.jvm(scala3): ProjectReference): ClasspathDep[ProjectReference]) *)
     .settings(
-      ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-        `world-common`.jvm(Dependencies.scalaVersion),
-        `world-locale`.jvm(Dependencies.scalaVersion),
-        `world-money`.jvm(Dependencies.scalaVersion),
-        `world-money-usage`.jvm(Dependencies.scalaVersion)
-      )
+      scalaVersion := scala3,
+      ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(runtimeModules.map(_.jvm(scala3): ProjectReference) *)
     )
 
-val `world` =
-  projectMatrix
+lazy val root =
+  project
     .in(file("."))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion))
-    .settings(publish / skip := true)
+    .notPublished
     .aggregate(
-      `world-common`,
-      `world-locale`,
-      `world-money`,
-      `world-money-usage`
+      (runtimeModules.flatMap(_.projectRefs) ++ `world-data`.projectRefs ++ Seq[ProjectReference](`sbt-world`)) *
     )
 
-def javaTimeDependencySetting = List(
-  libraryDependencies += Dependencies.`scala-java-time` % Provided,
-  libraryDependencies += Dependencies.`scala-java-time-tzdb` % Provided
+def worldModule(id: String): ProjectMatrix =
+  ProjectMatrix(id, file(s"modules/$id"), getClass.getClassLoader)
+    .jvmPlatform(Seq(scala3), Compat.moduleSettings(CrossVersion.binary))
+    .jsPlatform(Seq(scala3), Compat.moduleSettings(ScalaJSCrossVersion.binary))
+    .nativePlatform(Seq(scala3), nativeSettings ++ Compat.moduleSettings(ScalaNativeCrossVersion.binary))
+    .settings(strictSettings)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+
+/* The compiler bar. Every module builds clean under it. */
+def strictSettings: List[Setting[?]] = List(
+  scalacOptions ++= Seq(
+    "-Yexplicit-nulls",
+    "-Wunused:all",
+    "-Wall",
+    "-Wsafe-init",
+    // -Werror is the current spelling; 3.9 deprecates the -Xfatal-warnings alias it replaces.
+    "-Werror",
+    "-language:strictEquality"
+  )
 )
 
 def nativeSettings = List(
@@ -104,12 +117,6 @@ def unitTestSettings: List[Setting[?]] = List(
   libraryDependencies += Dependencies.munit % Test,
   testFrameworks += new TestFramework("munit.Framework")
 )
-
-def formattingSettings =
-  List(
-    scalafmtDetailedError := true,
-    scalafmtPrintDiff := true
-  )
 
 def publishSettings = List(
   packageOptions += Package.ManifestAttributes(
@@ -125,9 +132,18 @@ def publishSettings = List(
     else localStaging.value
   },
   pomIncludeRepository := (_ => false),
-  publishMavenStyle := true
+  publishMavenStyle := true,
+  scalafmtDetailedError := true,
+  scalafmtPrintDiff := true
 )
 
-addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
+def platformAlias(suffix: String, task: String, rows: Seq[Project]): Seq[Setting[?]] =
+  addCommandAlias(suffix, rows.map(p => s"${p.id}/$task").mkString("; "))
 
-addCommandAlias("check", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+platformAlias("testJVM", "test", runtimeModules.map(_.jvm(scala3)) :+ `world-data`.jvm(scala3))
+platformAlias("testJS", "test", runtimeModules.map(_.js(scala3)))
+platformAlias("testNative", "test", runtimeModules.map(_.native(scala3)))
+
+addCommandAlias("fmt", "scalafmtAll; scalafmtSbt; headerCreateAll")
+addCommandAlias("fmtCheck", "scalafmtCheckAll; scalafmtSbtCheck; headerCheckAll")
+addCommandAlias("lint", "scalafixAll --check")
