@@ -1,0 +1,42 @@
+name: Upstream Watch
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly. tzdata and the GS1 dictionary are the fastest-moving pins.
+    - cron: "17 6 * * 1"
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    name: Compare pinned sources against upstream
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Ensure drift label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create upstream-drift \
+            --description "A pinned upstream source has published a newer version" \
+            --color D93F0B || true
+
+      - name: Compare pins
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/upstream_watch.py --pins data/upstream-pins.json

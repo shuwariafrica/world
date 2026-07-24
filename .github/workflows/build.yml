@@ -1,20 +1,16 @@
-name: Integration Build
+name: "build"
 
 on:
   workflow_dispatch:
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - "**.md"
   push:
     branches: [ main ]
     tags: [ v* ]
-
-env:
-  NODE_LTS: 22
-  JDK_PUBLISH_LTS: 17
-  SBT_OPTS: >- # Use all available resources
-    -Xmx8G
-    -Xss4M
-    -XX:ReservedCodeCacheSize=512M
+    paths-ignore:
+      - "**.md"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -23,23 +19,26 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  JDK_RELEASE: 17
+  JDK_CURRENT: 25
+  NODE_LTS: 22
+  SBT_OPTS: >- # Use all available resources
+    -Xmx10G
+    -Xms6G
+    -Xss4M
+    -XX:ReservedCodeCacheSize=512M
+
 jobs:
-  build:
-    name: "[${{ matrix.platform }} / ${{ matrix.os }} / JDK ${{ matrix.java }}] Build & Test"
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+  test_jvm:
+    name: "[JVM: jdk-${{ matrix.java }}] TEST"
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { platform: jvm,    project: world,       java: 17, os: ubuntu-26.04 }
-          - { platform: jvm,    project: world,       java: 21, os: ubuntu-26.04 }
-          - { platform: jvm,    project: world,       java: 25, os: ubuntu-26.04 }
-          - { platform: js,     project: worldJS,     java: 21, os: ubuntu-26.04 }
-          - { platform: native, project: worldNative, java: 21, os: ubuntu-26.04 }
-          - { platform: native, project: worldNative, java: 21, os: windows-2025-vs2026 }
-          - { platform: native, project: worldNative, java: 21, os: macos-26 }
-
+        java: [ 17, 21, 25 ]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -47,31 +46,109 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Setup JDK
+      - name: Setup Java ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
+          check-latest: true
 
-      - name: Setup sbt
+      - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Setup Coursier Cache
+      - name: Set up Coursier cache
         uses: coursier/cache-action@v8
 
-      - name: Set up Node.js
-        if: matrix.platform == 'js'
+      - name: Test
+        run: sbt --server "world-jvm/test"
+
+      - name: Package
+        run: sbt --server "world-jvm/package"
+
+  test_js:
+    name: "[JS: node-${{ matrix.node }}] TEST"
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [ 22, 24 ]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_LTS }}
+          node-version: ${{ matrix.node }}
+          check-latest: true
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Test
+        run: sbt --server "world-js/test"
+
+      - name: Package
+        run: sbt --server "world-js/package"
+
+  test_native:
+    name: "[Native: ${{ matrix.target }}] TEST"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-26.04
+          - target: linux-aarch_64
+            runner: ubuntu-26.04-arm
+          - target: osx-aarch_64
+            runner: macos-26
+          - target: windows-x86_64
+            runner: windows-2025-vs2026
+            vsarch: amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
 
       # vcvarsall imports the MSVC build environment for the target arch; LLVM_BIN points Scala Native's
       # discovery at MSVCs clang ensuring the correct ABI
       - name: Set up MSVC toolchain (Windows)
-        if: startsWith(matrix.os, 'windows') && matrix.platform == 'native'
+        if: startsWith(matrix.runner, 'windows')
         shell: pwsh
         env:
-          VSARCH: amd64
+          VSARCH: ${{ matrix.vsarch }}
         run: |
           $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
                   -latest -property installationPath
@@ -81,16 +158,18 @@ jobs:
           $sub = if ($env:VSARCH -eq 'arm64') { 'arm64' } else { 'x64' }
           "LLVM_BIN=$vs\VC\Tools\Llvm\$sub\bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Execute Tests and Packaging
+      - name: Test
         shell: bash
-        run: |
-          sbt -Dsbt.ci=true "${{ matrix.project }}/test"
-          sbt -Dsbt.ci=true "${{ matrix.project }}/publishLocal"
+        run: sbt --server "world-native/test"
 
-  static-analysis:
+      - name: Package
+        shell: bash
+        run: sbt --server "world-native/package"
+
+  static_analysis:
     name: Static Analysis
     runs-on: ubuntu-26.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -98,50 +177,48 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Setup JDK
+      - name: Setup Java ${{ env.JDK_CURRENT }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JDK_PUBLISH_LTS }}
+          java-version: ${{ env.JDK_CURRENT }}
+          check-latest: true
 
-      - name: Setup sbt
+      - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Setup Coursier Cache
+      - name: Set up Coursier cache
         uses: coursier/cache-action@v8
 
-      - name: Verify Formatting
-        id: scalafmt-check
-        run: sbt -Dsbt.ci=true scalafmtCheckAll
+      - name: Verify Source Formatting
+        id: scalafmt
         continue-on-error: true
+        run: sbt --server "scalafmtCheckAll; scalafmtSbtCheck"
 
-      - name: Verify Linting Conformance
-        id: scalafix-check
-        run: sbt -Dsbt.ci=true "scalafixAll --check"
+      - name: Verify Linting Conformity
+        id: scalafix
         continue-on-error: true
+        run: sbt --server "scalafixAll --check"
 
-      - name: Verify Source File Headers
-        id: header-check
-        run: sbt -Dsbt.ci=true headerCheckAll
+      - name: Verify File Header Conformity
+        id: headers
         continue-on-error: true
+        run: sbt --server headerCheckAll
 
-      - name: Report Failures
-        if: steps.scalafmt-check.outcome == 'failure' || steps.scalafix-check.outcome == 'failure' || steps.header-check.outcome == 'failure'
+      - name: Check for failures
+        if: always()
         run: |
-          echo "Error: One or more static analysis tasks failed." >&2
-          if [[ "${{ steps.scalafmt-check.outcome }}" == "failure" ]]; then
-            echo "- Scalafmt code formatting check failed." >&2
+          failed=""
+          [[ "${{ steps.scalafmt.outcome }}" == "failure" ]] && failed="$failed scalafmtCheckAll"
+          [[ "${{ steps.scalafix.outcome }}" == "failure" ]] && failed="$failed scalafixAll"
+          [[ "${{ steps.headers.outcome }}" == "failure" ]] && failed="$failed headerCheckAll"
+          if [[ -n "$failed" ]]; then
+            echo "::error::Static analysis checks failed:$failed"
+            exit 1
           fi
-          if [[ "${{ steps.scalafix-check.outcome }}" == "failure" ]]; then
-            echo "- Scalafix code compliance check failed." >&2
-          fi
-          if [[ "${{ steps.header-check.outcome }}" == "failure" ]]; then
-            echo "- Source file headers check failed." >&2
-          fi
-          exit 1
 
-  site:
-    name: Compile Documentation Site
+  compatibility:
+    name: Compatibility Report
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -151,44 +228,74 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Setup JDK
+      - name: Setup Java ${{ env.JDK_RELEASE }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JDK_PUBLISH_LTS }}
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
 
-      - name: Setup sbt
+      - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Setup Coursier Cache
+      - name: Set up Coursier cache
         uses: coursier/cache-action@v8
 
-      - name: Build Site
+      # Reports and succeeds: compatibility is never a gate before 1.0.0.
+      - name: Report MiMa and TASTy-MiMa Findings
+        run: sbt --server "world-jvm/compatReport"
+
+  docs:
+    name: Assemble Documentation Site
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Compile Documentation Examples
+        run: sbt --server "world-site/mdoc"
+
+      - name: Build Documentation Site
         id: build-site
-        run: sbt -Dsbt.ci=true "world-site/generateUnidoc"
+        run: sbt --server -Dsbt.ci=true "world-site/generateUnidoc"
 
-      - name: Sanity check site
-        run: test -s "${{ steps.build-site.outputs.site_dir }}/index.html"
-
-      - name: Prepare Pages Artifact (.nojekyll)
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: touch "${{ steps.build-site.outputs.site_dir }}/.nojekyll"
-
-      - name: Upload Pages Artifact
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload Pages Artefact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ steps.build-site.outputs.site_dir }}
 
   publish:
     name: Publish Artefacts
-    needs: [ build, static-analysis, site ]
-    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - test_jvm
+      - test_js
+      - test_native
+      - static_analysis
+      - compatibility
+      - docs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-26.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -196,8 +303,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: 'Setup GPG Key and Agent'
-        id: import_gpg
+      - name: Import Signing Key
         uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.OSS_PUBLISH_USER_SIGNING_KEY }}
@@ -205,40 +311,46 @@ jobs:
           git_commit_gpgsign: true
           trust_level: 5
 
-      - name: Setup JDK
+      - name: Setup Java ${{ env.JDK_RELEASE }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JDK_PUBLISH_LTS }}
+          java-version: ${{ env.JDK_RELEASE }}
           check-latest: true
 
-      - name: Setup sbt
+      - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Setup Coursier Cache
+      - name: Set up Coursier cache
         uses: coursier/cache-action@v8
 
-      - name: Publish Release Artefacts (jvm/js/native)
+      - name: Publish Artefacts
+        run: sbt --server publishSigned
         env:
           SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
           SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
-        run: sbt -Dsbt.ci=true publishSigned sonaUpload sonaRelease
+
+      - name: Publish Maven Central Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: sbt --server "sonaUpload; sonaRelease"
+        env:
+          SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
 
   site-release:
-    name: Publish Site & GitHub Release
-    needs: [ publish, site ]
-    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
+    name: Release Documentation Site
+    needs: [ publish, docs ]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-26.04
+    timeout-minutes: 15
     permissions:
-      contents: write          # needed to create a release
-      pages: write             # deploy to GitHub Pages
-      id-token: write          # required by actions/deploy-pages
+      contents: write
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
-      # Deploys the `github-pages` artefact uploaded by the `site` job
-      # in this same run — no checkout/sbt/rebuild needed.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
@@ -253,7 +365,7 @@ jobs:
           app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
 
-      - name: Publish GitHub Release
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ steps.release-bot.outputs.token }}
         run: |
@@ -267,3 +379,29 @@ jobs:
             --generate-notes \
             --verify-tag \
             $prerelease_flag
+
+  dependency-graph:
+    name: Update Dependency Graph
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_CURRENT }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_CURRENT }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Submit Dependency Graph
+        uses: scalacenter/sbt-dependency-submission@v3

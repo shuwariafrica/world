@@ -1,13 +1,14 @@
 # world
 
-A collection of Scala libraries for representation and manipulation of real-world domain concepts.
+Representation, validation, exact computation, and locale-correct presentation of
+real-world domain concepts, cross-published for the JVM, Scala.js, and Scala Native.
 
-## API Structure
+Operations return errors as values from owned sealed families under `WorldError`, and no
+module depends on an external library or on a platform locale, formatting, or time
+facility.
 
-- **`world-common`:** The display-formatting type class ([[world.format.Formatter]]).
+Module concerns, the dependency graph, and artefact coordinates are on the
+[documentation site](https://dev.shuwari.africa/world/).
 
-- **`world-locale` ([[world.locale]]):** ISO country, language, and script data with validated opaque codes, predefined singletons ([[world.locale.country.Countries]], [[world.locale.language.Languages]], [[world.locale.script.Scripts]]), and BCP 47 locale composition ([[world.locale.Locale]]).
-
-- **`world-money` ([[world.money]]):** Type-safe monetary values ([[world.money.Money]]), ISO 4217 currency definitions ([[world.money.currency.Currency]]), and currency conversion ([[world.money.conversion.ExchangeRateProvider]]).
-
-- **`world-money-usage` ([[world.money.usage]]):** Currency-to-country territory mappings via the [[world.money.usage.CurrencyUsage]] typeclass.
+This release carries the build, publishing, and documentation pipeline; the API arrives
+with the increments that implement it.

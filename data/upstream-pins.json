@@ -1,0 +1,166 @@
+{
+  "description": "Pinned upstream sources for world's curated datasets. The scheduled upstream-watch workflow compares each pin against its published latest and reports drift. It never updates data: a pin moves through a reviewed change.",
+  "recorded": "2026-07-24",
+  "methods": {
+    "regex": "Fetch url as text; the first capture group of pattern is the published version.",
+    "github-release": "Fetch url as JSON; tag_name is the published version.",
+    "text": "Fetch url as text; the whole trimmed body is the published version.",
+    "manual": "No machine-checkable version endpoint. Reported for periodic human review at the stated cadence."
+  },
+  "sources": [
+    {
+      "name": "six-iso-4217-list-one",
+      "authority": "SIX Financial Information AG, ISO 4217 maintenance agency",
+      "content": "Current currency, fund and precious-metal codes",
+      "pinned": { "version": "2026-01-01", "published": "2026-01-01" },
+      "check": {
+        "method": "regex",
+        "url": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml",
+        "pattern": "Pblshd=\"([0-9]{4}-[0-9]{2}-[0-9]{2})\""
+      },
+      "cadence": "on ISO 4217 amendment"
+    },
+    {
+      "name": "six-iso-4217-list-three",
+      "authority": "SIX Financial Information AG, ISO 4217 maintenance agency",
+      "content": "Historic currency codes and their withdrawal dates",
+      "pinned": { "version": "2026-01-01", "published": "2026-01-01" },
+      "check": {
+        "method": "regex",
+        "url": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml",
+        "pattern": "Pblshd=\"([0-9]{4}-[0-9]{2}-[0-9]{2})\""
+      },
+      "cadence": "on ISO 4217 amendment"
+    },
+    {
+      "name": "cldr",
+      "authority": "Unicode Consortium",
+      "content": "Presentation data: numbers, names, lists, date-time, week data, plural rules, person-name patterns, likely subtags, parent locales",
+      "pinned": {
+        "version": "release-48-2",
+        "published": "2026-03-17",
+        "commit": "11299982335beb974c1c63c45265184e759c0f41"
+      },
+      "check": {
+        "method": "github-release",
+        "url": "https://api.github.com/repos/unicode-org/cldr/releases/latest"
+      },
+      "cadence": "two major releases per year, plus point releases"
+    },
+    {
+      "name": "iana-language-subtag-registry",
+      "authority": "IANA, under BCP 47 / RFC 5646",
+      "content": "Language, script, region, variant and extension subtags",
+      "pinned": { "version": "2026-06-14", "published": "2026-06-14" },
+      "check": {
+        "method": "regex",
+        "url": "https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry",
+        "pattern": "^File-Date: ([0-9]{4}-[0-9]{2}-[0-9]{2})"
+      },
+      "cadence": "ad hoc, several times per year"
+    },
+    {
+      "name": "iana-tzdata",
+      "authority": "IANA time zone database",
+      "content": "Zone histories and transition rules",
+      "pinned": { "version": "2026c", "published": "2026-07-08" },
+      "check": {
+        "method": "text",
+        "url": "https://data.iana.org/time-zones/tzdb/version"
+      },
+      "cadence": "ad hoc, several times per year, occasionally urgent"
+    },
+    {
+      "name": "gs1-barcode-syntax-dictionary",
+      "authority": "GS1 AISBL (Apache-2.0)",
+      "content": "Application Identifier table with per-component formats, linters and cross-AI rules",
+      "pinned": { "version": "2026-01-27", "published": "2026-01-27" },
+      "check": {
+        "method": "github-release",
+        "url": "https://api.github.com/repos/gs1/gs1-syntax-dictionary/releases/latest"
+      },
+      "cadence": "GS1's fastest-moving tier; several releases per year"
+    },
+    {
+      "name": "unicode-ucd",
+      "authority": "Unicode Consortium",
+      "content": "Character database: NFC, Bidi_Class, Joining_Type, Script and related properties",
+      "pinned": { "version": "17.0.0", "published": "2025-08-15" },
+      "check": {
+        "method": "regex",
+        "url": "https://www.unicode.org/Public/UCD/latest/ReadMe.txt",
+        "pattern": "Version ([0-9]+\\.[0-9]+\\.[0-9]+) of the Unicode Standard"
+      },
+      "cadence": "annual major release"
+    },
+    {
+      "name": "unicode-uts-46",
+      "authority": "Unicode Consortium",
+      "content": "IDNA compatibility processing and its mapping table",
+      "pinned": { "version": "35", "published": "2025-09-04" },
+      "check": {
+        "method": "regex",
+        "url": "https://www.unicode.org/reports/tr46/",
+        "pattern": "tr46-([0-9]+)"
+      },
+      "cadence": "tracks the Unicode release"
+    },
+    {
+      "name": "iban-registry",
+      "authority": "SWIFT, ISO 13616 registration authority",
+      "content": "Per-country IBAN and BBAN structure, bank and branch identifier positions, SEPA flag, examples",
+      "pinned": { "version": "102", "published": null },
+      "check": {
+        "method": "manual",
+        "url": "https://www.swift.com/standards/data-standards/iban-international-bank-account-number"
+      },
+      "cadence": "roughly quarterly",
+      "notes": "swift.com accepts the connection then serves nothing to automated clients; the release number cannot be read without a human fetch."
+    },
+    {
+      "name": "kenya-bank-branch-codes",
+      "authority": "Kenya Bankers Association",
+      "content": "Bank and branch listing: two-digit bank codes, three-digit branch codes",
+      "pinned": { "version": "2023-07", "published": "2023-07" },
+      "check": {
+        "method": "manual",
+        "url": "https://www.kba.co.ke/"
+      },
+      "cadence": "ad hoc"
+    },
+    {
+      "name": "ghana-ghipss-sort-codes",
+      "authority": "GhIPSS, with decomposition per Bank of Ghana Banks' Sort Codes",
+      "content": "Clearing house sort codes, split bank / clearing zone / branch",
+      "pinned": { "version": "2017-08", "published": "2017-08" },
+      "check": {
+        "method": "manual",
+        "url": "https://www.ghipss.net/"
+      },
+      "cadence": "ad hoc"
+    },
+    {
+      "name": "southafrica-branch-ranges",
+      "authority": "FNB participating-banks table, a participant publication rather than the allocating authority",
+      "content": "Six-digit universal branch code ranges per bank",
+      "pinned": { "version": "2022-05", "published": "2022-05" },
+      "check": {
+        "method": "manual",
+        "url": "https://www.fnb.co.za/"
+      },
+      "cadence": "ad hoc",
+      "notes": "No BankservAfrica, PASA or SARB specification for the code structure was retrievable; the snapshot is documented as participant-sourced."
+    },
+    {
+      "name": "nigeria-cbn-ofi-codes",
+      "authority": "Central Bank of Nigeria",
+      "content": "Five-digit other-financial-institution codes used by the NUBAN scheme",
+      "pinned": { "version": "2011", "published": "2011" },
+      "check": {
+        "method": "manual",
+        "url": "https://www.cbn.gov.ng/"
+      },
+      "cadence": "ad hoc"
+    }
+  ]
+}

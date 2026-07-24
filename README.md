@@ -3,18 +3,32 @@
 [![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
-Type-safe Scala libraries for modelling real-world domain concepts. Cross-platform (JVM, Scala.js, Scala Native).
+Scala 3 libraries modelling places, languages and locales, money and currencies,
+quantities, trade and business identifiers, postal addresses, parties, and civil time.
+Every module targets the JVM, Scala.js, and Scala Native, owns its data, and delegates to
+no platform locale, formatting, or time library.
+
+Operations return errors as values from owned sealed families. Nothing throws.
 
 ---
 
 ## Modules
 
-| Module | Coordinates | Purpose |
+| Module | Purpose | Depends on |
 | - | - | - |
-| `world-locale` | `"africa.shuwari" %%% "world-locale"` | ISO 3166-1 country codes and locale primitives |
-| `world-money` | `"africa.shuwari" %%% "world-money"` | ISO 4217 currencies, type-safe monetary values, arithmetic |
-| `world-money-usage` | `"africa.shuwari" %%% "world-money-usage"` | Currency-to-country usage territory mappings |
-| `world-common` | `"africa.shuwari" %%% "world-common"` | Shared formatting and utility abstractions |
+| `world` | territories, subdivisions, languages, scripts, locales, currencies, civil dates and times, rounding, ratios | - |
+| `world-money` | monetary amounts, rates, percentages, tax, bags, allocation | `world` |
+| `world-quantity` | measurement kinds, units, quantities, unit prices | `world`, `world-money` |
+| `world-id` | telephone, email, banking, tax and card identifiers | `world` |
+| `world-address` | postal addresses and territory address rules | `world` |
+| `world-gs1` | GTIN, GLN, SSCC, and element strings | `world`, `world-money`, `world-quantity` |
+| `world-party` | personal names, organisations, parties | `world`, `world-id`, `world-address` |
+| `world-temporal` | instants, zones, business calendars, fiscal periods | `world` |
+| `world-text` | cultures, locale-correct display, message substrate | `world`, `world-money`, `world-quantity`, `world-address`, `world-party` |
+
+`world-data` carries the curated dataset consumed at build time and never reaches a
+runtime classpath; `sbt-world` is the sbt plugin declaring locale and zone coverage and
+generating message catalogues.
 
 Add to your `build.sbt`:
 
@@ -24,23 +38,10 @@ libraryDependencies += "africa.shuwari" %%% "world-money" % "<version>"
 
 ---
 
-## Quick Start
+## Status
 
-```scala
-import world.money.*
-import world.money.syntax.*
-
-val price   = 100.KES
-val total   = price + 50.KES                     // 150.00 KES
-val halved  = price / 2                          // Right(50.00 KES)
-val rounded = BigDecimal("123.456").KES.rounded  // 123.46 KES
-```
-
----
-
-## Documentation
-
-Refer to the [project documentation site](https://dev.shuwari.africa/world/docs/) for API reference and usage guides.
+This release carries the build, publishing, and documentation pipeline. The module
+artefacts publish and are empty; each gains its API in the releases that follow.
 
 ---
 
@@ -49,8 +50,6 @@ Refer to the [project documentation site](https://dev.shuwari.africa/world/docs/
 - **Documentation**: <https://dev.shuwari.africa/world/docs>
 - **API Reference**: <https://dev.shuwari.africa/world>
 - **Source Code**: <https://github.com/shuwariafrica/world>
-- **ISO 3166 (Countries)**: <https://unstats.un.org/unsd/methodology/m49/>
-- **ISO 4217 (Currencies)**: <https://www.six-group.com/en/products-services/financial-information/data-standards.html#iso-4217>
 
 ---
 

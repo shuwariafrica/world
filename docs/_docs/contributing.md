@@ -2,172 +2,69 @@
 title: Contributing
 ---
 
-## Overview
-
-`world` is an open-source project that welcomes contributions. This guide outlines technical requirements and workflow for contributors.
-
----
-
 ## Prerequisites
 
-- **JDK 17+**
-- **sbt 1.11+**
-- **Git**
+- JDK 17 or newer
+- Node.js 22 or newer, for the Scala.js rows
+- An LLVM toolchain providing `clang`, for the Scala Native rows
 
-To allow for cross-platform builds, ensure the following system toolchains are available:
-
-- JavaScript runtime (Scala.js):
-  - **Node.js 22+**
-
-- Native toolchain (Scala Native):
-  - **LLVM toolchain**: `clang`, and standard C toolchain utilities
-
-## Setup
-
-Fork and clone the repository:
-
-```bash
-git clone https://github.com/shuwariafrica/world.git
-```
-
-Verify your environment:
-
-```bash
-sbt test
-```
-
-## Project Structure
+## Project layout
 
 ```text
-world/
-  modules/
-    common/         # Shared utilities (Formatter)
-    locale/         # Country and locale primitives (ISO 3166-1)
-    money/          # Currency and monetary values (ISO 4217)
-    money-usage/    # Currency-to-country usage bridge
-  docs/             # Documentation sources
-  project/          # Build configuration and source generators
+modules/
+  core/       world            places, locales, currencies, civil time
+  money/      world-money      monetary amounts and arithmetic
+  quantity/   world-quantity   measures, quantities, unit prices
+  id/         world-id         telephone, email, banking, tax and card identifiers
+  address/    world-address    postal addresses
+  gs1/        world-gs1        trade-item and logistics identification
+  party/      world-party      names, organisations, parties
+  temporal/   world-temporal   instants, zones, business calendars
+  text/       world-text       cultures, display, messages
+  data/       world-data       curated dataset, build time only
+  sbt-world/  sbt-world        the sbt plugin
+data/         pinned upstream sources and their provenance
+docs/         documentation sources
 ```
 
----
+## Commands
 
-## Code Guidelines
+| Command | Purpose |
+|---|---|
+| `sbt format` | apply formatting, linting, and source headers |
+| `sbt check` | verify formatting, linting, and source headers |
+| `sbt world-jvm/test` | test every JVM row |
+| `sbt world-js/test` | test every Scala.js row |
+| `sbt world-native/test` | test every Scala Native row |
+| `sbt world-site/mdoc` | compile the documentation examples |
+| `sbt world-jvm/compatReport` | print the MiMa and TASTy-MiMa report |
 
-### Prohibited Language Features
+A change is ready when `check` and all three test commands pass. The compatibility
+report is awareness only and never declines a change.
 
-The following constructs are **forbidden** via Scalafix and compiler flags. Do not use without suitable justification:
+## Code
 
-- **`var`** - use immutable values
-- **`null`** - use `Option`, or `| Null` with `boilerplate.nullable.*` at boundaries
-- **`throw`** - use `Either` or domain error types (exception: `fromUnsafe` methods)
-- **`return`** - use expression-based control flow
-- **`asInstanceOf`/`isInstanceOf`** - use pattern matching or `TypeTest`
-- **Default arguments** - provide explicit overloads
+Modules carry no external runtime dependencies, and compile under
+`-Wall -Wsafe-init` on top of the organisation's standard options - `-Werror`,
+`-Yexplicit-nulls`, `-Wunused:all`, and `-language:strictEquality` among them.
 
-### No Default Arguments
+Scalafix additionally rejects `var`, `null`, `throw`, `return`, `asInstanceOf`,
+`isInstanceOf`, and default arguments. Errors are values from owned sealed families;
+overloads replace default arguments; every domain type supplies `CanEqual` in its
+companion.
 
-Provide overloads instead:
+## Upstream data
 
-```scala sc:nocompile
-final case class Config(timeout: Int, retries: Option[Int])
+Curated datasets are pinned per source in `data/upstream-pins.json`, recording the
+pinned version, when it was taken, and where to check for a newer one. A scheduled
+workflow compares each pin against its published latest and opens an issue when a
+source moves. It never updates data: a pin moves through a reviewed change.
 
-object Config:
-  def apply(timeout: Int): Config = apply(timeout, None)
-```
+## Pull requests
 
-### Explicit Nulls
-
-`-Yexplicit-nulls` is always enabled. Use `import boilerplate.nullable.*` at boundaries.
-
-### Multiversal Equality
-
-`-language:strictEquality` is always enabled. All domain types must provide `CanEqual`:
-
-```scala sc:nocompile
-opaque type Email = String
-
-object Email:
-  def apply(raw: String): Either[String, Email] =
-    if raw.contains("@") then Right(raw) else Left("Invalid")
-  extension (e: Email) def value: String = e
-  given CanEqual[Email, Email] = CanEqual.derived
-```
-
-### Formatting
-
-The display formatting extension method is named `display` (via [[world.format.Formatter]]):
-
-```scala sc:nocompile
-import world.money.format.given
-100.KES.display  // "KES 100.00"
-```
-
-### Testing
-
-Use **munit** and **munit-scalacheck**:
-
-```scala sc:nocompile
-import munit.FunSuite
-import boilerplate.*
-
-class CurrencySuite extends FunSuite:
-  test("KES has correct code"):
-    assertEquals(Currencies.KES.code.unwrap, "KES")
-
-  test("addition combines amounts"):
-    val sum = 100.EUR + 50.EUR
-    assertEquals(sum.value, BigDecimal(150))
-```
-
-Test all platforms for cross-compiled modules:
-
-```bash
-sbt "world-jvm/test; world-js/test; world-native/test"
-```
-
----
-
-## Source Generation
-
-Country, language, script, and currency sources are generated at build time from the CLDR data in
-the `data/cldr` git submodule (pinned to a release tag). Initialise it before building:
-
-```bash
-git submodule update --init --depth 1
-```
-
-The generators live in `project/` (`CldrParser.scala` and the per-type populators). To change
-generated output, edit the relevant generator, then regenerate and verify:
-
-```bash
-sbt clean compile test
-```
-
-Generated `.scala` files under `target/.../src_managed` must never be edited by hand.
-
----
-
-## Workflow
-
-### Submitting Pull Requests
-
-1. Create a feature branch
-2. Make changes
-3. Write or update tests
-4. Update documentation for API changes
-5. Verify: `sbt clean compile test`
-6. Run formatting: `sbt format`
-7. Push and create pull request
-
----
+Branch, make the change with tests, bring the documentation to current, then run
+`sbt format` and confirm `check` and the test commands pass.
 
 ## Licence
 
-By contributing, you agree your contributions will be licensed under the [Apache Licence, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
----
-
-## Resources
-
-- [GitHub Repository](https://github.com/shuwariafrica/world)
-- [Project Documentation](https://dev.shuwari.africa/world/)
+Contributions are licensed under the [Apache Licence, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
