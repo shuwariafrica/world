@@ -2,48 +2,34 @@
 title: Modules
 ---
 
-## Modules
+## The module set
 
-`world` is a project that comprises a number of independent and/or loosely coupled modules. See the documentation of each module for more details.
+Each runtime module is published for the JVM, Scala.js, and Scala Native, and carries no
+external library dependencies.
 
----
+| Module | Concern | Depends on |
+|---|---|---|
+| [`world`](world.md) | territories, subdivisions, languages, scripts, locales, currencies, civil dates and times, rounding, ratios | - |
+| [`world-money`](world-money.md) | monetary amounts, rates, percentages, tax, bags, allocation | `world` |
+| [`world-quantity`](world-quantity.md) | measurement kinds, units, quantities, unit prices | `world`, `world-money` |
+| [`world-id`](world-id.md) | telephone, email, banking, tax and card identifiers | `world` |
+| [`world-address`](world-address.md) | postal addresses and territory address rules | `world` |
+| [`world-gs1`](world-gs1.md) | GTIN, GLN, SSCC, and element strings | `world`, `world-money`, `world-quantity` |
+| [`world-party`](world-party.md) | personal names, organisations, parties | `world`, `world-id`, `world-address` |
+| [`world-temporal`](world-temporal.md) | instants, zones, business calendars, fiscal periods | `world` |
+| [`world-text`](world-text.md) | cultures, locale-correct display, message substrate | `world`, `world-money`, `world-quantity`, `world-address`, `world-party` |
 
-### `world-locale`
+Two artefacts are not runtime libraries:
 
-|                         |                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| Dependency Coordinates: | `"africa.shuwari" %% "world-locale" % "{{projectVersion}}"`                                            |
-| Intent                  | ISO country, language, and script data, with BCP 47 locale parsing and CLDR likely-subtags resolution. |
-| Documentation           | [Documentation](locale/index.md) \| [API Reference](../world/locale.html)                              |
+| Artefact | Concern |
+|---|---|
+| [`world-data`](world-data.md) | the curated dataset, consumed at build time and never placed on a runtime classpath |
+| [`sbt-world`](sbt-world.md) | the sbt plugin declaring locale and zone coverage and generating messages |
 
----
+## Coordinates
 
-### `world-money`
+```scala
+libraryDependencies += "africa.shuwari" %%% "world" % "@VERSION@"
+```
 
-|                         |                                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dependency Coordinates: | `"africa.shuwari" %% "world-money" % "{{projectVersion}}"`                                                                                                    |
-| Intent                  | Provide utilities and structures for financial computing, including ISO 4217 currency codes and definitions, type-safe structures, and arithmetic operations. |
-| Documentation           | [Documentation](money/index.md) \| [API Reference](../world/money.html)                                                                                       |
-
----
-
-### `world-money-usage`
-
-|                         |                                                                  |
-| ----------------------- | ---------------------------------------------------------------- |
-| Dependency Coordinates: | `"africa.shuwari" %% "world-money-usage" % "{{projectVersion}}"` |
-| Intent                  | Currency-to-country usage territory mappings.                    |
-| Documentation           | [API Reference](../world/money/usage.html)                       |
-
----
-
-### `world-common`
-
-|                         |                                                                           |
-| ----------------------- | ------------------------------------------------------------------------- |
-| Dependency Coordinates: | `"africa.shuwari" %% "world-common" % "{{projectVersion}}"`               |
-| Intent                  | The `Formatter` display-formatting type class shared across modules.      |
-| Documentation           | [Documentation](common/index.md) \| [API Reference](../world/format.html) |
-
-> Note: Use the `%%%` operator instead of `%%` when targeting multiple platforms on sbt 1.x.
+`%%%` resolves the platform-correct artefact. On the JVM, `%%` is equivalent.

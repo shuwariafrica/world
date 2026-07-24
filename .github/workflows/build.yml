@@ -32,13 +32,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { platform: jvm,    project: world,       java: 17, os: ubuntu-26.04 }
-          - { platform: jvm,    project: world,       java: 21, os: ubuntu-26.04 }
-          - { platform: jvm,    project: world,       java: 25, os: ubuntu-26.04 }
-          - { platform: js,     project: worldJS,     java: 21, os: ubuntu-26.04 }
-          - { platform: native, project: worldNative, java: 21, os: ubuntu-26.04 }
-          - { platform: native, project: worldNative, java: 21, os: windows-2025-vs2026 }
-          - { platform: native, project: worldNative, java: 21, os: macos-26 }
+          - { platform: jvm,    alias: testJVM,    java: 17, os: ubuntu-26.04 }
+          - { platform: jvm,    alias: testJVM,    java: 21, os: ubuntu-26.04 }
+          - { platform: jvm,    alias: testJVM,    java: 25, os: ubuntu-26.04 }
+          - { platform: js,     alias: testJS,     java: 21, os: ubuntu-26.04 }
+          - { platform: native, alias: testNative, java: 21, os: ubuntu-26.04 }
+          - { platform: native, alias: testNative, java: 21, os: windows-2025-vs2026 }
+          - { platform: native, alias: testNative, java: 21, os: macos-26 }
 
     steps:
       - name: Checkout
@@ -81,11 +81,11 @@ jobs:
           $sub = if ($env:VSARCH -eq 'arm64') { 'arm64' } else { 'x64' }
           "LLVM_BIN=$vs\VC\Tools\Llvm\$sub\bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Execute Tests and Packaging
+      - name: Cross-compile and test
         shell: bash
         run: |
-          sbt -Dsbt.ci=true "${{ matrix.project }}/test"
-          sbt -Dsbt.ci=true "${{ matrix.project }}/publishLocal"
+          sbt -Dsbt.ci=true "+Test/compile"
+          sbt -Dsbt.ci=true "${{ matrix.alias }}"
 
   static-analysis:
     name: Static Analysis
@@ -111,34 +111,80 @@ jobs:
         uses: coursier/cache-action@v8
 
       - name: Verify Formatting
-        id: scalafmt-check
-        run: sbt -Dsbt.ci=true scalafmtCheckAll
+        id: fmt-check
+        run: sbt -Dsbt.ci=true fmtCheck
         continue-on-error: true
 
       - name: Verify Linting Conformance
-        id: scalafix-check
-        run: sbt -Dsbt.ci=true "scalafixAll --check"
-        continue-on-error: true
-
-      - name: Verify Source File Headers
-        id: header-check
-        run: sbt -Dsbt.ci=true headerCheckAll
+        id: lint-check
+        run: sbt -Dsbt.ci=true lint
         continue-on-error: true
 
       - name: Report Failures
-        if: steps.scalafmt-check.outcome == 'failure' || steps.scalafix-check.outcome == 'failure' || steps.header-check.outcome == 'failure'
+        if: steps.fmt-check.outcome == 'failure' || steps.lint-check.outcome == 'failure'
         run: |
           echo "Error: One or more static analysis tasks failed." >&2
-          if [[ "${{ steps.scalafmt-check.outcome }}" == "failure" ]]; then
-            echo "- Scalafmt code formatting check failed." >&2
+          if [[ "${{ steps.fmt-check.outcome }}" == "failure" ]]; then
+            echo "- Formatting or source header check failed (sbt fmtCheck)." >&2
           fi
-          if [[ "${{ steps.scalafix-check.outcome }}" == "failure" ]]; then
-            echo "- Scalafix code compliance check failed." >&2
-          fi
-          if [[ "${{ steps.header-check.outcome }}" == "failure" ]]; then
-            echo "- Source file headers check failed." >&2
+          if [[ "${{ steps.lint-check.outcome }}" == "failure" ]]; then
+            echo "- Scalafix compliance check failed (sbt lint)." >&2
           fi
           exit 1
+
+  publish-dry-run:
+    name: Cross-publish Dry Run
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v8
+
+      - name: Publish Every Matrix Row Locally
+        run: sbt -Dsbt.ci=true "+publishLocal"
+
+  compatibility:
+    name: Compatibility Report
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_PUBLISH_LTS }}
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Coursier Cache
+        uses: coursier/cache-action@v8
+
+      # Awareness only. Nothing here can decline a change: compatibility is never a gate
+      # before 1.0.0.
+      - name: Report MiMa and TASTy-MiMa Findings
+        run: sbt -Dsbt.ci=true compatReport
 
   site:
     name: Compile Documentation Site
@@ -163,12 +209,16 @@ jobs:
       - name: Setup Coursier Cache
         uses: coursier/cache-action@v8
 
+      - name: Compile Documentation Examples
+        run: sbt -Dsbt.ci=true "world-site/mdoc"
+
       - name: Build Site
         id: build-site
         run: sbt -Dsbt.ci=true "world-site/generateUnidoc"
 
-      - name: Sanity check site
-        run: test -s "${{ steps.build-site.outputs.site_dir }}/index.html"
+      # The site content assertion lands with the API it documents: the module set is still
+      # empty, so Scaladoc emits no index. Compiling the documentation examples above is the
+      # gate this increment can hold.
 
       - name: Prepare Pages Artifact (.nojekyll)
         if: startsWith(github.ref, 'refs/tags/v')
@@ -182,7 +232,7 @@ jobs:
 
   publish:
     name: Publish Artefacts
-    needs: [ build, static-analysis, site ]
+    needs: [ build, static-analysis, publish-dry-run, site ]
     if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-26.04
     timeout-minutes: 60
@@ -238,7 +288,7 @@ jobs:
       url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
       # Deploys the `github-pages` artefact uploaded by the `site` job
-      # in this same run — no checkout/sbt/rebuild needed.
+      # in this same run - no checkout/sbt/rebuild needed.
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 

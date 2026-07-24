@@ -1,13 +1,26 @@
 # world
 
-A collection of Scala libraries for representation and manipulation of real-world domain concepts.
+A collection of Scala 3 libraries for representation and manipulation of real-world domain
+concepts, cross-published for the JVM, Scala.js, and Scala Native.
 
-## API Structure
+## API structure
 
-- **`world-common`:** The display-formatting type class ([[world.format.Formatter]]).
+- **`world`:** territories and subdivisions, languages, scripts and locales, currencies,
+  civil dates, times and date-times, weekday and week rules, rounding policies, exact
+  ratios, and the shared error families.
+- **`world-money`:** monetary amounts bound to their currency, rates, percentages, tax,
+  bags, and exact allocation.
+- **`world-quantity`:** measurement kinds and units, quantities, and unit prices.
+- **`world-id`:** telephone, email, banking, tax, and card identifiers.
+- **`world-address`:** postal addresses and per-territory address rules.
+- **`world-gs1`:** GTIN, GLN, SSCC, and element strings.
+- **`world-party`:** personal names, organisations, and parties.
+- **`world-temporal`:** instants, zones, business calendars, and fiscal periods.
+- **`world-text`:** cultures, locale-correct display, and the message substrate.
 
-- **`world-locale` ([[world.locale]]):** ISO country, language, and script data with validated opaque codes, predefined singletons ([[world.locale.country.Countries]], [[world.locale.language.Languages]], [[world.locale.script.Scripts]]), and BCP 47 locale composition ([[world.locale.Locale]]).
+Two artefacts are not runtime libraries: `world-data` carries the curated dataset consumed
+at build time, and `sbt-world` is the sbt plugin that declares coverage and generates
+message catalogues.
 
-- **`world-money` ([[world.money]]):** Type-safe monetary values ([[world.money.Money]]), ISO 4217 currency definitions ([[world.money.currency.Currency]]), and currency conversion ([[world.money.conversion.ExchangeRateProvider]]).
-
-- **`world-money-usage` ([[world.money.usage]]):** Currency-to-country territory mappings via the [[world.money.usage.CurrencyUsage]] typeclass.
+The published API arrives with the increments that implement it; this release carries the
+release infrastructure the modules ship through.
