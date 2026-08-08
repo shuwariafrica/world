@@ -1,7 +1,7 @@
 scalaVersion := scala3
 organization := "africa.shuwari"
 description := "Scala toolkit for representation and manipulation of real-world domain concepts"
-homepage := Some(url("https://github.com/shuwariafrica/world"))
+homepage := Some(uri("https://github.com/shuwariafrica/world"))
 startYear := Some(2023)
 semanticdbEnabled := true
 scmInfo := ScmInfo(
