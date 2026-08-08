@@ -9,15 +9,15 @@
 !.sbtopts
 !.scalafix.conf
 !.scalafmt.conf
-
+!docs/**/*.md
+!README.md
 
 # Build output directories
 target/
 
 # Miscellaneous
+*.md
 null/
 PowerShell*/
+build.sbt.semanticdb
 metals.sbt
-*.md
-!README.md
-!docs/**/*.md

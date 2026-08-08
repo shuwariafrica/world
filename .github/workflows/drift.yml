@@ -1,10 +1,10 @@
-name: Upstream Watch
+name: drift
 
 on:
   workflow_dispatch:
   schedule:
-    # Weekly. tzdata and the GS1 dictionary are the fastest-moving pins.
-    - cron: "17 6 * * 1"
+    # Weekly: libphonenumber releases roughly fortnightly and is the fastest-moving pin.
+    - cron: "0 6 * * 1"
 
 concurrency:
   group: upstream-watch
@@ -15,8 +15,8 @@ permissions:
   issues: write
 
 jobs:
-  watch:
-    name: Compare pinned sources against upstream
+  report:
+    name: report
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
@@ -27,14 +27,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-
-      - name: Ensure drift label exists
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh label create upstream-drift \
-            --description "A pinned upstream source has published a newer version" \
-            --color D93F0B || true
 
       - name: Compare pins
         env:

@@ -15,7 +15,7 @@ import sys
 import urllib.error
 import urllib.request
 
-LABEL = "upstream-drift"
+LABEL = "task"
 USER_AGENT = "world-upstream-watch (+https://github.com/shuwariafrica/world)"
 TIMEOUT = 60
 
@@ -54,8 +54,6 @@ def issue_body(source: dict, latest: str) -> str:
             f"- Cadence: {source['cadence']}",
             f"- Source: {source['check']['url']}",
             "",
-            "The watcher reports only. Update the dataset and its pin in "
-            "`data/upstream-pins.json` through a reviewed change.",
         ]
     )
 

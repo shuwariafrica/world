@@ -6,11 +6,13 @@ import sbtunidoc.BaseUnidocPlugin.autoImport._
 import mdoc.MdocPlugin
 import mdoc.MdocPlugin.autoImport._
 
-/** Plugin for managing Scaladoc/Unidoc settings for the `world` project.
-  * Must be manually enabled on the root project to keep documentation settings organised.
-  * 
-  * This plugin requires MdocPlugin because it uses mdoc to preprocess documentation
-  * files before Scaladoc generation, enabling dynamic variable substitution.
+/** Plugin for managing Scaladoc/Unidoc settings for the `world` project. Must
+  * be manually enabled on the root project to keep documentation settings
+  * organised.
+  *
+  * This plugin requires MdocPlugin because it uses mdoc to preprocess
+  * documentation files before Scaladoc generation, enabling dynamic variable
+  * substitution.
   */
 object WorldUnidocPlugin extends AutoPlugin:
 
@@ -132,8 +134,7 @@ object WorldUnidocPlugin extends AutoPlugin:
         "-groups",
         // Enable Inkuire type-based search engine
         "-Ygenerate-inkuire"
-        // Snippet compiler temporarily disabled - requires sc:nocompile markers on all prose
-        // "-snippet-compiler:compile"
+        // The snippet compiler stays off: enabling it requires sc:nocompile markers on all prose.
       )
 
       val rootContentOption = if (rootContent.exists()) {

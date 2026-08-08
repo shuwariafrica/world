@@ -1,0 +1,27 @@
+# dataset: cash-practice
+# source: world-cash-rounding-survey
+# authority: national legal gazettes, consolidated statute portals, and central-bank publications, per row
+# origin: the operative instrument named in each row, read at an official or officially derived source
+# pin: 2026-08-05
+# published: 2026-08-05
+# licence: official-texts-of-a-legislative-nature
+# licence-url: https://eur-lex.europa.eu/content/legal-notice/legal-notice.html
+# licence-note: each row records the operative provision of a public instrument and cites it; official texts of a legislative nature carry no copyright in the jurisdictions surveyed
+# licence-verified: 2026-07-26
+# cadence: on amendment of a surveyed instrument
+# compiled-in: true
+# columns: territory,currency,digits,increment,mode,incrementBy,modeBy,instrument
+BE	EUR	2	5	half-up	statute	statute	Wetboek van economisch recht / Code de droit economique arts. VI.7/1-VI.7/3 (inserted by W 2014-05-15/02; amended W 2015-12-18/17; made obligatory for cash by W 2019-05-02/28 art. 4)
+CA	CAD	2	5	half-up	agreement	agreement	NONE binding. Department of Finance "Phasing Out the Penny" guidance; CRA GST/HST Info Sheet GI-131. The only binding instrument is SOR/2012-264 (P.C. 2012-1622) which authorises REDEMPTION only and says nothing about rounding
+CH	CHF	2	5	half-up	denomination	unstated	WZG SR 941.10 and MuenzV SR 941.101 read in full/by article headings - NO rounding provision in either; smallest denomination 5 Rp (MuenzV art. 2); 1 Rp withdrawn by V of 12.04.2006 AS 2006 1799
+DK	DKK	2	50	half-up	statute	unstated	BEK nr 928 af 19/09/2008 Bekendtgoerelse om afskaffelse af 25-oeren som gyldigt betalingsmiddel m.v. (under moentloven lov nr. 817 af 21.12.1988 ss. 3 and 5; consolidated LBK nr 1803 af 12/12/2018)
+EE	EUR	2	5	half-up	statute	statute	Euro kasutusele votmise ja eurodes tehtavate sularahamaksete arveldamise seadus (EKVS) ss. 5(1)-5(4) inserted by RT I 30.05.2024 2
+FI	EUR	2	5	half-up	statute	statute	Laki euromaaraisten maksujen pyoristamisesta 890/2000 as amended by 496/2002
+HU	HUF	0	5	half-up	statute	statute	2008. evi III. torveny az 1 es 2 forintos cimletu ermek bevonasa kovetkezteben szukseges kerekites szabalyairol
+IE	EUR	2	5	half-up	agreement	agreement	NONE. Administrative scheme run by the Central Bank of Ireland at the request of the Department of Finance
+LT	EUR	2	5	half-up	statute	statute	Lietuvos Respublikos atsiskaitymu grynaisiais pinigais sumu apvalinimo istatymas Nr. XIV-2515 art. 4
+MX	MXN	2	5	half-up	statute	statute	Ley Monetaria de los Estados Unidos Mexicanos, Articulo 3o. (reformed by decree DOF 22-VI-1992, in force 1-I-1993)
+NL	EUR	2	5	half-up	agreement	agreement	NONE. Art. 6:113 BW (guilder 5-cent rounding) REPEALED with effect 2002-01-01 by Stb. 2001-481 (Aanpassingswet euro) ch. 5 art. 2
+NO	NOK	2	100	half-up	directive	directive	FOR-2011-03-16-294 Forskrift om tilbaketrekking av 50-oeremynt som gyldig betalingsmiddel (Norges Bank; sentralbankloven 1985 ss. 13 and 15; added authority LOV-2019-06-21-31 s. 3-6)
+SE	SEK	2	100	half-up	statute	statute	Lag (1970:1029) om avrundning av vissa oeresbelopp (aendring infoerd t.o.m. SFS 2009:283)
+SK	EUR	2	5	half-up	statute	statute	Zakon NR SR c. 18/1996 Z. z. o cenach s. 3 ods. 4 as replaced by Zakon c. 457/2021 Z. z.

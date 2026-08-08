@@ -4,9 +4,21 @@ subsection:
   - title: Introduction
     page: index.md
 
-  - title: Modules
-    index: modules/index.md
-    directory: modules
+  - title: Money and pricing
+    page: money.md
+
+  - title: Quantities and tariffs
+    page: quantities.md
+
+  - title: Civil time and calendars
+    page: time.md
+
+  - title: Places, locales, and currencies
+    page: places.md
+
+  - title: Reference
+    index: reference/index.md
+    directory: reference
 
   - title: Contributing
     page: contributing.md

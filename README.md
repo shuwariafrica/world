@@ -3,45 +3,97 @@
 [![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
-Scala 3 libraries modelling places, languages and locales, money and currencies,
-quantities, trade and business identifiers, postal addresses, parties, and civil time.
-Every module targets the JVM, Scala.js, and Scala Native, owns its data, and delegates to
-no platform locale, formatting, or time library.
+The concepts commerce runs on - civil time, places and locales, money, and quantities -
+as Scala 3 types that compute exactly and carry their own reference data. Cross-published
+for the JVM, Scala.js, and Scala Native.
 
-Operations return errors as values from owned sealed families. Nothing throws.
+```scala
+libraryDependencies += "africa.shuwari" %%% "world" % "<version>"
+```
 
 ---
 
-## Modules
+## What it does
 
-| Module | Purpose | Depends on |
-| - | - | - |
-| `world` | territories, subdivisions, languages, scripts, locales, currencies, civil dates and times, rounding, ratios | - |
-| `world-money` | monetary amounts, rates, percentages, tax, bags, allocation | `world` |
-| `world-quantity` | measurement kinds, units, quantities, unit prices | `world`, `world-money` |
-| `world-id` | telephone, email, banking, tax and card identifiers | `world` |
-| `world-address` | postal addresses and territory address rules | `world` |
-| `world-gs1` | GTIN, GLN, SSCC, and element strings | `world`, `world-money`, `world-quantity` |
-| `world-party` | personal names, organisations, parties | `world`, `world-id`, `world-address` |
-| `world-temporal` | instants, zones, business calendars, fiscal periods | `world` |
-| `world-text` | cultures, locale-correct display, message substrate | `world`, `world-money`, `world-quantity`, `world-address`, `world-party` |
-
-`world-data` carries the curated dataset consumed at build time and never reaches a
-runtime classpath; `sbt-world` is the sbt plugin declaring locale and zone coverage and
-generating message catalogues.
-
-Add to your `build.sbt`:
+**Civil time that is not tied to one calendar.** A `Date` is the day itself, not a
+Gregorian labelling other calendars convert from. Arithmetic names its overflow policy at
+the call site, so nobody has to guess what happened to the 31st.
 
 ```scala
-libraryDependencies += "africa.shuwari" %%% "world-money" % "<version>"
+Date(2026, 1, 31).plusMonths(1, Overflow.Constrain)   // 2026-02-28
+Date(2008, 2, 29).years(Date(2026, 2, 28))            // 18 - the leapling's anniversary
+Calendar.Ethiopic.at(Date(2025, 9, 11))               // Parts(2018, 1, 1)
 ```
+
+**Places and locales from the issuing authorities.** Territories, regions, languages,
+scripts, and BCP 47 tags, with negotiation against what you actually support - and codes
+the standards under-serve carried honestly rather than filled in.
+
+```scala
+Territory.XK.alpha3                                   // None - Kosovo has none, so none is invented
+Locale.negotiate("sw-KE;q=0.9, en", supported)        // the RFC 4647 Lookup answer
+Territory.KE.currency                                 // Some(KES)
+```
+
+**Money closed over its currency.** The amount is the value; the currency is the type.
+Every rounding step is a boundary you name, and cash rounding follows the jurisdiction's
+own instrument.
+
+```scala
+Currency.KES(2500) * 3 + Currency.KES(150)            // Money[Currency.KES]
+Currency.KES(1) + Currency.TZS(2)                     // does not compile
+Currency.KES(BigDecimal("1000.00")).split(3)          // 333.34, 333.33, 333.33 - sums exactly
+```
+
+**Quantities that keep their measure.** Three dozen stays three-of-dozen for the invoice
+line while comparing and converting exactly, and billable time is a quantity like any
+other, priced through the same algebra.
+
+```scala
+Measure.Dozen(3) + Measure.Each(5)                    // 41/12 dozen, exactly
+Currency.KES(1500).per(Measure.Hour).total(Measure.Minute(210), Rounding.HalfUp)  // 5250.00
+Measure.Kilogram(1) + Measure.Litre(1)                // does not compile
+```
+
+---
+
+## What the types guarantee
+
+- **Errors are values.** Every fallible operation returns `Either` over a sealed family
+  rooted at `WorldError`. Nothing throws. A message names the violated constraint; the
+  value that violated it stays a typed field, so captured input never reaches a log
+  through `getMessage`.
+- **Arithmetic is exact, and rounding is never silent.** Money and quantities compute over
+  exact decimals and rationals. Anything that need not terminate takes its scale and mode
+  at the call site.
+- **Wrong combinations do not compile.** Currencies, quantity kinds, and rate directions
+  are all in the types, and binary floating-point is refused at every exact-numeric seam
+  with a message pointing at the decimal form.
+- **Data is versioned, not ambient.** Reference facts are curated from their issuing
+  authorities and compiled in, so behaviour does not change underneath you when a
+  platform, a JDK, or a browser does.
 
 ---
 
 ## Status
 
-This release carries the build, publishing, and documentation pipeline. The module
-artefacts publish and are empty; each gains its API in the releases that follow.
+> Pre-release and under active development. _Expect_ API changes.
+
+The [documentation site](https://dev.shuwari.africa/world/docs) carries the guides, the
+module map, and the dependency graph.
+
+---
+
+## Data and attribution
+
+`world` compiles curated reference data into its artefacts, so redistributing them
+redistributes that data. The attribution notices required for it travel inside every
+artefact at `META-INF/NOTICE`, and are also in [NOTICE](NOTICE) at the root of this
+repository.
+
+What the data is, why it is compiled in rather than read from a platform, and how its
+vintage is pinned is covered in
+[the data that ships](https://dev.shuwari.africa/world/docs/reference/data.html).
 
 ---
 
@@ -54,7 +106,5 @@ artefacts publish and are empty; each gains its API in the releases that follow.
 ---
 
 ## Licence
-
-Copyright 2023-2026 Shuwari Africa Ltd.
 
 Licensed under the Apache Licence, Version 2.0. See [LICENCE](https://www.apache.org/licenses/LICENSE-2.0) for details.

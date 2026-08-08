@@ -1,0 +1,44 @@
+# dataset: regions
+# source: cldr
+# authority: Unicode Consortium
+# origin: common/validity/region.xml macroregion validity, named from common/main/en.xml
+# pin: release-48-2
+# published: 2026-03-17
+# licence: Unicode-3.0
+# licence-url: https://www.unicode.org/license.txt
+# licence-note: Unicode License v3 grants distribution of the Data Files
+# licence-verified: 2026-07-26
+# cadence: two major releases per year, plus point releases
+# compiled-in: true
+# columns: m49,name
+001	world
+002	Africa
+003	North America
+005	South America
+009	Oceania
+011	Western Africa
+013	Central America
+014	Eastern Africa
+015	Northern Africa
+017	Middle Africa
+018	Southern Africa
+019	Americas
+021	Northern America
+029	Caribbean
+030	Eastern Asia
+034	Southern Asia
+035	Southeast Asia
+039	Southern Europe
+053	Australasia
+054	Melanesia
+057	Micronesian Region
+061	Polynesia
+142	Asia
+143	Central Asia
+145	Western Asia
+150	Europe
+151	Eastern Europe
+154	Northern Europe
+155	Western Europe
+202	Sub-Saharan Africa
+419	Latin America

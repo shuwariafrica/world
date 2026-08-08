@@ -12,7 +12,10 @@
       "name": "six-iso-4217-list-one",
       "authority": "SIX Financial Information AG, ISO 4217 maintenance agency",
       "content": "Current currency, fund and precious-metal codes",
-      "pinned": { "version": "2026-01-01", "published": "2026-01-01" },
+      "pinned": {
+        "version": "2026-01-01",
+        "published": "2026-01-01"
+      },
       "check": {
         "method": "regex",
         "url": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml",
@@ -24,7 +27,10 @@
       "name": "six-iso-4217-list-three",
       "authority": "SIX Financial Information AG, ISO 4217 maintenance agency",
       "content": "Historic currency codes and their withdrawal dates",
-      "pinned": { "version": "2026-01-01", "published": "2026-01-01" },
+      "pinned": {
+        "version": "2026-01-01",
+        "published": "2026-01-01"
+      },
       "check": {
         "method": "regex",
         "url": "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml",
@@ -51,7 +57,10 @@
       "name": "iana-language-subtag-registry",
       "authority": "IANA, under BCP 47 / RFC 5646",
       "content": "Language, script, region, variant and extension subtags",
-      "pinned": { "version": "2026-06-14", "published": "2026-06-14" },
+      "pinned": {
+        "version": "2026-06-14",
+        "published": "2026-06-14"
+      },
       "check": {
         "method": "regex",
         "url": "https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry",
@@ -60,10 +69,57 @@
       "cadence": "ad hoc, several times per year"
     },
     {
+      "name": "iso-15924",
+      "authority": "Unicode Consortium, ISO 15924 Registration Authority",
+      "content": "Script codes, their numeric codes and English names",
+      "pinned": {
+        "version": "2026-07-26",
+        "published": "2026-07-26"
+      },
+      "check": {
+        "method": "manual",
+        "url": "https://www.unicode.org/iso15924/iso15924.txt"
+      },
+      "cadence": "on ISO 15924 amendment",
+      "notes": "the code list carries no file-level version marker; only its per-row assignment dates, so the pin is the retrieval date."
+    },
+    {
+      "name": "libphonenumber",
+      "authority": "The libphonenumber Authors (Apache-2.0)",
+      "content": "Per-territory calling codes, national prefixes and possible national lengths",
+      "pinned": {
+        "version": "v9.0.35",
+        "published": "2026-07-26"
+      },
+      "check": {
+        "method": "github-release",
+        "url": "https://api.github.com/repos/google/libphonenumber/releases/latest"
+      },
+      "cadence": "roughly fortnightly"
+    },
+    {
+      "name": "ec-regulation-2866-98",
+      "authority": "Council of the European Union",
+      "content": "The irrevocably fixed conversion rates between the euro and the eleven legacy currencies it replaced",
+      "pinned": {
+        "version": "31998R2866",
+        "published": "1998-12-31"
+      },
+      "check": {
+        "method": "manual",
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:31998R2866"
+      },
+      "cadence": "never",
+      "notes": "the rates are fixed irrevocably by article 1; later accessions are separate regulations, each a separate pin."
+    },
+    {
       "name": "iana-tzdata",
       "authority": "IANA time zone database",
       "content": "Zone histories and transition rules",
-      "pinned": { "version": "2026c", "published": "2026-07-08" },
+      "pinned": {
+        "version": "2026c",
+        "published": "2026-07-08"
+      },
       "check": {
         "method": "text",
         "url": "https://data.iana.org/time-zones/tzdb/version"
@@ -74,7 +130,10 @@
       "name": "gs1-barcode-syntax-dictionary",
       "authority": "GS1 AISBL (Apache-2.0)",
       "content": "Application Identifier table with per-component formats, linters and cross-AI rules",
-      "pinned": { "version": "2026-01-27", "published": "2026-01-27" },
+      "pinned": {
+        "version": "2026-01-27",
+        "published": "2026-01-27"
+      },
       "check": {
         "method": "github-release",
         "url": "https://api.github.com/repos/gs1/gs1-syntax-dictionary/releases/latest"
@@ -85,7 +144,10 @@
       "name": "unicode-ucd",
       "authority": "Unicode Consortium",
       "content": "Character database: NFC, Bidi_Class, Joining_Type, Script and related properties",
-      "pinned": { "version": "17.0.0", "published": "2025-08-15" },
+      "pinned": {
+        "version": "17.0.0",
+        "published": "2025-08-15"
+      },
       "check": {
         "method": "regex",
         "url": "https://www.unicode.org/Public/UCD/latest/ReadMe.txt",
@@ -97,7 +159,10 @@
       "name": "unicode-uts-46",
       "authority": "Unicode Consortium",
       "content": "IDNA compatibility processing and its mapping table",
-      "pinned": { "version": "35", "published": "2025-09-04" },
+      "pinned": {
+        "version": "35",
+        "published": "2025-09-04"
+      },
       "check": {
         "method": "regex",
         "url": "https://www.unicode.org/reports/tr46/",
@@ -109,7 +174,10 @@
       "name": "iban-registry",
       "authority": "SWIFT, ISO 13616 registration authority",
       "content": "Per-country IBAN and BBAN structure, bank and branch identifier positions, SEPA flag, examples",
-      "pinned": { "version": "102", "published": null },
+      "pinned": {
+        "version": "102",
+        "published": null
+      },
       "check": {
         "method": "manual",
         "url": "https://www.swift.com/standards/data-standards/iban-international-bank-account-number"
@@ -118,10 +186,28 @@
       "notes": "swift.com accepts the connection then serves nothing to automated clients; the release number cannot be read without a human fetch."
     },
     {
+      "name": "world-cash-rounding-survey",
+      "authority": "National legal gazettes, consolidated statute portals, and central-bank publications, per row",
+      "content": "Jurisdiction cash-rounding practice: the increment, the midpoint rule, and the provenance class of each fact",
+      "pinned": {
+        "version": "2026-08-05",
+        "published": "2026-08-05"
+      },
+      "check": {
+        "method": "manual",
+        "url": "https://eur-lex.europa.eu/"
+      },
+      "cadence": "on amendment of a surveyed instrument",
+      "notes": "Twenty-seven jurisdictions, each read at its own official or officially derived source; there is no single upstream endpoint to poll, so drift is reviewed per instrument."
+    },
+    {
       "name": "kenya-bank-branch-codes",
       "authority": "Kenya Bankers Association",
       "content": "Bank and branch listing: two-digit bank codes, three-digit branch codes",
-      "pinned": { "version": "2023-07", "published": "2023-07" },
+      "pinned": {
+        "version": "2023-07",
+        "published": "2023-07"
+      },
       "check": {
         "method": "manual",
         "url": "https://www.kba.co.ke/"
@@ -132,7 +218,10 @@
       "name": "ghana-ghipss-sort-codes",
       "authority": "GhIPSS, with decomposition per Bank of Ghana Banks' Sort Codes",
       "content": "Clearing house sort codes, split bank / clearing zone / branch",
-      "pinned": { "version": "2017-08", "published": "2017-08" },
+      "pinned": {
+        "version": "2017-08",
+        "published": "2017-08"
+      },
       "check": {
         "method": "manual",
         "url": "https://www.ghipss.net/"
@@ -143,7 +232,10 @@
       "name": "southafrica-branch-ranges",
       "authority": "FNB participating-banks table, a participant publication rather than the allocating authority",
       "content": "Six-digit universal branch code ranges per bank",
-      "pinned": { "version": "2022-05", "published": "2022-05" },
+      "pinned": {
+        "version": "2022-05",
+        "published": "2022-05"
+      },
       "check": {
         "method": "manual",
         "url": "https://www.fnb.co.za/"
@@ -155,7 +247,10 @@
       "name": "nigeria-cbn-ofi-codes",
       "authority": "Central Bank of Nigeria",
       "content": "Five-digit other-financial-institution codes used by the NUBAN scheme",
-      "pinned": { "version": "2011", "published": "2011" },
+      "pinned": {
+        "version": "2011",
+        "published": "2011"
+      },
       "check": {
         "method": "manual",
         "url": "https://www.cbn.gov.ng/"

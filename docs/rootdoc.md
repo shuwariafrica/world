@@ -1,14 +1,16 @@
 # world
 
-Representation, validation, exact computation, and locale-correct presentation of
-real-world domain concepts, cross-published for the JVM, Scala.js, and Scala Native.
+Civil time and calendars, places and locales, money, and quantities - modelled as exact,
+cross-published Scala 3 types with their reference data compiled in.
 
-Operations return errors as values from owned sealed families under `WorldError`, and no
-module depends on an external library or on a platform locale, formatting, or time
-facility.
+Operations return errors as values from owned sealed families rooted at `WorldError`.
+Money and quantity arithmetic is exact, and every rounding step is a boundary the caller
+names.
+
+`world-core` carries the calendar-neutral civil day, exact ratios, and the
+identifier-scheme concept; `world` adds the territory, language, script, locale, and
+currency registers; `world-money` and `world-quantity` build the commercial arithmetic on
+them.
 
 Module concerns, the dependency graph, and artefact coordinates are on the
 [documentation site](https://dev.shuwari.africa/world/).
-
-This release carries the build, publishing, and documentation pipeline; the API arrives
-with the increments that implement it.

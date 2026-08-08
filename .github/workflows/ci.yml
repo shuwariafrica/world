@@ -1,4 +1,4 @@
-name: "build"
+name: "ci"
 
 on:
   workflow_dispatch:
@@ -9,34 +9,31 @@ on:
   push:
     branches: [ main ]
     tags: [ v* ]
-    paths-ignore:
-      - "**.md"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
 
 permissions:
   contents: read
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  JDK_RELEASE: 17
+  JDK_RELEASE: 21
   JDK_CURRENT: 25
   NODE_LTS: 22
   SBT_OPTS: >- # Use all available resources
-    -Xmx10G
-    -Xms6G
+    -Xmx7G
+    -Xms5G
     -Xss4M
-    -XX:ReservedCodeCacheSize=512M
 
 jobs:
   test_jvm:
-    name: "[JVM: jdk-${{ matrix.java }}] TEST"
+    name: "jvm / jdk-${{ matrix.java }} / tests"
     strategy:
       fail-fast: false
       matrix:
-        java: [ 17, 21, 25 ]
+        java: [ 21, 25 ]
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -51,7 +48,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-          check-latest: true
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
@@ -60,17 +56,22 @@ jobs:
         uses: coursier/cache-action@v8
 
       - name: Test
-        run: sbt --server "world-jvm/test"
+        run: sbt --server "world-jvm/testOnly * -- "
+
+      # The allocation probes run inside the JVM suite above; these are the size budgets, which the
+      # test run cannot see.
+      - name: Verify Size Budgets
+        run: sbt --server "world/budgets; world-money/budgets"
 
       - name: Package
         run: sbt --server "world-jvm/package"
 
   test_js:
-    name: "[JS: node-${{ matrix.node }}] TEST"
+    name: "js / node-${{ matrix.node }} / tests"
     strategy:
       fail-fast: false
       matrix:
-        node: [ 22, 24 ]
+        node: [ 24, 26 ]
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -91,7 +92,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
-          check-latest: true
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
@@ -100,13 +100,13 @@ jobs:
         uses: coursier/cache-action@v8
 
       - name: Test
-        run: sbt --server "world-js/test"
+        run: sbt --server "world-js/testOnly * -- "
 
       - name: Package
         run: sbt --server "world-js/package"
 
   test_native:
-    name: "[Native: ${{ matrix.target }}] TEST"
+    name: "native / ${{ matrix.target }} / tests"
     strategy:
       fail-fast: false
       matrix:
@@ -134,7 +134,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
-          check-latest: true
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
@@ -160,14 +159,19 @@ jobs:
 
       - name: Test
         shell: bash
-        run: sbt --server "world-native/test"
+        run: sbt --server "world-native/testOnly * -- "
+
+      # NIR is only produced on this row, so its budget can only be measured here.
+      - name: Verify Size Budgets
+        shell: bash
+        run: sbt --server "worldNative/budgets; world-moneyNative/budgets"
 
       - name: Package
         shell: bash
         run: sbt --server "world-native/package"
 
   static_analysis:
-    name: Static Analysis
+    name: analyse
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -177,12 +181,11 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Setup Java ${{ env.JDK_CURRENT }}
+      - name: Setup Java ${{ env.JDK_RELEASE }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JDK_CURRENT }}
-          check-latest: true
+          java-version: ${{ env.JDK_RELEASE }}
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
@@ -218,7 +221,7 @@ jobs:
           fi
 
   compatibility:
-    name: Compatibility Report
+    name: reports / compatibility
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -246,7 +249,7 @@ jobs:
         run: sbt --server "world-jvm/compatReport"
 
   docs:
-    name: Assemble Documentation Site
+    name: "docs / site"
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -282,8 +285,8 @@ jobs:
         with:
           path: ${{ steps.build-site.outputs.site_dir }}
 
-  publish:
-    name: Publish Artefacts
+  publish-artefacts:
+    name: "publish / artefacts"
     needs:
       - test_jvm
       - test_js
@@ -337,9 +340,9 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
           SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
 
-  site-release:
-    name: Release Documentation Site
-    needs: [ publish, docs ]
+  publish-release:
+    name: "publish / release"
+    needs: [ publish-artefacts, docs ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -381,7 +384,7 @@ jobs:
             $prerelease_flag
 
   dependency-graph:
-    name: Update Dependency Graph
+    name: "report / dependency-graph"
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04
     permissions:
@@ -398,7 +401,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JDK_CURRENT }}
-          check-latest: true
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
