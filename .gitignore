@@ -2,6 +2,7 @@
 .*
 # Exceptions
 !.github/
+!.github/**
 !.gitattributes
 !.gitignore
 !.gitkeep
