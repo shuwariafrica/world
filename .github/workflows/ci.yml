@@ -120,6 +120,9 @@ jobs:
           - target: windows-x86_64
             runner: windows-2025-vs2026
             vsarch: amd64
+          - target: windows-aarch_64
+            runner: windows-11-vs2026-arm
+            vsarch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
