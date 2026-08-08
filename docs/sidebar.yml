@@ -4,43 +4,21 @@ subsection:
   - title: Introduction
     page: index.md
 
-  - title: Modules
-    index: modules/index.md
-    directory: modules
-    subsection:
+  - title: Money and pricing
+    page: money.md
 
-      - title: "world-locale"
-        index: modules/locale/index.md
-        directory: modules/locale
-        subsection:
-          - title: Core Concepts
-            page: modules/locale/concepts.md
-          - title: Countries
-            page: modules/locale/countries.md
-          - title: Formatting
-            page: modules/locale/formatting.md
+  - title: Quantities and tariffs
+    page: quantities.md
 
-      - title: "world-money"
-        index: modules/money/index.md
-        directory: modules/money
-        subsection:
-          - title: Core Concepts
-            page: modules/money/concepts.md
-          - title: Currencies
-            page: modules/money/currencies.md
-          - title: Money Operations
-            page: modules/money/operations.md
-          - title: Currency Conversion
-            page: modules/money/conversion.md
+  - title: Civil time and calendars
+    page: time.md
 
-      - title: "world-common"
-        index: modules/common/index.md
-        directory: modules/common
-        subsection:
-          - title: Core Concepts
-            page: modules/common/concepts.md
-          - title: Formatting
-            page: modules/common/formatting.md
+  - title: Places, locales, and currencies
+    page: places.md
+
+  - title: Reference
+    index: reference/index.md
+    directory: reference
 
   - title: Contributing
     page: contributing.md

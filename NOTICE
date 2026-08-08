@@ -1,0 +1,89 @@
+world
+Copyright 2023-2026 Shuwari Africa Ltd.
+
+This product includes software developed at Shuwari Africa Ltd.
+(https://shuwari.africa/).
+
+================================================================================
+Third-party reference data embedded in this product
+================================================================================
+
+The artefacts of this product embed curated reference data compiled in at build
+time from the sources below. Redistributing these artefacts redistributes that
+data. Each curated file additionally carries the source, the pinned upstream
+release, and the verified terms in its own provenance header.
+
+--------------------------------------------------------------------------------
+Unicode Common Locale Data Repository (CLDR), and the ISO 15924 code table
+--------------------------------------------------------------------------------
+Copyright (C) 1991-2026 Unicode, Inc. All rights reserved.
+Licensed under the Unicode License v3 (Unicode-3.0).
+https://www.unicode.org/license.txt
+
+Embedded: territories, macro areas, week data, likely subtags, parent locales,
+language and script data, currency usage, script codes, script numbers, and
+writing direction.
+
+--------------------------------------------------------------------------------
+IANA Language Subtag Registry
+--------------------------------------------------------------------------------
+Maintained by IANA under BCP 47 / RFC 5646.
+IANA and the IETF state that the Protocol Registries may be freely used by any
+party for any purpose. https://www.iana.org/help/licensing-terms
+
+Embedded: the registered language subtags and their ISO 639 pairings.
+
+--------------------------------------------------------------------------------
+ISO 4217 currency code lists
+--------------------------------------------------------------------------------
+Published by SIX Financial Information AG in its capacity as the ISO 4217
+maintenance agency, which states that it makes the code lists available online
+and free of charge.
+https://www.six-group.com/en/products-services/financial-information/data-standards.html
+
+Embedded: current currency, fund and precious-metal codes; withdrawn codes and
+the dates of their withdrawal.
+
+--------------------------------------------------------------------------------
+Council Regulation (EC) No 2866/98
+--------------------------------------------------------------------------------
+(C) European Union, https://eur-lex.europa.eu/, 1998-2026.
+Reuse is authorised provided the source is acknowledged.
+
+Embedded: the irrevocably fixed euro conversion rates of article 1.
+
+--------------------------------------------------------------------------------
+libphonenumber
+--------------------------------------------------------------------------------
+Copyright (C) The libphonenumber Authors.
+Licensed under the Apache License, Version 2.0.
+http://www.apache.org/licenses/LICENSE-2.0
+
+Embedded: per-territory calling codes, national prefixes, possible lengths,
+presentation formats, and mobile ranges.
+
+--------------------------------------------------------------------------------
+ISO 13616 IBAN Registry
+--------------------------------------------------------------------------------
+Published by SWIFT in its capacity as the ISO 13616 registration authority,
+openly and without stated terms, and redistributed here with that credit.
+https://www.swift.com/standards/data-standards/iban-international-bank-account-number
+
+Embedded: per-country IBAN and BBAN structures, identifier positions, and the
+SEPA membership flag.
+
+--------------------------------------------------------------------------------
+Cash-rounding practice survey
+--------------------------------------------------------------------------------
+Compiled from national legal gazettes, consolidated statute portals, and
+central-bank publications, with every row cited to the operative provision of
+its own instrument. Official texts of a legislative nature carry no copyright in
+the jurisdictions surveyed.
+
+Embedded: per-jurisdiction cash-rounding increments and midpoint rules, together
+with the provenance class of each fact.
+
+================================================================================
+
+Any authority named above that asks may have its data withdrawn from these
+artefacts.

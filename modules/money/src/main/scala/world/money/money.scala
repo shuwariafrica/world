@@ -1,298 +1,420 @@
-/****************************************************************
- * Copyright © 2023, 2026 Shuwari Africa Ltd.                   *
- *                                                              *
- * This file is licensed to you under the terms of the Apache   *
- * License Version 2.0 (the "License"); you may not use this    *
- * file except in compliance with the License. You may obtain   *
- * a copy of the License at:                                    *
- *                                                              *
- *     https://www.apache.org/licenses/LICENSE-2.0              *
- *                                                              *
- * Unless required by applicable law or agreed to in writing,   *
- * software distributed under the License is distributed on an  *
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, *
- * either express or implied. See the License for the specific  *
- * language governing permissions and limitations under the     *
- * License.                                                     *
- ****************************************************************/
+/****************************************************************************
+ * Copyright 2023, 2026 Ali Rashid.                                         *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *     http://www.apache.org/licenses/LICENSE-2.0                           *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ****************************************************************************/
 package world.money
 
 import scala.annotation.targetName
-import scala.math.BigDecimal.RoundingMode
-import scala.util.Try
 
-import world.money.conversion.ConversionQuery
-import world.money.conversion.ExchangeRateProvider
-import world.money.currency.Currency
-import world.money.currency.CurrencyMathContext
-import world.money.errors.ArithmeticError
-import world.money.errors.ConversionError
-import world.money.errors.NumberFormattingError
+import world.*
 
-/** A monetary amount paired with its [[world.money.currency.Currency Currency]].
-  *
-  * The currency is part of the value (not a phantom): it is carried as data and
-  * is reflected in the type parameter `C`, so amounts of different currencies
-  * cannot be combined - `100.KES + 50.JPY` is a compile error. Equality is
-  * value-based: `Money` amounts compare by numeric value (scale-insensitive) and
-  * currency, so `1.50` and `1.5` of the same currency are equal.
-  *
-  * Construction is exact - the amount is stored as given. Arithmetic operations
-  * round to the contextual [[world.money.currency.CurrencyMathContext CurrencyMathContext]];
-  * [[Money$.rounded rounded]] and display round to the currency's minor units.
-  *
-  * Operations are provided as extension methods in [[Money$ Money]].
-  *
-  * @tparam C The singleton type of this amount's currency.
+/** An amount of one currency, represented as the exact decimal amount alone:
+  * the currency lives in `C` and is recovered from evidence rather than stored
+  * per value. Arithmetic is exact and closed over `C`, and every rounding step
+  * is a boundary the caller names. Instances via a currency value -
+  * `Currency.KES(BigDecimal("120.50"))` - or [[Money$ Money]].
   */
-final case class Money[C <: Currency](amount: BigDecimal, currency: C) derives CanEqual
+opaque type Money[C <: Currency & Singleton] = BigDecimal
 
-/** Factory methods and operations for [[Money]]. */
+/** Factories, arithmetic, rounding boundaries, and allocation for [[Money]]. */
 object Money:
 
-  // --- Factories ---
-
-  /** Creates a `Money[C]` from an amount, resolving the currency from context.
-    *
-    * @tparam C The currency type, whose instance is summoned via `ValueOf`.
+  /** The storage and wire form: the currency explicit beside its amount.
+    * Re-enter the typed world by binding the currency, as
+    * `v match { case Money.Value(c, a) => c(a) }`.
     */
-  @targetName("applyOfType")
-  def apply[C <: Currency](amount: BigDecimal)(using c: ValueOf[C]): Money[C] =
-    Money(amount, c.value)
+  final case class Value(currency: Currency, amount: BigDecimal) derives CanEqual
+  object Value:
+    given Ordering[Value] = Ordering.by(v => (v.currency.code, v.amount))
 
-  /** Creates a `Money` from a runtime currency, typed to that currency's singleton.
-    *
-    * Useful when the currency is not known at compile time (e.g. deserialisation).
+  /** Weights that admit no allocation: empty, negative, or summing to nothing. */
+  sealed abstract class Unallocatable private[money] () extends WorldError("unallocatable weights") derives CanEqual
+  case object Unallocatable extends Unallocatable()
+
+  def zero[C <: Currency & Singleton]: Money[C] = BigDecimal(0)
+
+  def apply[C <: Currency & Singleton](amount: BigDecimal): Money[C] = amount
+
+  def add[C <: Currency & Singleton](m: Money[C], n: Money[C]): Money[C] = m + n
+  def subtract[C <: Currency & Singleton](m: Money[C], n: Money[C]): Money[C] = m - n
+  def multiply[C <: Currency & Singleton](m: Money[C], k: BigDecimal): Money[C] = m * k
+  @targetName("multiplyByInt")
+  def multiply[C <: Currency & Singleton](m: Money[C], k: Int): Money[C] = m * k
+  def lessThan[C <: Currency & Singleton](m: Money[C], n: Money[C]): Boolean = m < n
+  def lessOrEqual[C <: Currency & Singleton](m: Money[C], n: Money[C]): Boolean = m <= n
+  def greaterThan[C <: Currency & Singleton](m: Money[C], n: Money[C]): Boolean = m > n
+  def greaterOrEqual[C <: Currency & Singleton](m: Money[C], n: Money[C]): Boolean = m >= n
+  def min[C <: Currency & Singleton](m: Money[C], n: Money[C]): Money[C] =
+    if m.compare(n) <= 0 then m else n
+  def max[C <: Currency & Singleton](m: Money[C], n: Money[C]): Money[C] =
+    if m.compare(n) >= 0 then m else n
+
+  /** Rounds to the currency's minor unit. Identity for currencies without one
+    * (metals, special codes), whose amounts have no legal-tender scale; use
+    * `rounded(scale, mode)` to impose one.
     */
-  def from(amount: BigDecimal, currency: Currency): Money[currency.type] = Money(amount, currency)
+  def rounded[C <: Currency & Singleton](m: Money[C], mode: Rounding)(using c: ValueOf[C]): Money[C] =
+    c.value.digits match
+      case Some(d) => rounder(m, d, mode)
+      case None    => m
 
-  /** Parses a decimal string into a `Money` of the given currency.
-    *
-    * @return `Right` with the amount, or `Left` with a
-    *   [[world.money.errors.NumberFormattingError]] if the string is not a valid decimal.
+  @targetName("roundedAtScale")
+  def rounded[C <: Currency & Singleton](m: Money[C], scale: Int, mode: Rounding): Money[C] =
+    rounder(m, scale, mode)
+
+  /** Rounds to the cash increment the territory's recorded practice sets for
+    * this currency.
     */
-  def from(amount: String, currency: Currency): Either[NumberFormattingError, Money[currency.type]] =
-    Try(BigDecimal(amount)).toEither.left
-      .map(t => NumberFormattingError(s"Unable to parse '$amount' as a decimal amount.", Some(t)))
-      .map(Money(_, currency))
+  def cash[C <: Currency & Singleton](m: Money[C], t: Territory)(using ValueOf[C]): Money[C] =
+    m.cash(t)
 
-  /** A zero amount of the given currency. */
-  def zero[C <: Currency](using c: ValueOf[C]): Money[C] = Money(BigDecimal(0), c.value)
+  @targetName("cashWithMode")
+  def cash[C <: Currency & Singleton](m: Money[C], t: Territory, mode: Rounding)(using ValueOf[C]): Money[C] = m.cash(t, mode)
 
-  given [C <: Currency]: Ordering[Money[C]] = Ordering.by(_.amount)
-  export scala.math.Ordering.Implicits.infixOrderingOps
+  def divided[C <: Currency & Singleton](m: Money[C], k: BigDecimal, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+    m.divided(k, scale, mode)
 
-  // --- Companion aliases for multi-parameter extensions (core convention ss1.4) ---
+  /** Splits the exact amount by integer weights at its own scale. */
+  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Int]): Either[Unallocatable, Vector[Money[C]]] = m.allocate(weights)
 
-  /** Compares two amounts of the same currency. */
-  def compare[C <: Currency](self: Money[C], that: Money[C]): Int = self.compare(that)
+  /** Allocation by exact ratio weights. */
+  @targetName("allocateByRatios")
+  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Ratio]): Either[Unallocatable, Vector[Money[C]]] = m.allocate(weights)
 
-  /** The lesser of two amounts of the same currency. */
-  def min[C <: Currency](self: Money[C], that: Money[C]): Money[C] = self.min(that)
+  def split[C <: Currency & Singleton](m: Money[C], parts: Int): Either[Unallocatable, Vector[Money[C]]] = m.split(parts)
 
-  /** The greater of two amounts of the same currency. */
-  def max[C <: Currency](self: Money[C], that: Money[C]): Money[C] = self.max(that)
+  def convert[C <: Currency & Singleton, T <: Currency & Singleton](m: Money[C], rate: Rate[C, T]): Money[T] = m.convert(rate)
 
-  /** Divides an amount by a scalar. */
-  def divide[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
-    self / divisor
+  /** Scales by an exact ratio, rounded at the currency's scale. */
+  def scaled[C <: Currency & Singleton](m: Money[C], r: Ratio, mode: Rounding)(using ValueOf[C]): Money[C] = m.scaled(r, mode)
 
-  /** Computes the remainder of dividing an amount by a scalar. */
-  def remainder[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
-    self.remainder(divisor)
+  @targetName("scaledAtScale")
+  def scaled[C <: Currency & Singleton](m: Money[C], r: Ratio, scale: Int, mode: Rounding): Money[C] = m.scaled(r, scale, mode)
 
-  /** Divides an amount by a scalar, returning the integer quotient. */
-  def divideToIntegralValue[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError,
-                                                                                                                   Money[C]] =
-    self.divideToIntegralValue(divisor)
+  /** The selling price at a markup over this cost. */
+  def markup[C <: Currency & Singleton](m: Money[C], p: Percent): Money[C] = m.markup(p)
 
-  /** Divides an amount by a scalar, returning quotient and remainder. */
-  def divideAndRemainder[C <: Currency](self: Money[C], divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError,
-                                                                                                                (quotient: Money[C],
-                                                                                                                 remainder: Money[C])] =
-    self.divideAndRemainder(divisor)
+  /** The selling price at a margin, rounded at the currency's scale. */
+  def margin[C <: Currency & Singleton](m: Money[C], p: Percent, mode: Rounding)(using ValueOf[C]): Either[Undefined, Money[C]] = m.margin
+    (p, mode)
 
-  /** Distributes an amount proportionally by ratios. */
-  def allocate[C <: Currency](self: Money[C], ratios: Seq[BigDecimal])(using CurrencyMathContext): Either[ArithmeticError, Seq[Money[C]]] =
-    self.allocate(ratios)
+  @targetName("marginAtScale")
+  def margin[C <: Currency & Singleton](m: Money[C], p: Percent, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+    m.margin(p, scale, mode)
 
-  // --- Operations ---
+  /** The level payment amortising this principal on the reducing balance. */
+  def annuity[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, mode: Rounding)(using ValueOf[C]): Either[Undefined,
+                                                                                                                           Money[C]] =
+    m.annuity(rate, periods, mode)
 
-  extension [C <: Currency](self: Money[C])
+  @targetName("annuityAtScale")
+  def annuity[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+    m.annuity(rate, periods, scale, mode)
 
-    /** The numeric value of this amount. */
-    def value: BigDecimal = self.amount
+  extension [C <: Currency & Singleton](m: Money[C])
+    /** The exact amount, at whatever scale arithmetic has produced. */
+    def amount: BigDecimal = m
+    def currency(using c: ValueOf[C]): Currency = c.value
+    def value(using c: ValueOf[C]): Value = Value(c.value, m)
 
-    /** Adds another amount of the same currency. */
-    @targetName("plus")
-    def +(that: Money[C])(using CurrencyMathContext): Money[C] = Money(add(self.amount, that.amount), self.currency)
+    @targetName("ext_add") def +(n: Money[C]): Money[C] = m + n
+    @targetName("ext_subtract") def -(n: Money[C]): Money[C] = m - n
+    @targetName("negated") def unary_- : Money[C] = -m
+    @targetName("ext_multiply") def *(k: BigDecimal): Money[C] = m * k
+    @targetName("ext_multiplyInt") def *(k: Int): Money[C] = m * BigDecimal(k)
+    @targetName("multiplyDouble") inline def *(k: Double): Money[C] =
+      scala.compiletime.error("binary floating-point cannot carry exact amounts; construct from a decimal string or integer")
+    def abs: Money[C] = m.abs
 
-    /** Subtracts another amount of the same currency. */
-    @targetName("minus")
-    def -(that: Money[C])(using CurrencyMathContext): Money[C] = Money(subtract(self.amount, that.amount), self.currency)
+    @targetName("ext_lessThan") def <(n: Money[C]): Boolean = m.compare(n) < 0
+    @targetName("ext_lessOrEqual") def <=(n: Money[C]): Boolean = m.compare(n) <= 0
+    @targetName("ext_greaterThan") def >(n: Money[C]): Boolean = m.compare(n) > 0
+    @targetName("ext_greaterOrEqual") def >=(n: Money[C]): Boolean = m.compare(n) >= 0
+    @targetName("ext_min") def min(n: Money[C]): Money[C] = Money.min(m, n)
+    @targetName("ext_max") def max(n: Money[C]): Money[C] = Money.max(m, n)
+    def isZero: Boolean = m.signum == 0
+    def signum: Int = m.signum
 
-    /** Scales this amount by a multiplier. */
-    @targetName("times")
-    def *(multiplier: BigDecimal)(using CurrencyMathContext): Money[C] = Money(multiply(self.amount, multiplier), self.currency)
+    @targetName("ext_rounded")
+    def rounded(mode: Rounding)(using ValueOf[C]): Money[C] = Money.rounded(m, mode)
 
-    /** Divides this amount by a scalar.
-      *
-      * @return `Right` with the quotient, or `Left` if `divisor` is zero.
+    @targetName("ext_roundedAtScale")
+    def rounded(scale: Int, mode: Rounding): Money[C] = Money.rounded(m, scale, mode)
+
+    /** Rounds to the cash increment the territory's recorded practice sets for
+      * this currency. Cash practice is the jurisdiction's fact, never the
+      * currency's: one euro rounds to five cents by statute in Finland, by
+      * voluntary agreement in the Netherlands, and not at all in Germany. The
+      * caller names the territory; one recording no practice for this currency
+      * falls back to minor-unit half-even.
       */
-    @targetName("dividedBy")
-    def /(divisor: BigDecimal)(using CurrencyMathContext): Either[ArithmeticError, Money[C]] =
-      divide(self.amount, divisor).map(Money(_, self.currency))
+    @targetName("ext_cash")
+    def cash(t: Territory)(using c: ValueOf[C]): Money[C] =
+      Cash.of(t) match
+        case Some(rule) if rule.currency == c.value => m.cash(t, rule.mode)
+        case _                                      => c.value.digits.fold(m)(d => rounder(m, d, Rounding.HalfEven))
 
-    /** Negates this amount. */
-    @targetName("negate")
-    def unary_- : Money[C] = Money(-self.amount, self.currency)
+    /** Cash rounding with the midpoint mode imposed at the call site. */
+    @targetName("ext_cashWithMode")
+    def cash(t: Territory, mode: Rounding)(using c: ValueOf[C]): Money[C] =
+      Cash.of(t) match
+        case Some(rule) if rule.currency == c.value =>
+          val step = BigDecimal(rule.increment, rule.digits)
+          rounder(m / step, 0, mode) * step
+        case _ => c.value.digits.fold(m)(d => rounder(m, d, mode))
 
-    /** The remainder after dividing this amount by a scalar. */
-    @targetName("remainderExt")
-    def remainder(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, Money[C]] =
-      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
-      else Right(Money(BigDecimal(self.amount.bigDecimal.remainder(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))), self.currency))
-
-    /** The integer quotient of dividing this amount by a scalar (truncated towards zero). */
-    @targetName("divideToIntegralValueExt")
-    def divideToIntegralValue(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, Money[C]] =
-      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
-      else
-        Right
-          (Money
-            (BigDecimal(self.amount.bigDecimal.divideToIntegralValue(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))), self.currency))
-
-    /** Divides this amount by a scalar, yielding both integer quotient and remainder. */
-    @targetName("divideAndRemainderExt")
-    def divideAndRemainder(divisor: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError,
-                                                                                        (quotient: Money[C], remainder: Money[C])] =
-      if divisor.signum == 0 then Left(ArithmeticError("Division by zero."))
-      else
-        val parts = self.amount.bigDecimal.divideAndRemainder(divisor.bigDecimal, CurrencyMathContext.unwrap(ctx))
-        Right((quotient = Money(BigDecimal(parts(0)), self.currency), remainder = Money(BigDecimal(parts(1)), self.currency)))
-
-    /** Compares this amount to another of the same currency. */
-    @targetName("compareExt")
-    def compare(that: Money[C]): Int = self.amount.compare(that.amount)
-
-    /** The lesser of this and another amount of the same currency. */
-    @targetName("minExt")
-    def min(that: Money[C]): Money[C] = if self.amount <= that.amount then self else that
-
-    /** The greater of this and another amount of the same currency. */
-    @targetName("maxExt")
-    def max(that: Money[C]): Money[C] = if self.amount >= that.amount then self else that
-
-    /** The absolute value of this amount. */
-    def abs: Money[C] = Money(self.amount.abs, self.currency)
-
-    /** The sign of this amount: -1, 0, or 1. */
-    def signum: Int = self.amount.signum
-
-    /** `true` if this amount is exactly zero. */
-    def isZero: Boolean = self.amount.signum == 0
-
-    /** `true` if this amount is strictly positive. */
-    def isPositive: Boolean = self.amount.signum > 0
-
-    /** `true` if this amount is strictly negative. */
-    def isNegative: Boolean = self.amount.signum < 0
-
-    /** `true` if this amount is zero or positive. */
-    def isPositiveOrZero: Boolean = self.amount.signum >= 0
-
-    /** `true` if this amount is zero or negative. */
-    def isNegativeOrZero: Boolean = self.amount.signum <= 0
-
-    /** Rounds to the currency's minor units using `HALF_UP`. */
-    def rounded: Money[C] = self.rounded(RoundingMode.HALF_UP)
-
-    /** Rounds to the currency's minor units using the given mode. */
-    @targetName("roundedMode")
-    def rounded(mode: RoundingMode.RoundingMode): Money[C] = self.currency.digits match
-      case Some(scale) => Money(self.amount.setScale(scale, mode), self.currency)
-      case None        => self
-
-    /** Distributes this amount proportionally according to the given ratios.
-      *
-      * The sum of the results always equals this amount exactly; any rounding
-      * remainder is distributed one minor unit at a time to the leading portions.
-      *
-      * @param ratios Non-negative proportions; they need not sum to one.
-      * @return `Right` with the distributed amounts, or `Left` if the ratios are
-      *   empty, negative, or sum to zero.
+    /** The amount in minor units, when exactly representable at the currency's
+      * scale.
       */
-    @targetName("allocateExt")
-    def allocate(ratios: Seq[BigDecimal])(using ctx: CurrencyMathContext): Either[ArithmeticError, Seq[Money[C]]] =
-      if ratios.isEmpty then Left(ArithmeticError("Cannot allocate with empty ratios."))
-      else if ratios.exists(_ < 0) then Left(ArithmeticError("Cannot allocate with negative ratios."))
-      else
-        val total = ratios.sum
-        if total == 0 then Left(ArithmeticError("Cannot allocate when the sum of ratios is zero."))
-        else
-          import scala.util.boundary, boundary.break
-          boundary[Either[ArithmeticError, Seq[Money[C]]]]:
-            val portions = ratios.map { ratio =>
-              divide(multiply(self.amount, ratio), total) match
-                case Left(err) => break(Left(err))
-                case Right(v)  => v
-            }
-            val scale = self.currency.digits
-            val rounded = scale match
-              case Some(d) => portions.map(_.setScale(d, RoundingMode.DOWN))
-              case None    => portions
-            val leftover = self.amount - rounded.foldLeft(BigDecimal(0))(_ + _)
-            if leftover == 0 then Right(rounded.map(Money(_, self.currency)))
-            else
-              val unit = BigDecimal(BigInt(1), scale.getOrElse(0))
-              // Distribute the rounding remainder one minor unit at a time to leading portions.
-              val adjusted = rounded
-                .foldLeft((leftover, Vector.empty[Money[C]])) { case ((remaining, acc), amt) =>
-                  if remaining != 0 then
-                    val adjustment = if remaining > 0 then unit else -unit
-                    (remaining - adjustment, acc :+ Money(amt + adjustment, self.currency))
-                  else (remaining, acc :+ Money(amt, self.currency))
-                }
-                ._2
-              Right(adjusted)
-            end if
-        end if
+    def minor(using c: ValueOf[C]): Option[Long] =
+      c.value.digits.flatMap { d =>
+        val scaled = rounder(m, d, Rounding.Down)
+        if scaled.compare(m) == 0 then
+          val units = (scaled * BigDecimal(10).pow(d)).toBigInt
+          if units.isValidLong then Some(units.toLong) else None
+        else None
+      }
 
-    /** Converts this amount to another currency using a contextual provider. */
-    def convertTo[T <: Currency](using provider: ExchangeRateProvider, target: ValueOf[T], ctx: CurrencyMathContext): Either[
-      ConversionError,
-      Money[T]] =
-      if self.currency == target.value then Right(Money(self.amount, target.value).rounded)
-      else
-        provider
-          .get(ConversionQuery(self.currency, target.value))
-          .map(rate => Money(multiply(self.amount, rate.rate), target.value).rounded)
+    @targetName("ext_divided")
+    def divided(k: BigDecimal, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+      if k.signum == 0 then Left(Undefined)
+      else Right(rounder(m / k, scale, mode))
 
+    /** Splits the exact amount by integer weights at its own scale: the parts
+      * always sum to the whole, a zero weight receives zero, and the remainder
+      * goes to the largest fractional shares (ties to the earliest). Round
+      * first to allocate legal tender.
+      */
+    @targetName("ext_allocate")
+    def allocate(weights: Seq[Int]): Either[Unallocatable, Vector[Money[C]]] =
+      shares(m, weights.map(BigInt(_)))
+
+    /** Allocation by exact ratio weights - proportional-to-balances splits and
+      * the like.
+      */
+    @targetName("ext_allocateRatios")
+    def allocate(weights: Seq[Ratio]): Either[Unallocatable, Vector[Money[C]]] =
+      if weights.exists(_.signum < 0) then Left(Unallocatable)
+      else
+        val common = weights.map(_.denominator).foldLeft(BigInt(1))((acc, d) => acc / acc.gcd(d) * d)
+        shares(m, weights.map(w => w.numerator * (common / w.denominator)))
+
+    /** Splits into `parts` equal shares; equivalent to allocating unit weights. */
+    @targetName("ext_split")
+    def split(parts: Int): Either[Unallocatable, Vector[Money[C]]] =
+      if parts <= 0 then Left(Unallocatable) else m.allocate(Vector.fill(parts)(1))
+
+    /** Converts through an exchange rate, exactly; rounding remains the
+      * caller's boundary.
+      */
+    @targetName("ext_convert")
+    def convert[T <: Currency & Singleton](rate: Rate[C, T]): Money[T] = m * rate.value
+
+    /** Scales by an exact ratio - a day-count fraction, an apportionment share -
+      * rounded at the currency's scale by `mode` (the quotient need not
+      * terminate, so the boundary is named).
+      */
+    @targetName("ext_scaled")
+    def scaled(r: Ratio, mode: Rounding)(using c: ValueOf[C]): Money[C] =
+      m.scaled(r, c.value.digits.getOrElse(0), mode)
+
+    /** The same scaling at an explicit scale: sub-minor-unit accrual (a ledger
+      * carries interest at four places before posting), and the controlled form
+      * for currencies that record no minor unit, which the currency-scale form
+      * rounds to whole units.
+      */
+    @targetName("ext_scaledAtScale")
+    def scaled(r: Ratio, scale: Int, mode: Rounding): Money[C] =
+      val product = m * BigDecimal(r.numerator)
+      BigDecimal(product.underlying.divide(BigDecimal(r.denominator).underlying, scale, rounder.jdk(mode)))
+
+    /** The selling price at a markup over this cost, `cost * (1 + markup)`,
+      * exact. Named apart from [[margin]], which divides where this multiplies.
+      */
+    @targetName("ext_markup")
+    def markup(p: Percent): Money[C] = m * (BigDecimal(1) + p.fraction)
+
+    /** The selling price at a margin - `cost / (1 - margin)` - rounded at the
+      * currency's scale by `mode` (the quotient need not terminate).
+      * `Undefined` at a 100% margin.
+      */
+    @targetName("ext_margin")
+    def margin(p: Percent, mode: Rounding)(using c: ValueOf[C]): Either[Undefined, Money[C]] =
+      m.divided(BigDecimal(1) - p.fraction, c.value.digits.getOrElse(0), mode)
+
+    /** The same at an explicit scale - sub-minor pricing (fuel-grade
+      * precision), and the controlled form for currencies without a minor unit.
+      */
+    @targetName("ext_marginAtScale")
+    def margin(p: Percent, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+      m.divided(BigDecimal(1) - p.fraction, scale, mode)
+
+    /** The level payment amortising this principal over `periods` at the
+      * periodic rate `rate` on the reducing balance, exact until the
+      * currency-scale rounding by `mode`. A zero rate degenerates to the equal
+      * split; non-positive periods and a degenerate rate are `Undefined`.
+      *
+      * Named rather than left to the caller because flat-rate quoting is a
+      * plain multiplication and the two are a costly confusion.
+      */
+    @targetName("ext_annuity")
+    def annuity(rate: Ratio, periods: Int, mode: Rounding)(using c: ValueOf[C]): Either[Undefined, Money[C]] =
+      m.annuity(rate, periods, c.value.digits.getOrElse(0), mode)
+
+    /** The same at an explicit scale - schedule analysis below the posting
+      * scale, and the controlled form for currencies without a minor unit.
+      */
+    @targetName("ext_annuityAtScale")
+    def annuity(rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
+      if periods <= 0 then Left(Undefined)
+      else if rate.isZero then m.divided(BigDecimal(periods), scale, mode)
+      else
+        for
+          growth <- (Ratio.One + rate).pow(periods)
+          payment <- (Ratio(m.amount) * rate * growth) / (growth - Ratio.One)
+        yield Money.apply[C](payment.decimal(scale, mode))
   end extension
 
-  extension [C <: Currency](amounts: Iterable[Money[C]])
+  // Largest-remainder allocation at the amount's own scale: parts sum to the whole, a zero
+  // weight receives zero, remainder to the largest fractional shares (ties earliest).
+  private def shares[C <: Currency & Singleton](m: Money[C], weights: Seq[BigInt]): Either[Unallocatable, Vector[Money[C]]] =
+    val total = weights.sum
+    if weights.isEmpty || weights.exists(_.signum < 0) || total.signum <= 0 then Left(Unallocatable)
+    else
+      val negative = m.signum < 0
+      val norm = if m.scale < 0 then m.setScale(0) else m
+      val scale = norm.scale
+      val units = BigInt(norm.abs.underlying.unscaledValue)
+      val base = weights.map(w => units * w / total)
+      val remainders = weights.map(w => units * w % total)
+      val leftover = (units - base.sum).toInt
+      val bumped = remainders.zipWithIndex.sortBy((r, i) => (-r, i)).map(_._2).take(leftover).toSet
+      Right
+        (base.zipWithIndex.toVector.map { (u, i) =>
+          val part = BigDecimal(if bumped.contains(i) then u + 1 else u, scale)
+          if negative then -part else part
+        })
+    end if
+  end shares
 
-    /** Sums all amounts, returning zero for an empty collection. */
-    def total(using ValueOf[C], CurrencyMathContext): Money[C] =
-      amounts.foldLeft(Money.zero[C])((acc, m) => Money(add(acc.amount, m.amount), acc.currency))
+  /** The deterministic rendering a ledger key, an audit hash, or a
+    * deduplication compares: trailing zeros stripped, then padded to the
+    * currency's minor unit where it has one, so anything finer survives.
+    */
+  def canonical(v: Value): Value = v.canonical
 
-    /** The arithmetic mean of all amounts, or `None` if the collection is empty. */
-    def average(using ValueOf[C], CurrencyMathContext): Option[Money[C]] =
-      if amounts.isEmpty then None else (amounts.total / BigDecimal(amounts.size)).toOption
+  extension (v: Value)
+    @targetName("ext_canonical")
+    def canonical: Value =
+      val stripped = BigDecimal(v.amount.underlying.stripTrailingZeros)
+      val scaled = v.currency.digits match
+        case Some(d) if stripped.scale < d => stripped.setScale(d)
+        case _                             => stripped
+      Value(v.currency, scaled)
 
-  // --- Private context-aware arithmetic on raw amounts ---
-
-  private def add(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
-    BigDecimal(a.bigDecimal.add(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
-
-  private def subtract(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
-    BigDecimal(a.bigDecimal.subtract(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
-
-  private def multiply(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): BigDecimal =
-    BigDecimal(a.bigDecimal.multiply(b.bigDecimal, CurrencyMathContext.unwrap(ctx)))
-
-  private def divide(a: BigDecimal, b: BigDecimal)(using ctx: CurrencyMathContext): Either[ArithmeticError, BigDecimal] =
-    if b.signum == 0 then Left(ArithmeticError("Division by zero."))
-    else Right(BigDecimal(a.bigDecimal.divide(b.bigDecimal, CurrencyMathContext.unwrap(ctx))))
-
+  given [C <: Currency & Singleton] => CanEqual[Money[C], Money[C]] = CanEqual.derived
+  given [C <: Currency & Singleton] => Ordering[Money[C]] = Ordering.BigDecimal.on(identity)
 end Money
+
+/** A territory's cash-rounding practice for its tender: the currency the row
+  * governs, the increment in `10^-digits` units of that currency, the midpoint
+  * mode, and - separately, because the two genuinely differ in kind - where
+  * each of those facts comes from.
+  *
+  * Keyed by territory because the practice is the jurisdiction's. Switzerland's
+  * increment follows from its denomination set with no rounding provision in
+  * any instrument; Denmark's is statutory while its midpoint is stated by
+  * nothing; Finland's statute states both. `Unstated` marks a value no source
+  * states, recorded as this library's own documented choice rather than
+  * attributed to a rule that does not exist. Instances via [[Cash$ Cash]].
+  */
+final case class Cash
+  (currency: Currency, digits: Int, increment: Int, mode: Rounding, incrementBy: Cash.Provenance, modeBy: Cash.Provenance)
+    derives CanEqual
+
+/** The provenance vocabulary and the recorded rows for [[Cash]]. */
+object Cash:
+  /** Where a cash-practice fact comes from: a statute or ministerial order, a
+    * central-bank directive, a voluntary industry agreement, the denomination
+    * set itself where the smallest coin decides and no rounding provision
+    * exists, observed practice, or nothing at all.
+    */
+  enum Provenance derives CanEqual:
+    case Statute, Directive, Agreement, Denomination, Practice, Unstated
+
+  /** The recorded practice for a territory, `None` where none is recorded
+    * rather than a guess. Germany records nothing, and the minor-unit fallback
+    * is the German answer.
+    */
+  def of(t: Territory): Option[Cash] =
+    val governed = world.packed.at(world.money.tables.cashCurrency, t.index)
+    Option.when(governed > 0)
+      (
+        Cash
+          (
+            Currency.fromIndex(governed - 1),
+            world.packed.at(world.money.tables.cashDigits, t.index),
+            world.packed.at(world.money.tables.cashIncrement, t.index),
+            Rounding.fromOrdinal(world.packed.at(world.money.tables.cashRounding, t.index)),
+            Provenance.fromOrdinal(world.packed.at(world.money.tables.cashIncrementBy, t.index)),
+            Provenance.fromOrdinal(world.packed.at(world.money.tables.cashModeBy, t.index))
+          ))
+  end of
+end Cash
+
+/** The euro conversion a withdrawn currency carries, for
+  * [[world.Currency.Historic Historic]].
+  */
+extension (h: Currency.Historic)
+  /** Converts a legacy-currency amount through the EC 2866/98 fixed factor
+    * where one exists. The half-up cent rounding is EC 1103/97 art. 5's own
+    * rule, so it is not a parameter.
+    */
+  def euro(amount: BigDecimal): Option[Money[Currency.EUR]] =
+    val factor =
+      world.packed.slice(world.money.tables.euroFactors, world.money.tables.euroFactorOffsets, Currency.Historic.index(h))
+    Option.when(factor.nonEmpty)(Money.apply[Currency.EUR](rounder(amount / BigDecimal(factor), 2, Rounding.HalfUp)))
+
+/** Typed amount construction from a currency value. */
+extension (c: Currency)
+  /** An amount of this currency, typed by the currency's own singleton: the
+    * same expression serves compile-time constants (`Currency.KES(100)`) and
+    * runtime-bound currencies (`val c = Currency.from(code)...; c(100)`).
+    */
+  def apply(amount: BigDecimal): Money[c.type] = Money.apply[c.type](amount)
+  def apply(amount: Int): Money[c.type] = Money.apply[c.type](BigDecimal(amount))
+  def apply(amount: Long): Money[c.type] = Money.apply[c.type](BigDecimal(amount))
+  inline def apply(amount: Double): Money[c.type] =
+    scala.compiletime.error("binary floating-point cannot carry exact amounts; construct from a decimal string or integer")
+  inline def apply(amount: Float): Money[c.type] =
+    scala.compiletime.error("binary floating-point cannot carry exact amounts; construct from a decimal string or integer")
+
+  /** An amount given in minor units, so `Currency.KES.minor(12345)` is 123.45
+    * shillings.
+    */
+  def minor(amount: Long): Money[c.type] =
+    Money.apply[c.type](BigDecimal(amount, c.digits.getOrElse(0)))
+end extension
+
+/** The legal tender a territory records, for [[world.Territory Territory]]. */
+extension (t: Territory)
+  /** The principal legal tender of the territory, where one is current. */
+  def currency: Option[Currency] = t.tender.headOption
+
+  /** Every current legal tender of the territory, principal first. */
+  def tender: Vector[Currency] =
+    world.packed
+      .slice(world.money.tables.tender, world.money.tables.tenderOffsets, t.index)
+      .map(ch => Currency.fromIndex(ch.toInt))
+      .toVector

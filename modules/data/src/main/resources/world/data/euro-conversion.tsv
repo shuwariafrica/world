@@ -1,0 +1,24 @@
+# dataset: euro-conversion
+# source: ec-regulation-2866-98
+# authority: Council of the European Union
+# origin: Council Regulation (EC) No 2866/98 article 1, via EUR-Lex CELEX:31998R2866
+# pin: 31998R2866
+# published: 1998-12-31
+# licence: eur-lex-reuse
+# licence-url: https://eur-lex.europa.eu/content/legal-notice/legal-notice.html
+# licence-note: the Commission authorises reuse of EUR-Lex documents with the source acknowledged
+# licence-verified: 2026-07-26
+# cadence: never - the rates are irrevocably fixed
+# compiled-in: true
+# columns: currency,factor
+ATS	13.7603
+BEF	40.3399
+DEM	1.95583
+ESP	166.386
+FIM	5.94573
+FRF	6.55957
+IEP	0.787564
+ITL	1936.27
+LUF	40.3399
+NLG	2.20371
+PTE	200.482

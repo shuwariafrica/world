@@ -2,67 +2,72 @@
 title: Introduction
 ---
 
-## Overview
+## What `world` is
 
-`world` is a collection of Scala 3 libraries for type-safe modelling of real-world domain concepts. All modules support JVM, Scala.js, and Scala Native.
+`world` gives Scala the concepts commerce actually runs on, as types that compute exactly
+and carry their own reference data:
 
-### Dependency Resolution
+- **civil time** - a day that is not tied to one calendar's labelling, with arithmetic
+  whose overflow policy is named at the call site
+- **places and locales** - territories, regions, languages, scripts, and BCP 47 tags,
+  with negotiation against a supported set
+- **money** - amounts closed over their currency, tax structures, graduated bands, and
+  legally-correct cash rounding
+- **quantities** - measures and unit prices, block tariffs, and rate cards
 
-All libraries are published to Maven Central:
+Every module cross-publishes for the JVM, Scala.js, and Scala Native. Territory,
+language, script, currency, and locale facts are curated from their issuing authorities
+and compiled into the artefacts, so behaviour does not change underneath you when a
+platform, a JDK, or a browser does.
 
-```scala sc:nocompile
-libraryDependencies += "africa.shuwari" %%% "world-money" % "{{projectVersion}}"
+## Add it
+
+```scala
+libraryDependencies += "africa.shuwari" %%% "world" % "@VERSION@"
 ```
 
-See [available modules](modules/index.md) for all artefact coordinates.
+[Modules and coordinates](reference/index.md) lists the full set and its dependency
+graph.
 
----
+## What the types guarantee
 
-## Quick Examples
+**Errors are values.** Every operation that can fail returns `Either` over a sealed
+family rooted at `WorldError`. Nothing throws. A failure's message names the violated
+constraint; the value that violated it stays a typed field, so captured input never
+reaches a log through `getMessage`.
 
-### Countries
+**Arithmetic is exact, and rounding is never silent.** Money and quantities compute over
+exact decimals and rationals. Every operation whose result need not terminate takes the
+scale and the mode at the call site.
 
-```scala sc:nocompile
-import world.locale.*
-import boilerplate.*
+**Wrong combinations do not compile.** Money is parameterised by its currency, quantities
+by their kind, and exchange rates by their direction. Binary floating-point is refused at
+every exact-numeric seam with a message pointing at the decimal form.
 
-val kenya = Countries.KE
-kenya.name           // "Kenya"
-kenya.alpha2.unwrap  // "KE"
-
-Countries.from("GB")              // Some(Countries.GB)
-Countries.from(Alpha2Code("KE"))  // Some(Countries.KE)
+```scala
+// Currency.KES(1) + Currency.TZS(2)      does not compile
+// Currency.KES(1.5)                      does not compile
+// Measure.Kilogram(1) + Measure.Litre(1) does not compile
 ```
 
-### Currencies
+**Data is versioned, not ambient.** Each dataset records the upstream release it was
+taken from, so an artefact can state which vintage of each source it holds. See
+[the data that ships](reference/data.md).
 
-```scala sc:nocompile
-import world.money.*
-import boilerplate.*
+## Where to go next
 
-Currencies.KES.code.unwrap        // "KES"
-Currencies.KES.numericCode.unwrap // 404
-Currencies.KES.digits             // Some(2)
+| If you are | Start at |
+|---|---|
+| pricing, invoicing, or taking payment | [Money and pricing](money.md) |
+| weighing, measuring, or metering | [Quantities and tariffs](quantities.md) |
+| handling dates, ages, or calendars | [Civil time and calendars](time.md) |
+| localising, or resolving territories | [Places, locales, and currencies](places.md) |
+| changing `world` itself | [Contributing](contributing.md) |
 
-Currencies.from("EUR")  // Some(Currencies.EUR)
-```
+## Status
 
-### Money
-
-```scala sc:nocompile
-import world.money.*
-import world.money.syntax.*
-
-val price   = 100.KES
-val doubled = price * 2                          // 200.00 KES
-val halved  = price / 2                          // Right(50.00 KES)
-val rounded = BigDecimal("123.456").KES.rounded  // 123.46 KES
-
-// Compile error: different currencies cannot be mixed
-// 100.KES + 50.EUR
-```
-
----
+Civil time and calendars, places and locales, money, and quantities ship with their full
+API. Further domains follow in later releases.
 
 ## Licence
 

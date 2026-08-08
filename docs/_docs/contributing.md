@@ -2,172 +2,80 @@
 title: Contributing
 ---
 
-## Overview
-
-`world` is an open-source project that welcomes contributions. This guide outlines technical requirements and workflow for contributors.
-
----
-
 ## Prerequisites
 
-- **JDK 17+**
-- **sbt 1.11+**
-- **Git**
+- JDK 17 or newer
+- Node.js 22 or newer, for the Scala.js rows
+- An LLVM toolchain providing `clang`, for the Scala Native rows
+- The CLDR submodule: `git submodule update --init data/cldr`
 
-To allow for cross-platform builds, ensure the following system toolchains are available:
-
-- JavaScript runtime (Scala.js):
-  - **Node.js 22+**
-
-- Native toolchain (Scala Native):
-  - **LLVM toolchain**: `clang`, and standard C toolchain utilities
-
-## Setup
-
-Fork and clone the repository:
-
-```bash
-git clone https://github.com/shuwariafrica/world.git
-```
-
-Verify your environment:
-
-```bash
-sbt test
-```
-
-## Project Structure
+## Project layout
 
 ```text
-world/
-  modules/
-    common/         # Shared utilities (Formatter)
-    locale/         # Country and locale primitives (ISO 3166-1)
-    money/          # Currency and monetary values (ISO 4217)
-    money-usage/    # Currency-to-country usage bridge
-  docs/             # Documentation sources
-  project/          # Build configuration and source generators
+modules/
+  core/       world-core       civil time, calendars, ratios, the scheme concept
+  world/      world            territories, languages, scripts, locales, currencies
+  money/      world-money      monetary amounts and commercial arithmetic
+  quantity/   world-quantity   measures, quantities, unit prices, tariffs
+  data/       world-data       curated datasets, consumed at build time
+data/         pinned upstream sources and the CLDR submodule
+docs/         documentation sources
+project/      the curation pipeline, the packer, and the compatibility reporter
 ```
 
----
+## Commands
 
-## Code Guidelines
+| Command | Purpose |
+|---|---|
+| `sbt format` | apply formatting, linting, and source headers |
+| `sbt check` | verify formatting, linting, and source headers |
+| `sbt "world-jvm/testOnly *"` | test every JVM row |
+| `sbt "world-js/testOnly *"` | test every Scala.js row |
+| `sbt "world-native/testOnly *"` | test every Scala Native row |
+| `sbt world/budgets` | measure the packed data against its recorded size budget |
+| `sbt world-data/dataVerify` | verify every dataset's provenance, pin, and redistribution terms |
+| `sbt world-data/dataReport` | print each dataset's row count, pin, and verified terms |
+| `sbt world-data/curate` | regenerate the datasets from their pinned upstream releases |
+| `sbt world-site/mdoc` | compile the documentation examples |
+| `sbt world-jvm/compatReport` | print the MiMa and TASTy-MiMa report |
 
-### Prohibited Language Features
+Use `testOnly *`, not `test`: `test` selects against the previous run's analysis and will
+report a passing lane having executed nothing. Confirm the executed count in the output of
+every lane.
 
-The following constructs are **forbidden** via Scalafix and compiler flags. Do not use without suitable justification:
+A change is ready when `check` and all three test commands pass. The compatibility report
+is awareness only and never declines a change.
 
-- **`var`** - use immutable values
-- **`null`** - use `Option`, or `| Null` with `boilerplate.nullable.*` at boundaries
-- **`throw`** - use `Either` or domain error types (exception: `fromUnsafe` methods)
-- **`return`** - use expression-based control flow
-- **`asInstanceOf`/`isInstanceOf`** - use pattern matching or `TypeTest`
-- **Default arguments** - provide explicit overloads
+## Code
 
-### No Default Arguments
+Modules compile under `-Yexplicit-nulls -Wunused:all -Wall -Wsafe-init -Werror
+-language:strictEquality`, on both the main and test configurations. `-Werror` is the
+warning-escalation gate: `-Xfatal-warnings` is a deprecated alias whose own deprecation
+notice escalates, so it fails even a warning-free compilation.
 
-Provide overloads instead:
+Scalafix additionally rejects `var`, `null`, `throw`, `return`, `while`, `asInstanceOf`,
+`isInstanceOf`, default arguments, and pattern-matching `val` bindings.
 
-```scala sc:nocompile
-final case class Config(timeout: Int, retries: Option[Int])
+Data aggregates carry no methods: behaviour lives in the companion as extensions, smart
+constructors, and givens. Every multi-parameter extension has a companion alias for
+non-curried invocation, with `@targetName` on the extension to keep the erased signatures
+apart. Errors are values from owned sealed families; a failure message names the violated
+constraint and keeps the offending value in a typed field. Every domain type supplies
+`CanEqual` in its companion.
 
-object Config:
-  def apply(timeout: Int): Config = apply(timeout, None)
-```
+## Data
 
-### Explicit Nulls
+Curated datasets are pinned per source in `data/upstream-pins.json`, recording the pinned
+version, when it was taken, and where to check for a newer one. A scheduled workflow
+compares each pin against its published latest and opens an issue when a source moves. It
+never updates data: a pin moves through a reviewed change.
 
-`-Yexplicit-nulls` is always enabled. Use `import boilerplate.nullable.*` at boundaries.
+`dataVerify` runs before the packed tables are generated, so a dataset reaches an artefact
+only once its provenance and terms are verified. It also runs the correctness gates over
+the data itself - the phone presentation formats, for instance, are checked against the
+possible lengths their own territory admits.
 
-### Multiversal Equality
+## Pull requests
 
-`-language:strictEquality` is always enabled. All domain types must provide `CanEqual`:
-
-```scala sc:nocompile
-opaque type Email = String
-
-object Email:
-  def apply(raw: String): Either[String, Email] =
-    if raw.contains("@") then Right(raw) else Left("Invalid")
-  extension (e: Email) def value: String = e
-  given CanEqual[Email, Email] = CanEqual.derived
-```
-
-### Formatting
-
-The display formatting extension method is named `display` (via [[world.format.Formatter]]):
-
-```scala sc:nocompile
-import world.money.format.given
-100.KES.display  // "KES 100.00"
-```
-
-### Testing
-
-Use **munit** and **munit-scalacheck**:
-
-```scala sc:nocompile
-import munit.FunSuite
-import boilerplate.*
-
-class CurrencySuite extends FunSuite:
-  test("KES has correct code"):
-    assertEquals(Currencies.KES.code.unwrap, "KES")
-
-  test("addition combines amounts"):
-    val sum = 100.EUR + 50.EUR
-    assertEquals(sum.value, BigDecimal(150))
-```
-
-Test all platforms for cross-compiled modules:
-
-```bash
-sbt "world-jvm/test; world-js/test; world-native/test"
-```
-
----
-
-## Source Generation
-
-Country, language, script, and currency sources are generated at build time from the CLDR data in
-the `data/cldr` git submodule (pinned to a release tag). Initialise it before building:
-
-```bash
-git submodule update --init --depth 1
-```
-
-The generators live in `project/` (`CldrParser.scala` and the per-type populators). To change
-generated output, edit the relevant generator, then regenerate and verify:
-
-```bash
-sbt clean compile test
-```
-
-Generated `.scala` files under `target/.../src_managed` must never be edited by hand.
-
----
-
-## Workflow
-
-### Submitting Pull Requests
-
-1. Create a feature branch
-2. Make changes
-3. Write or update tests
-4. Update documentation for API changes
-5. Verify: `sbt clean compile test`
-6. Run formatting: `sbt format`
-7. Push and create pull request
-
----
-
-## Licence
-
-By contributing, you agree your contributions will be licensed under the [Apache Licence, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
----
-
-## Resources
-
-- [GitHub Repository](https://github.com/shuwariafrica/world)
-- [Project Documentation](https://dev.shuwari.africa/world/)
+Branch, make the change with tests, bring the documentation to current, then run
+`sbt format` and confirm `check` and the three test commands pass.

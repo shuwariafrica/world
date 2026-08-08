@@ -1,0 +1,191 @@
+# dataset: currencies
+# source: six-iso-4217-list-one
+# authority: SIX Financial Information AG, ISO 4217 maintenance agency
+# origin: list-one.xml
+# pin: 2026-01-01
+# published: 2026-01-01
+# licence: published-free-of-charge
+# licence-url: https://www.six-group.com/en/products-services/financial-information/data-standards.html
+# licence-note: the maintenance agency states it makes the code lists available online and free of charge
+# licence-verified: 2026-07-26
+# cadence: on ISO 4217 amendment
+# compiled-in: true
+# columns: code,numeric,digits,kind
+AED	784	2	tender
+AFN	971	2	tender
+ALL	008	2	tender
+AMD	051	2	tender
+AOA	973	2	tender
+ARS	032	2	tender
+AUD	036	2	tender
+AWG	533	2	tender
+AZN	944	2	tender
+BAM	977	2	tender
+BBD	052	2	tender
+BDT	050	2	tender
+BHD	048	3	tender
+BIF	108	0	tender
+BMD	060	2	tender
+BND	096	2	tender
+BOB	068	2	tender
+BOV	984	2	fund
+BRL	986	2	tender
+BSD	044	2	tender
+BTN	064	2	tender
+BWP	072	2	tender
+BYN	933	2	tender
+BZD	084	2	tender
+CAD	124	2	tender
+CDF	976	2	tender
+CHE	947	2	fund
+CHF	756	2	tender
+CHW	948	2	fund
+CLF	990	4	fund
+CLP	152	0	tender
+CNY	156	2	tender
+COP	170	2	tender
+COU	970	2	fund
+CRC	188	2	tender
+CUP	192	2	tender
+CVE	132	2	tender
+CZK	203	2	tender
+DJF	262	0	tender
+DKK	208	2	tender
+DOP	214	2	tender
+DZD	012	2	tender
+EGP	818	2	tender
+ERN	232	2	tender
+ETB	230	2	tender
+EUR	978	2	tender
+FJD	242	2	tender
+FKP	238	2	tender
+GBP	826	2	tender
+GEL	981	2	tender
+GHS	936	2	tender
+GIP	292	2	tender
+GMD	270	2	tender
+GNF	324	0	tender
+GTQ	320	2	tender
+GYD	328	2	tender
+HKD	344	2	tender
+HNL	340	2	tender
+HTG	332	2	tender
+HUF	348	2	tender
+IDR	360	2	tender
+ILS	376	2	tender
+INR	356	2	tender
+IQD	368	3	tender
+IRR	364	2	tender
+ISK	352	0	tender
+JMD	388	2	tender
+JOD	400	3	tender
+JPY	392	0	tender
+KES	404	2	tender
+KGS	417	2	tender
+KHR	116	2	tender
+KMF	174	0	tender
+KPW	408	2	tender
+KRW	410	0	tender
+KWD	414	3	tender
+KYD	136	2	tender
+KZT	398	2	tender
+LAK	418	2	tender
+LBP	422	2	tender
+LKR	144	2	tender
+LRD	430	2	tender
+LSL	426	2	tender
+LYD	434	3	tender
+MAD	504	2	tender
+MDL	498	2	tender
+MGA	969	2	tender
+MKD	807	2	tender
+MMK	104	2	tender
+MNT	496	2	tender
+MOP	446	2	tender
+MRU	929	2	tender
+MUR	480	2	tender
+MVR	462	2	tender
+MWK	454	2	tender
+MXN	484	2	tender
+MXV	979	2	fund
+MYR	458	2	tender
+MZN	943	2	tender
+NAD	516	2	tender
+NGN	566	2	tender
+NIO	558	2	tender
+NOK	578	2	tender
+NPR	524	2	tender
+NZD	554	2	tender
+OMR	512	3	tender
+PAB	590	2	tender
+PEN	604	2	tender
+PGK	598	2	tender
+PHP	608	2	tender
+PKR	586	2	tender
+PLN	985	2	tender
+PYG	600	0	tender
+QAR	634	2	tender
+RON	946	2	tender
+RSD	941	2	tender
+RUB	643	2	tender
+RWF	646	0	tender
+SAR	682	2	tender
+SBD	090	2	tender
+SCR	690	2	tender
+SDG	938	2	tender
+SEK	752	2	tender
+SGD	702	2	tender
+SHP	654	2	tender
+SLE	925	2	tender
+SOS	706	2	tender
+SRD	968	2	tender
+SSP	728	2	tender
+STN	930	2	tender
+SVC	222	2	tender
+SYP	760	2	tender
+SZL	748	2	tender
+THB	764	2	tender
+TJS	972	2	tender
+TMT	934	2	tender
+TND	788	3	tender
+TOP	776	2	tender
+TRY	949	2	tender
+TTD	780	2	tender
+TWD	901	2	tender
+TZS	834	2	tender
+UAH	980	2	tender
+UGX	800	0	tender
+USD	840	2	tender
+USN	997	2	fund
+UYI	940	0	fund
+UYU	858	2	tender
+UYW	927	4	tender
+UZS	860	2	tender
+VED	926	2	tender
+VES	928	2	tender
+VND	704	0	tender
+VUV	548	0	tender
+WST	882	2	tender
+XAD	396	2	tender
+XAF	950	0	tender
+XAG	961		metal
+XAU	959		metal
+XBA	955		special
+XBB	956		special
+XBC	957		special
+XBD	958		special
+XCD	951	2	tender
+XCG	532	2	tender
+XDR	960		tender
+XOF	952	0	tender
+XPD	964		metal
+XPF	953	0	tender
+XPT	962		metal
+XSU	994		tender
+XTS	963		special
+XUA	965		tender
+XXX	999		special
+YER	886	2	tender
+ZAR	710	2	tender
+ZMW	967	2	tender
+ZWG	924	2	tender

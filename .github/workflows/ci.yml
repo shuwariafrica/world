@@ -1,0 +1,409 @@
+name: "ci"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - "**.md"
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  JDK_RELEASE: 21
+  JDK_CURRENT: 25
+  NODE_LTS: 22
+  SBT_OPTS: >- # Use all available resources
+    -Xmx7G
+    -Xms5G
+    -Xss4M
+
+jobs:
+  test_jvm:
+    name: "jvm / jdk-${{ matrix.java }} / tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 21, 25 ]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ matrix.java }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Test
+        run: sbt --server "world-jvm/testOnly * -- "
+
+      # The allocation probes run inside the JVM suite above; these are the size budgets, which the
+      # test run cannot see.
+      - name: Verify Size Budgets
+        run: sbt --server "world/budgets; world-money/budgets"
+
+      - name: Package
+        run: sbt --server "world-jvm/package"
+
+  test_js:
+    name: "js / node-${{ matrix.node }} / tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [ 24, 26 ]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          check-latest: true
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Test
+        run: sbt --server "world-js/testOnly * -- "
+
+      - name: Package
+        run: sbt --server "world-js/package"
+
+  test_native:
+    name: "native / ${{ matrix.target }} / tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-26.04
+          - target: linux-aarch_64
+            runner: ubuntu-26.04-arm
+          - target: osx-aarch_64
+            runner: macos-26
+          - target: windows-x86_64
+            runner: windows-2025-vs2026
+            vsarch: amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      # vcvarsall imports the MSVC build environment for the target arch; LLVM_BIN points Scala Native's
+      # discovery at MSVCs clang ensuring the correct ABI
+      - name: Set up MSVC toolchain (Windows)
+        if: startsWith(matrix.runner, 'windows')
+        shell: pwsh
+        env:
+          VSARCH: ${{ matrix.vsarch }}
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+                  -latest -property installationPath
+          cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" $env:VSARCH && set" |
+            ForEach-Object { if ($_ -match '^([^=]+)=(.*)$') { "$($Matches[1])=$($Matches[2])" } } |
+            Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $sub = if ($env:VSARCH -eq 'arm64') { 'arm64' } else { 'x64' }
+          "LLVM_BIN=$vs\VC\Tools\Llvm\$sub\bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Test
+        shell: bash
+        run: sbt --server "world-native/testOnly * -- "
+
+      # NIR is only produced on this row, so its budget can only be measured here.
+      - name: Verify Size Budgets
+        shell: bash
+        run: sbt --server "worldNative/budgets; world-moneyNative/budgets"
+
+      - name: Package
+        shell: bash
+        run: sbt --server "world-native/package"
+
+  static_analysis:
+    name: analyse
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Verify Source Formatting
+        id: scalafmt
+        continue-on-error: true
+        run: sbt --server "scalafmtCheckAll; scalafmtSbtCheck"
+
+      - name: Verify Linting Conformity
+        id: scalafix
+        continue-on-error: true
+        run: sbt --server "scalafixAll --check"
+
+      - name: Verify File Header Conformity
+        id: headers
+        continue-on-error: true
+        run: sbt --server headerCheckAll
+
+      - name: Check for failures
+        if: always()
+        run: |
+          failed=""
+          [[ "${{ steps.scalafmt.outcome }}" == "failure" ]] && failed="$failed scalafmtCheckAll"
+          [[ "${{ steps.scalafix.outcome }}" == "failure" ]] && failed="$failed scalafixAll"
+          [[ "${{ steps.headers.outcome }}" == "failure" ]] && failed="$failed headerCheckAll"
+          if [[ -n "$failed" ]]; then
+            echo "::error::Static analysis checks failed:$failed"
+            exit 1
+          fi
+
+  docs:
+    name: "docs / site"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Compile Documentation Examples
+        run: sbt --server "world-site/mdoc"
+
+      - name: Build Documentation Site
+        id: build-site
+        run: sbt --server -Dsbt.ci=true "world-site/generateUnidoc"
+
+      - name: Upload Pages Artefact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ steps.build-site.outputs.site_dir }}
+
+  publish-artefacts:
+    name: "publish / artefacts"
+    needs:
+      - test_jvm
+      - test_js
+      - test_native
+      - static_analysis
+      - compatibility
+      - docs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Import Signing Key
+        uses: crazy-max/ghaction-import-gpg@v7
+        with:
+          gpg_private_key: ${{ secrets.OSS_PUBLISH_USER_SIGNING_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          trust_level: 5
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      - name: Publish Artefacts
+        run: sbt --server publishSigned
+        env:
+          SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
+
+      - name: Publish Maven Central Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: sbt --server "sonaUpload; sonaRelease"
+        env:
+          SONATYPE_USERNAME: ${{ secrets.OSS_PUBLISH_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.OSS_PUBLISH_USER_PASSPHRASE }}
+
+  publish-release:
+    name: "publish / release"
+    needs: [ publish-artefacts, docs ]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy to GitHub Pages
+        id: deploy-pages
+        uses: actions/deploy-pages@v5
+
+      - name: Mint Release Bot Token
+        id: release-bot
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+        run: |
+          prerelease_flag=""
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --verify-tag \
+            $prerelease_flag
+ 
+  compatibility:
+    name: reports / compatibility
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      # Reports and succeeds: compatibility is never a gate before 1.0.0.
+      - name: Report MiMa and TASTy-MiMa Findings
+        run: sbt --server "world-jvm/compatReport"
+           
+  dependency-graph:
+    name: "reports / dependency-graph"
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_CURRENT }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_CURRENT }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Submit Dependency Graph
+        uses: scalacenter/sbt-dependency-submission@v3

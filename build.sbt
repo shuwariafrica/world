@@ -1,6 +1,7 @@
+scalaVersion := scala3
 organization := "africa.shuwari"
 description := "Scala toolkit for representation and manipulation of real-world domain concepts"
-homepage := Some(url("https://github.com/shuwariafrica/world"))
+homepage := Some(uri("https://github.com/shuwariafrica/world"))
 startYear := Some(2023)
 semanticdbEnabled := true
 scmInfo := ScmInfo(
@@ -8,125 +9,196 @@ scmInfo := ScmInfo(
   "scm:git:https://github.com/shuwariafrica/world.git",
   Some("scm:git:git@github.com:shuwariafrica/world.git")
 ).some
+
 apacheLicensed
 Shuwari.organisationSettings
 formattingSettings
 
-val `world-common` =
-  projectMatrix
-    .in(file("modules/common"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .settings(unitTestSettings)
-    .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.boilerplate)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
+def scala3 = Libraries.scala3
 
-val `world-locale` =
+val `world-core` =
   projectMatrix
-    .in(file("modules/locale"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .dependsOn(`world-common`)
+    .in(file("modules/core"))
+    .settings(description := "Civil time, exact rationals, calendars, and the scheme concept.")
+    .settings(compilerSettings)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.countriesGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.languagesGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.scriptsGeneratorTask)
-    .settings(Compile / sourceGenerators += SourceGenerators.likelySubtagsGeneratorTask)
+    .settings(Compat.settings)
+    .settings(libraryDependencies += Libraries.boilerplate)
+    .jvmPlatform(Seq(scala3))
+    .jsPlatform(Seq(scala3))
+    .nativePlatform(Seq(scala3), nativeSettings)
+
+val world =
+  projectMatrix
+    .in(file("modules/world"))
+    .dependsOn(`world-core`)
+    .settings(description := "Places, languages, scripts, locales, and currencies.")
+    .settings(compilerSettings)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .settings(Compat.settings)
+    .settings(Data.registers)
+    .settings(libraryDependencies += Libraries.`boilerplate-testkit` % Test)
+    .jvmPlatform(Seq(scala3))
+    .jsPlatform(Seq(scala3))
+    .nativePlatform(Seq(scala3), nativeSettings)
 
 val `world-money` =
   projectMatrix
     .in(file("modules/money"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting)
-    .nativePlatform(Seq(Dependencies.scalaVersion), javaTimeDependencySetting ++ nativeSettings)
-    .dependsOn(`world-common`)
+    .dependsOn(`world-core`, world)
+    .settings(description := "Monetary amounts, rates, tax, and exact allocation.")
+    .settings(compilerSettings)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.currenciesGeneratorTask)
+    .settings(Compat.settings)
+    .settings(Data.monetary)
+    .jvmPlatform(Seq(scala3))
+    .jsPlatform(Seq(scala3))
+    .nativePlatform(Seq(scala3), nativeSettings)
 
-val `world-money-usage` =
+val `world-quantity` =
   projectMatrix
-    .in(file("modules/money-usage"))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion), nativeSettings)
-    .in(file("modules/money-usage"))
-    .dependsOn(`world-locale`, `world-money`)
+    .in(file("modules/quantity"))
+    .dependsOn(`world-core`, world, `world-money`)
+    .settings(description := "Measurement kinds, units, quantities, unit prices, and tariffs.")
+    .settings(compilerSettings)
     .settings(unitTestSettings)
     .settings(publishSettings)
-    .settings(libraryDependencies += Dependencies.`munit-scalacheck` % Test)
-    .settings(Compile / sourceGenerators += SourceGenerators.currencyUsageGeneratorTask)
+    .settings(Compat.settings)
+    .jvmPlatform(Seq(scala3))
+    .jsPlatform(Seq(scala3))
+    .nativePlatform(Seq(scala3), nativeSettings)
+
+val `world-data` =
+  projectMatrix
+    .in(file("modules/data"))
+    .settings(description := "Curated source data compiled into world's artefacts.")
+    .settings(compilerSettings)
+    .settings(publishSettings)
+    .settings(Compat.settings)
+    .settings(Data.curation)
+    .jvmPlatform(Seq(scala3))
 
 val `world-site` =
   project
     .in(file("docs"))
-    .notPublished
     .enablePlugins(WorldUnidocPlugin)
+    .settings(publish / skip := true)
+    .settings(scalaVersion := scala3)
+    .dependsOn(
+      `world-core`.jvm(scala3),
+      world.jvm(scala3),
+      `world-money`.jvm(scala3),
+      `world-quantity`.jvm(scala3)
+    )
     .settings(
       ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-        `world-common`.jvm(Dependencies.scalaVersion),
-        `world-locale`.jvm(Dependencies.scalaVersion),
-        `world-money`.jvm(Dependencies.scalaVersion),
-        `world-money-usage`.jvm(Dependencies.scalaVersion)
+        `world-core`.jvm(scala3),
+        world.jvm(scala3),
+        `world-money`.jvm(scala3),
+        `world-quantity`.jvm(scala3)
       )
     )
 
-val `world` =
+val `world-jvm` =
+  projectMatrix
+    .in(file(".jvm"))
+    .jvmPlatform(Seq(scala3))
+    .settings(publish / skip := true)
+    .aggregate(`world-core`, world, `world-money`, `world-quantity`, `world-data`)
+
+val `world-js` =
+  projectMatrix
+    .in(file(".js"))
+    .jsPlatform(Seq(scala3))
+    .defaultAxes(VirtualAxis.js, VirtualAxis.scalaABIVersion(scala3))
+    .settings(publish / skip := true)
+    .aggregate(`world-core`, world, `world-money`, `world-quantity`)
+
+val `world-native` =
+  projectMatrix
+    .in(file(".native"))
+    .nativePlatform(Seq(scala3))
+    .defaultAxes(VirtualAxis.native, VirtualAxis.scalaABIVersion(scala3))
+    .settings(publish / skip := true)
+    .aggregate(`world-core`, world, `world-money`, `world-quantity`)
+
+val `world-root` =
   projectMatrix
     .in(file("."))
-    .jvmPlatform(Seq(Dependencies.scalaVersion))
-    .jsPlatform(Seq(Dependencies.scalaVersion))
-    .nativePlatform(Seq(Dependencies.scalaVersion))
     .settings(publish / skip := true)
-    .aggregate(
-      `world-common`,
-      `world-locale`,
-      `world-money`,
-      `world-money-usage`
-    )
+    .aggregate(`world-jvm`, `world-js`, `world-native`)
 
-def javaTimeDependencySetting = List(
-  libraryDependencies += Dependencies.`scala-java-time` % Provided,
-  libraryDependencies += Dependencies.`scala-java-time-tzdb` % Provided
+def compilerOptions = List(
+  "-Yexplicit-nulls",
+  "-Wunused:all",
+  "-Wall",
+  "-Wsafe-init",
+  "-Werror",
+  "-language:strictEquality"
+)
+
+def compilerSettings = List(
+  Compile / compile / scalacOptions ++= compilerOptions,
+  Test / compile / scalacOptions ++= compilerOptions,
+  Compile / doc / scalacOptions := Nil,
+  Test / doc / scalacOptions := Nil
 )
 
 def nativeSettings = List(
   libraryDependencySchemes += "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.Always
 )
 
+def formattingSettings = List(
+  scalafmtDetailedError := true,
+  scalafmtPrintDiff := true
+)
+
 def unitTestSettings: List[Setting[?]] = List(
-  libraryDependencies += Dependencies.munit % Test,
+  libraryDependencies += Libraries.munit % Test,
   testFrameworks += new TestFramework("munit.Framework")
 )
 
-def formattingSettings =
-  List(
-    scalafmtDetailedError := true,
-    scalafmtPrintDiff := true
-  )
-
-def publishSettings = List(
-  packageOptions += Package.ManifestAttributes(
-    "Created-By" -> "Simple Build Tool",
-    "Build-Jdk" -> System.getProperty("java.version"),
-    "Specification-Title" -> name.value,
-    "Specification-Version" -> Keys.version.value,
-    "Specification-Vendor" -> organizationName.value
-  ),
-  publishTo := {
-    if (isSnapshot.value)
-      Some("central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/"))
-    else localStaging.value
-  },
-  pomIncludeRepository := (_ => false),
-  publishMavenStyle := true
+def manifestSettings = packageOptions += Package.ManifestAttributes(
+  "Build-Jdk" -> System.getProperty("java.version"),
+  "Specification-Title" -> name.value,
+  "Specification-Version" -> Keys.version.value,
+  "Specification-Vendor" -> organizationName.value
 )
+
+def licenceSettings = List(
+  Compile / resourceGenerators += Def.task {
+    val root = (ThisBuild / baseDirectory).value
+    val meta = (Compile / resourceManaged).value / "META-INF"
+    Seq("LICENSE", "NOTICE").map { name =>
+      val target = meta / name
+      IO.copyFile(root / name, target)
+      target
+    }
+  }.taskValue
+)
+
+def publishSettings = licenceSettings ++ {
+  import java.time.Year
+  List[Setting[?]](
+    manifestSettings,
+    headerLicense := {
+      val start = startYear.value.get
+      val current: Int = Year.now.getValue
+      val developmentTimeline = if start == current then s"$current" else s"$start, $current"
+      Some(HeaderLicense.ALv2(developmentTimeline, "Ali Rashid."))
+    },
+    headerEmptyLine := false,
+    publishTo := {
+      if (isSnapshot.value) Some("central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/"))
+      else localStaging.value
+    },
+    pomIncludeRepository := (_ => false),
+    publishMavenStyle := true
+  )
+}
 
 addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")
 
