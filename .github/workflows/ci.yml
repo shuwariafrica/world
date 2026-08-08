@@ -220,34 +220,6 @@ jobs:
             exit 1
           fi
 
-  compatibility:
-    name: reports / compatibility
-    runs-on: ubuntu-26.04
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ env.JDK_RELEASE }}
-          check-latest: true
-
-      - name: Set up sbt
-        uses: sbt/setup-sbt@v1
-
-      - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
-
-      # Reports and succeeds: compatibility is never a gate before 1.0.0.
-      - name: Report MiMa and TASTy-MiMa Findings
-        run: sbt --server "world-jvm/compatReport"
-
   docs:
     name: "docs / site"
     runs-on: ubuntu-26.04
@@ -382,9 +354,37 @@ jobs:
             --generate-notes \
             --verify-tag \
             $prerelease_flag
+ 
+  compatibility:
+    name: reports / compatibility
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+          check-latest: true
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      # Reports and succeeds: compatibility is never a gate before 1.0.0.
+      - name: Report MiMa and TASTy-MiMa Findings
+        run: sbt --server "world-jvm/compatReport"
+           
   dependency-graph:
-    name: "report / dependency-graph"
+    name: "reports / dependency-graph"
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04
     permissions:
