@@ -39,7 +39,7 @@ class AllocationProbeSuite extends munit.FunSuite:
     * loading and first-call resolution are excluded. The accumulator is what
     * stops the optimiser discarding a call whose result nothing reads.
     */
-  private def bytesPerCall(rows: Int)(op: Int => Int): Double =
+  private def round(rows: Int)(op: Int => Int): Double =
     val bean = counter.getOrElse(fail("this JVM exposes no per-thread allocation counter, so the probe measured nothing"))
     bean.setThreadAllocatedMemoryEnabled(true)
     val thread = Thread.currentThread.threadId
@@ -53,7 +53,19 @@ class AllocationProbeSuite extends munit.FunSuite:
     val after = bean.getThreadAllocatedBytes(thread)
     assert(after >= before, s"the allocation counter ran backwards (sink $sink)")
     (after - before).toDouble / iterations.toDouble
-  end bytesPerCall
+  end round
+
+  /** The smallest of several rounds: incidental JIT and safepoint allocation only ever adds to a
+    * reading, so the minimum is the closest estimate of what a call itself costs.
+    */
+  private def bytesPerCall(rows: Int)(op: Int => Int): Double =
+    (1 to 3).map(_ => round(rows)(op)).min
+
+  // The counter samples the whole thread, so a round picks up whatever JIT compilation and
+  // safepoint bookkeeping lands inside its window: up to a few hundred bytes across 200,000
+  // calls, or some thousandths of a byte each. This bound sits two orders above that noise and
+  // an order below one 16-byte object header, so it admits the noise and nothing else.
+  private val negligible = 1.0
 
   private def report(name: String, perCall: Double): Double =
     println(f"[probe] $name%-46s $perCall%8.3f B/call")
@@ -80,8 +92,11 @@ class AllocationProbeSuite extends munit.FunSuite:
     val status = report("Territory.status", bytesPerCall(tables.territories)(i => Territory.fromIndex(i).status.ordinal))
     val direction = report("Script.direction", bytesPerCall(tables.scripts)(i => Script.fromIndex(i).direction.ordinal))
     assert
-      (numeric == 0.0 && status == 0.0 && direction == 0.0,
-       s"packed code accessors allocated: numeric $numeric, status $status, direction $direction")
+      (
+        numeric < negligible && status < negligible && direction < negligible,
+        s"packed code accessors allocated: numeric $numeric, status $status, direction $direction; " +
+          s"anything at or above $negligible B/call is an allocation, not counter noise"
+      )
   }
 
   // The accessors that build a value are recorded rather than bounded: what a caller pays
