@@ -113,13 +113,16 @@ jobs:
         include:
           - target: linux-x86_64
             runner: ubuntu-26.04
-          - target: linux-aarch_64
+          - target: linux-aarch64
             runner: ubuntu-26.04-arm
-          - target: osx-aarch_64
+          - target: osx-aarch64
             runner: macos-26
           - target: windows-x86_64
             runner: windows-2025-vs2026
             vsarch: amd64
+          - target: windows-aarch64
+            runner: windows-11-vs2026-arm
+            vsarch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
