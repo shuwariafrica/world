@@ -1,7 +1,7 @@
 import sbt.*
 
 object Libraries:
-  val scala3 = "3.9.0-RC1"
+  val scala3 = "3.9.0-RC4"
 
   val munit = "org.scalameta" %% "munit" % "1.3.4"
 
