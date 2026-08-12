@@ -19,6 +19,7 @@ import scala.annotation.targetName
 
 import boilerplate.TypedError
 import boilerplate.ValueCodec
+import boilerplate.codec.ASCII
 
 /** Root of every failure a world operation returns. Operations return these as
   * `Left` values and never throw them; the `Throwable` base is there so
@@ -95,26 +96,14 @@ end Week
 enum Overflow derives CanEqual:
   case Constrain, Reject
 
-// Wire parsers and code folds are ASCII by every governing standard: platform predicates
-// (Character.isDigit admits every Unicode Nd, isLetter every Unicode letter) are barred from
-// them. Case folding is boilerplate's, whose Ascii.lower is the same locale-free fold.
+// The one wire read boilerplate's ASCII vocabulary does not cover: `ASCII.uint` bounds by VALUE
+// (anything up to Int.MaxValue), while a fixed-width civil field is bounded by WIDTH. The
+// time-of-day components arrive from a split with no width guard of their own, so this read is
+// their only one; every other site in world has an independent width guard and uses `ASCII.uint`.
 private[world] object ascii:
-  inline def digit(ch: Char): Boolean = ch >= '0' && ch <= '9'
-  inline def letter(ch: Char): Boolean = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
-  inline def letterOrDigit(ch: Char): Boolean = letter(ch) || digit(ch)
-  def digits(s: String): Boolean = s.nonEmpty && s.forall(digit)
-  def letters(s: String): Boolean = s.nonEmpty && s.forall(letter)
-  def alphanumeric(s: String): Boolean = s.nonEmpty && s.forall(letterOrDigit)
-
-  /** Strict unsigned decimal read: ASCII digits only, no sign, no leading `+`. */
   def int(s: String): Option[Int] =
-    if !digits(s) || s.length > 9 then None else Some(s.foldLeft(0)((n, ch) => n * 10 + (ch - '0')))
-  def long(s: String): Option[Long] =
-    if !digits(s) || s.length > 18 then None
-    else Some(s.foldLeft(0L)((n, ch) => n * 10 + (ch - '0')))
-  def upper(s: String): String =
-    s.map(ch => if ch >= 'a' && ch <= 'z' then (ch - 32).toChar else ch)
-end ascii
+    if !ASCII.isDigits(s) || s.length > 9 then None
+    else Some(s.foldLeft(0)((n, ch) => n * 10 + (ch - '0')))
 
 private[world] object rounder:
   def jdk(mode: Rounding): java.math.RoundingMode = mode match
@@ -187,6 +176,14 @@ object Date:
     */
   def parse(value: String): Either[Invalid, Date] = civil.parse(value).left.map(Invalid(_))
 
+  /** Exact day arithmetic. */
+  @targetName("plusDaysOf")
+  def plus(d: Date, n: Days): Either[Invalid, Date] = d.plus(n)
+
+  /** Seven exact days per week. */
+  @targetName("plusWeeksOf")
+  def plus(d: Date, n: Weeks): Either[Invalid, Date] = d.plus(n)
+
   /** Month arithmetic with the day-overflow policy named at the call site. */
   @targetName("plusMonthsWithOverflow")
   inline def plus(d: Date, n: Months, overflow: Overflow): Either[Invalid, Date] = d.plus(n, overflow)
@@ -210,6 +207,11 @@ object Date:
     * edges).
     */
   private[world] def fromCivil(y: Int, m: Int, d: Int): Date = civil.fromCivil(y, m, d)
+
+  /** Total construction from an epoch day already known in range (an interval's
+    * unpacked bounds).
+    */
+  private[world] def fromDays(value: Int): Date = value
 
   private val first: Int = civil.fromCivil(1, 1, 1)
   private val last: Int = civil.fromCivil(9999, 12, 31)
@@ -303,6 +305,8 @@ object Date:
   given CanEqual[Date, Date] = CanEqual.derived
   given Ordering[Date] = Ordering.Int.on(identity)
   given ValueCodec.Aux[Date, Invalid] = ValueCodec(parse, d => Date.value(d))
+  // A day is a day; only what a record attaches to one can be about a person.
+  given Classified[Date] = Classified.of(Classification.None)
 end Date
 
 /** A time of day at second precision, without zone. `24:00:00` is admitted as
@@ -333,7 +337,7 @@ object Time:
       case _              => Left(Invalid(value))
 
   private def fromParts(raw: String, h: String, m: String, s: String): Either[Invalid, Time] =
-    (h.toIntOption, m.toIntOption, s.toIntOption) match
+    (ascii.int(h), ascii.int(m), ascii.int(s)) match
       case (Some(hh), Some(mm), Some(ss)) => of(hh, mm, ss).left.map(_ => Invalid(raw))
       case _                              => Left(Invalid(raw))
 
@@ -455,10 +459,13 @@ object YearMonth:
   def parse(value: String): Either[Invalid, YearMonth] =
     value.split('-') match
       case Array(y, m) if y.length == 4 && m.length == 2 =>
-        (y.toIntOption, m.toIntOption) match
+        (ASCII.uint(y), ASCII.uint(m)) match
           case (Some(yy), Some(mm)) => of(yy, mm).left.map(_ => Invalid(value))
           case _                    => Left(Invalid(value))
       case _ => Left(Invalid(value))
+
+  /** Month arithmetic with the range edge typed. */
+  def plus(ym: YearMonth, n: Months): Either[Invalid, YearMonth] = ym.plus(n)
 
   private[world] def fromPacked(packed: Int): YearMonth = packed
 
@@ -479,6 +486,7 @@ object YearMonth:
     def length: Int = Date.length(ym.year, ym.month.value)
 
     /** Month arithmetic; a result outside years 1 to 9999 is a typed failure. */
+    @targetName("ext_plusMonths")
     def plus(n: Months): Either[Invalid, YearMonth] =
       val months = ym.year * 12 + (ym.month.value - 1) + n.value
       of(Math.floorDiv(months, 12), Math.floorMod(months, 12) + 1)

@@ -21,7 +21,7 @@ import scala.util.boundary
 import scala.util.boundary.break
 
 import boilerplate.ValueCodec
-import boilerplate.codec.Ascii
+import boilerplate.codec.ASCII
 import boilerplate.nullable.*
 
 /** A BCP 47 locale identifier held as its canonical tag, so equality, ordering,
@@ -66,9 +66,9 @@ object Locale:
     tag.split('-').toList match
       case x :: rest
           if (x == "x" || x == "X") && rest.nonEmpty
-            && rest.forall(p => p.length <= 8 && ascii.alphanumeric(p)) =>
-        Right(("x" :: rest.map(p => Ascii.lower(p))).mkString("-"))
-      case first :: rest if first.length >= 2 && first.length <= 3 && ascii.letters(first) =>
+            && rest.forall(p => p.length <= 8 && ASCII.isAlphanumeric(p)) =>
+        Right(("x" :: rest.map(p => ASCII.lower(p))).mkString("-"))
+      case first :: rest if first.length >= 2 && first.length <= 3 && ASCII.isLetters(first) =>
         world.Language.from(first) match
           case Left(_)     => Left(Invalid.Language(first))
           case Right(lang) => components(lang, rest)
@@ -77,18 +77,18 @@ object Locale:
   private def components(lang: Language, rest: List[String]): Either[Invalid, Locale] =
     boundary:
       def script(remaining: List[String]): (Option[String], List[String]) = remaining match
-        case s :: t if s.length == 4 && ascii.letters(s) =>
+        case s :: t if s.length == 4 && ASCII.isLetters(s) =>
           world.Script.from(s) match
             case Right(sc) => (Some(sc.code), t)
             case Left(_)   => break(Left(Invalid.Script(s)))
         case _ => (None, remaining)
 
       def region(remaining: List[String]): (Option[String], List[String]) = remaining match
-        case r :: t if r.length == 2 && ascii.letters(r) =>
+        case r :: t if r.length == 2 && ASCII.isLetters(r) =>
           Territory.from(r) match
             case Right(terr) => (Some(terr.alpha2), t)
             case Left(_)     => break(Left(Invalid.Region(r)))
-        case r :: t if r.length == 3 && ascii.digits(r) =>
+        case r :: t if r.length == 3 && ASCII.isDigits(r) =>
           // A territory's own numeric is not a region subtag: only macro areas take the
           // three-digit form.
           world.Region.from(r.toInt).toOption.filter(_.territory.isEmpty) match
@@ -99,9 +99,9 @@ object Locale:
       @tailrec def variants(remaining: List[String], acc: List[String]): (List[String], List[String]) =
         remaining match
           case v :: t
-              if (v.length >= 5 && v.length <= 8 && ascii.alphanumeric(v))
-                || (v.length == 4 && ascii.digit(v.head) && ascii.alphanumeric(v)) =>
-            variants(t, Ascii.lower(v) :: acc)
+              if (v.length >= 5 && v.length <= 8 && ASCII.isAlphanumeric(v))
+                || (v.length == 4 && ASCII.isDigit(v.head) && ASCII.isAlphanumeric(v)) =>
+            variants(t, ASCII.lower(v) :: acc)
           case _ => (acc.reverse, remaining)
 
       val (sc, afterScript) = script(rest)
@@ -111,7 +111,7 @@ object Locale:
       tail match
         case Nil                         => Right(canonical.mkString("-"))
         case ext :: _ if ext.length == 1 =>
-          Right((canonical ++ tail.map(p => Ascii.lower(p))).mkString("-"))
+          Right((canonical ++ tail.map(p => ASCII.lower(p))).mkString("-"))
         case bad :: _ => Left(Invalid.Variant(bad))
 
   /** Resolves an `Accept-Language` header against a supported set by the RFC
@@ -168,21 +168,25 @@ object Locale:
       * not, and nothing is substituted for it.
       */
     def language: Option[Language] = world.Language.from(l.takeWhile(_ != '-')).toOption
+    // A one-character subtag opens the extension and private-use sections, whose payloads are
+    // uninterpreted: the `Latn` in `en-t-sc-latn` is a transform subtag, not this tag's script.
     def script: Option[Script] =
       l.split('-')
         .toList
         .drop(1)
+        .takeWhile(_.length != 1)
         .collectFirst {
-          case s if s.length == 4 && ascii.letters(s) => world.Script.from(s).toOption
+          case s if s.length == 4 && ASCII.isLetters(s) => world.Script.from(s).toOption
         }
         .flatten
     def region: Option[Region] =
       l.split('-')
         .toList
         .drop(1)
+        .takeWhile(_.length != 1)
         .collectFirst {
-          case r if r.length == 2 && ascii.letters(r) => Territory.from(r).toOption
-          case r if r.length == 3 && ascii.digits(r)  => world.Region.from(r.toInt).toOption
+          case r if r.length == 2 && ASCII.isLetters(r) => Territory.from(r).toOption
+          case r if r.length == 3 && ASCII.isDigits(r)  => world.Region.from(r.toInt).toOption
         }
         .flatten
     def variants: Vector[String] =
@@ -190,7 +194,7 @@ object Locale:
         .toVector
         .drop(1)
         .takeWhile(_.length != 1)
-        .filter(v => (v.length >= 5 && v.length <= 8) || (v.length == 4 && ascii.digit(v.head)))
+        .filter(v => (v.length >= 5 && v.length <= 8) || (v.length == 4 && ASCII.isDigit(v.head)))
 
     /** Adds the most likely script and region where absent, per UTS 35.
       * Identity where the data holds no answer.

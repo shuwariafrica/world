@@ -34,15 +34,14 @@ object Register:
   def apply[P, K <: Scheme.Kind](rows: (P, Scheme[K])*): Register[P, K] =
     new Register(rows.toVector)
 
-  /** The register with one more applying row. */
-  def added[P, K <: Scheme.Kind](r: Register[P, K], row: (P, Scheme[K])): Register[P, K] =
-    r + row
-
   /** Every scheme applying at the coordinate, in register order. Empty means
     * this register holds no row for it, never that no scheme exists.
     */
   def in[P, K <: Scheme.Kind](r: Register[P, K], p: P)(using CanEqual[P, P]): Vector[Scheme[K]] =
     r.in(p)
+
+  /** The register with one more row appended. */
+  def add[P, K <: Scheme.Kind](r: Register[P, K], row: (P, Scheme[K])): Register[P, K] = r + row
 
   extension [P, K <: Scheme.Kind](r: Register[P, K])
     @targetName("extended")

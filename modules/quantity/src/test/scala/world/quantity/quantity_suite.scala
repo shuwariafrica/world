@@ -23,9 +23,6 @@ import world.quantity.Measure.*
 
 trait Sacks extends Kind
 
-trait Energy extends Kind
-val KilowattHour: Measure[Energy] = Measure[Energy]("kWh", 1)
-
 class QuantitySuite extends munit.FunSuite:
 
   private val stock = Dozen(3) + Each(5)
@@ -174,6 +171,60 @@ class QuantitySuite extends munit.FunSuite:
   }
   test("quantity: feet and inches compose") {
     assert(Foot(1) =~ Inch(12))
+  }
+
+  // Metered energy and data: standardised units only (SI; IEC 80000-13). The decimal and binary
+  // byte families are distinct units named apart, the gallon discipline again.
+  test("energy: the watt-hour family is exact against the joule") {
+    assert
+      (
+        KilowattHour(1) =~ Joule(3600000) && MegawattHour(1) =~ KilowattHour(1000)
+          && Megajoule(1) =~ Joule(1000000) && Kilojoule(1) =~ Joule(1000) && WattHour(1) =~ Joule(3600))
+  }
+  test("data: the byte is eight bits and the two families are distinct units") {
+    assert
+      (
+        Byte(1) =~ Bit(8) && Gigabyte(1) =~ Byte(1000000000) && Gibibyte(1) =~ Byte(1073741824)
+          && Gigabyte(1) < Gibibyte(1) && Kibibyte(1) =~ Byte(1024) && Terabyte(1) =~ Megabyte(1000000)
+          && Tebibyte(1) =~ Mebibyte(1048576))
+  }
+  test("data: a bundle card prices whole gigabytes") {
+    assertEquals
+      (
+        Breaks
+          .of
+            (
+              Gigabyte,
+              Breaks.upTo(Ratio(1), Breaks.Charge.Flat(Currency.KES(99))),
+              Breaks.upTo(Ratio(5), Breaks.Charge.Flat(Currency.KES(300))),
+              Breaks.open(Breaks.Charge.PerUnit(Currency.KES(50)))
+            )
+          .toOption
+          .flatMap(_.charge(Gigabyte(3), Rounding.HalfUp).toOption),
+        Some(Currency.KES(300))
+      )
+  }
+  test("negative: energy and data never mix") {
+    assert(!typeChecks("world.quantity.Measure.Joule(1) + world.quantity.Measure.Bit(1)"))
+  }
+  test("control: same-kind data arithmetic composes") {
+    assertEquals(Gigabyte(1) + Mebibyte(0), Gigabyte(1))
+  }
+  test("price: a per-hundred-kilogram price decomposes through existing arithmetic") {
+    val perHundredKg = Measure.of[Mass]("100kg", Ratio(100)).toOption.get
+    assert(perHundredKg.factor / Kilogram.factor == Right(Ratio(100)) && Kilogram.code == Some("KGM"))
+  }
+  test("measure: rec 20 codes for the shipped vocabulary") {
+    assert
+      (
+        Kilogram.code == Some("KGM") && KilowattHour.code == Some("KWH") && Gigabyte.code == Some("E34")
+          && Dozen.code == Some("DZN"))
+  }
+  test("measure: hectare, the binary family, and consumer measures carry no code") {
+    assert
+      (
+        Hectare.code == None && Gibibyte.code == None && Measure[Sacks]("sack50", 50).code == None
+          && Hectare(2).in(SquareMetre).measure.code == Some("MTK"))
   }
 
   test("datetime: plus a duration") {
@@ -340,18 +391,18 @@ class QuantitySuite extends munit.FunSuite:
   test("instant: elapsed time is a quantity the price algebra consumes") {
     assert
       (
-        Instant.epoch(1000).until(Instant.epoch(4500)) == Second(3500)
+        Instant.seconds(1000).until(Instant.seconds(4500)) == Second(3500)
           && Currency
             .KES(1500)
             .per(Hour)
-            .total(Instant.epoch(0).until(Instant.epoch(5400)), Rounding.HalfUp)
+            .total(Instant.seconds(0).until(Instant.seconds(5400)), Rounding.HalfUp)
           == Currency.KES(2250))
   }
   test("instant: duration arithmetic carries the whole-second boundary") {
     assert
       (
-        Instant.epoch(100).plus(Minute(2)) == Right(Instant.epoch(220))
-          && Instant.epoch(100).plus(Second(Ratio(1, 2))).isLeft)
+        Instant.seconds(100).plus(Minute(2)) == Right(Instant.seconds(220))
+          && Instant.seconds(100).plus(Second(Ratio(1, 2))).isLeft)
   }
 
   test("breaks: the containing row prices the whole quantity") {

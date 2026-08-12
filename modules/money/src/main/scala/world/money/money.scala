@@ -19,6 +19,8 @@ import scala.annotation.targetName
 
 import world.*
 
+import boilerplate.codec.Decimal
+
 /** An amount of one currency, represented as the exact decimal amount alone:
   * the currency lives in `C` and is recovered from evidence rather than stored
   * per value. Arithmetic is exact and closed over `C`, and every rounding step
@@ -37,6 +39,8 @@ object Money:
   final case class Value(currency: Currency, amount: BigDecimal) derives CanEqual
   object Value:
     given Ordering[Value] = Ordering.by(v => (v.currency.code, v.amount))
+    // An amount is not about a person; only the record it sits in can be.
+    given Classified[Value] = Classified.of(Classification.None)
 
   /** Weights that admit no allocation: empty, negative, or summing to nothing. */
   sealed abstract class Unallocatable private[money] () extends WorldError("unallocatable weights") derives CanEqual
@@ -122,6 +126,18 @@ object Money:
   def annuity[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
     m.annuity(rate, periods, scale, mode)
 
+  /** The printed schedule behind the annuity. */
+  def amortisation[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, mode: Rounding)(using ValueOf[C]): Either[
+    Undefined,
+    Vector[Instalment[C]]] =
+    m.amortisation(rate, periods, mode)
+
+  @targetName("amortisationAtScale")
+  def amortisation[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[
+    Undefined,
+    Vector[Instalment[C]]] =
+    m.amortisation(rate, periods, scale, mode)
+
   extension [C <: Currency & Singleton](m: Money[C])
     /** The exact amount, at whatever scale arithmetic has produced. */
     def amount: BigDecimal = m
@@ -189,7 +205,9 @@ object Money:
     @targetName("ext_divided")
     def divided(k: BigDecimal, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
       if k.signum == 0 then Left(Undefined)
-      else Right(rounder(m / k, scale, mode))
+      // One correctly-rounded division: `m / k` under the default MathContext and then a
+      // second rounding can cross a half boundary the exact quotient never reaches.
+      else Right(BigDecimal(m.underlying.divide(k.underlying, scale, rounder.jdk(mode))))
 
     /** Splits the exact amount by integer weights at its own scale: the parts
       * always sum to the whole, a zero weight receives zero, and the remainder
@@ -284,6 +302,31 @@ object Money:
           growth <- (Ratio.One + rate).pow(periods)
           payment <- (Ratio(m.amount) * rate * growth) / (growth - Ratio.One)
         yield Money.apply[C](payment.decimal(scale, mode))
+
+    /** The printed schedule behind [[annuity]]: each instalment's interest is
+      * the period's opening balance at `rate`, its principal the payment's
+      * remainder, and the last instalment absorbs the rounding residual, so the
+      * balance closes at exactly zero and the principals sum to exactly this
+      * amount. Unlike [[allocate]], which spreads the remainder, a schedule
+      * closes on its final row. `Undefined` as [[annuity]].
+      */
+    @targetName("ext_amortisation")
+    def amortisation(rate: Ratio, periods: Int, mode: Rounding)(using c: ValueOf[C]): Either[Undefined, Vector[Instalment[C]]] =
+      m.amortisation(rate, periods, c.value.digits.getOrElse(0), mode)
+
+    /** The same at an explicit scale. */
+    @targetName("ext_amortisationAtScale")
+    def amortisation(rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[Undefined, Vector[Instalment[C]]] =
+      m.annuity(rate, periods, scale, mode).map { payment =>
+        val (rows, closing) =
+          (1 until periods).foldLeft((Vector.empty[Instalment[C]], m)) { case ((acc, balance), _) =>
+            val interest = balance.scaled(rate, scale, mode)
+            val principal = payment - interest
+            (acc :+ Instalment(payment, interest, principal, balance - principal), balance - principal)
+          }
+        val interest = closing.scaled(rate, scale, mode)
+        rows :+ Instalment(closing + interest, interest, closing, Money.zero[C])
+      }
   end extension
 
   // Largest-remainder allocation at the amount's own scale: parts sum to the whole, a zero
@@ -317,7 +360,7 @@ object Money:
   extension (v: Value)
     @targetName("ext_canonical")
     def canonical: Value =
-      val stripped = BigDecimal(v.amount.underlying.stripTrailingZeros)
+      val stripped = BigDecimal(Decimal.render(v.amount))
       val scaled = v.currency.digits match
         case Some(d) if stripped.scale < d => stripped.setScale(d)
         case _                             => stripped
@@ -326,6 +369,14 @@ object Money:
   given [C <: Currency & Singleton] => CanEqual[Money[C], Money[C]] = CanEqual.derived
   given [C <: Currency & Singleton] => Ordering[Money[C]] = Ordering.BigDecimal.on(identity)
 end Money
+
+/** One period of an amortisation schedule: the payment, its interest share, its
+  * principal share, and the closing balance - the row a lending book prints.
+  * Instances come from [[Money$ Money]]'s `amortisation`.
+  */
+final case class Instalment[C <: Currency & Singleton]
+  (payment: Money[C], interest: Money[C], principal: Money[C], balance: Money[C])
+    derives CanEqual
 
 /** A territory's cash-rounding practice for its tender: the currency the row
   * governs, the increment in `10^-digits` units of that currency, the midpoint

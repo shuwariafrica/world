@@ -99,4 +99,124 @@ Coordinate.parse("-1.28333,36.81667")
 Coordinate.of(BigDecimal(91), BigDecimal(0))
 ```
 
-Distance and geometry are not offered here. A pin is identity, not a route.
+## Rules as a value
+
+The curated rules are a value, not a hidden lookup, so an operator whose local knowledge
+exceeds the compiled tier supplies its own to the same operations. Ghana writes its
+postcodes in two notations - `GA-543` and `200543` name the same place - and the operator's
+own guidance equates them:
+
+```scala mdoc:silent
+val ghana = Address.Rules(
+  Set(Address.Field.Lines, Address.Field.Locality, Address.Field.Code),
+  "%N\n%A\n%Z %C",
+  code =>
+    (code.length == 6 && code.forall(c => c >= '0' && c <= '9'))
+      || (code.length == 5 && code.take(2).forall(c => c >= 'A' && c <= 'Z')
+        && code.drop(2).forall(c => c >= '0' && c <= '9'))
+)
+```
+
+```scala mdoc
+val accra = Address(Territory.KE).line("Ring Road").locality("Accra").code("200543")
+
+accra.issues(ghana)
+
+accra.code("GA543").issues(ghana)
+```
+
+`Address.Rules.of(territory)` is what `issues` and `display` resolve when no rules are
+given, so the curated tier and a consumer's own reach the same engine.
+
+## Distance, boxes, and fences
+
+A pin is identity first, but dispatch prices by distance and service areas are drawn on a
+map, so the geometry those two need is here. `distance` is the great-circle distance to the
+whole metre, on the WGS 84 mean-radius sphere, and it returns a quantity - so a distance
+bands through the same tariff vocabulary a weight does:
+
+```scala mdoc:silent
+import world.quantity.Measure
+```
+
+```scala mdoc
+val cbd = Coordinate.of(BigDecimal("-1.2864"), BigDecimal("36.8172")).toOption.get
+val jkia = Coordinate.of(BigDecimal("-1.3192"), BigDecimal("36.9278")).toOption.get
+
+cbd.distance(jkia)
+
+cbd.distance(jkia).in(Measure.Kilometre).amount
+```
+
+The sphere sits within 0.6 percent of the ellipsoid everywhere, which is inside any
+dispatch-fee or locator tolerance. Surveying-grade geodesics are out of scope with the rest
+of geometry.
+
+A `Box` is the cheap prefilter a locator query runs before exact distances refine the
+survivors, and `around` sizes one from a radius. Its bounding meridians touch the circle
+rather than approximating it, so the box genuinely covers what it claims away from the
+equator; a circle reaching a pole widens to the full longitude band, and a box whose west
+edge sits east of its east edge wraps the antimeridian:
+
+```scala mdoc
+Box.around(cbd, Measure.Kilometre(5)).map(_.contains(jkia))
+
+Box
+  .around(Coordinate.of(BigDecimal("-16.8"), BigDecimal("179.9")).toOption.get, Measure.Kilometre(50))
+  .map(_.wraps)
+```
+
+A `Fence` is the drawn delivery zone: a ring of coordinates with even-odd containment, in
+coordinate space normalised across the antimeridian. Its domain is the business zone -
+under 180 degrees of longitude extent, and not enclosing a pole:
+
+```scala mdoc
+Fence
+  .of(Vector(
+    Coordinate.of(BigDecimal("-1.2"), BigDecimal("36.7")).toOption.get,
+    Coordinate.of(BigDecimal("-1.2"), BigDecimal("36.9")).toOption.get,
+    Coordinate.of(BigDecimal("-1.4"), BigDecimal("36.9")).toOption.get,
+    Coordinate.of(BigDecimal("-1.4"), BigDecimal("36.7")).toOption.get
+  ))
+  .map(zone => (zone.contains(cbd), zone.contains(jkia)))
+```
+
+## Compositions that are not operations
+
+The three questions asked most often of a distance are one-line compositions over it, so
+they are written at the call site rather than added to the surface: an operation that only
+reorders a standard-library call earns no place in an API.
+
+Nearest branch, by minimising over the base quantity:
+
+```scala mdoc
+val branches = Vector(cbd, jkia)
+branches.minBy(branch => cbd.distance(branch).base)
+```
+
+Everything within a radius, by filtering on the same measure:
+
+```scala mdoc
+branches.filter(branch => cbd.distance(branch) <= Measure.Kilometre(20))
+```
+
+A travelled path's length, by summing over consecutive pairs:
+
+```scala mdoc
+Vector(cbd, jkia, cbd).sliding(2).map(pair => pair(0).distance(pair(1)).base).toVector
+```
+
+## The international form
+
+The domestic form has no country line, because a domestic letter needs none. The
+international form appends the country name in the reader's own language, which makes it a
+presentation concern - it lives with the rest of presentation, and takes a culture:
+
+```scala mdoc:silent
+import world.text.Culture
+import world.text.international
+```
+
+```scala mdoc
+delivery.international(using Culture.en)
+```

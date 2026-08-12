@@ -131,7 +131,7 @@ DateTime.parse("2026-07-24T17:00:00").toOption.get
   .in(Hour).amount
 
 Currency.KES(1500).per(Hour)
-  .total(Instant.epoch(0).until(Instant.epoch(5400)), Rounding.HalfUp).amount
+  .total(Instant.seconds(0).until(Instant.seconds(5400)), Rounding.HalfUp).amount
 ```
 
 Adding a duration to a civil date-time carries the day, and refuses a sub-second remainder

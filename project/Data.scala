@@ -56,14 +56,15 @@ object Data:
   // Re-base on a measured run plus a tenth of headroom.
   private def registerBudgets = Map(
     "tables.scala" -> 185000L,
+    "constants.scala" -> 40000L,
     "classfiles" -> 655000L,
     "nir" -> 745000L
   )
 
   private def monetaryBudgets = Map(
     "tables.scala" -> 13300L,
-    "classfiles" -> 384000L,
-    "nir" -> 432000L
+    "classfiles" -> 484000L,
+    "nir" -> 541000L
   )
 
   private def identifierBudgets = Map(
@@ -75,8 +76,8 @@ object Data:
 
   private def addressingBudgets = Map(
     "tables.scala" -> 45300L,
-    "classfiles" -> 103000L,
-    "nir" -> 124000L
+    "classfiles" -> 172000L,
+    "nir" -> 198000L
   )
 
   private def root = Def.setting((ThisBuild / baseDirectory).value)

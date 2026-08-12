@@ -15,7 +15,7 @@
  ****************************************************************************/
 package world
 
-import boilerplate.codec.Ascii
+import boilerplate.codec.ASCII
 
 /** An ISO 15924 script. Instances via [[Script$ Script]]. */
 opaque type Script = Int
@@ -33,7 +33,7 @@ object Script extends Scripts:
     // alphabet, so a Turkish default locale cannot reach it.
     val c =
       if code.isEmpty then code
-      else ascii.upper(code.substring(0, 1)) + Ascii.lower(code.substring(1))
+      else ASCII.upper(code.substring(0, 1)) + ASCII.lower(code.substring(1))
     val i = packed.indexOf(tables.scriptCode, 4, tables.scripts, c)
     if i >= 0 then Right(i) else Left(Unknown(code))
 
@@ -64,7 +64,7 @@ object Language extends Languages:
 
   /** Parses an ISO 639-1 or 639-3 code, case-insensitively. */
   def from(code: String): Either[Unknown, Language] =
-    val c = Ascii.lower(code)
+    val c = ASCII.lower(code)
     val i =
       if c.length == 2 then packed.indexOf(tables.languageCode, 3, tables.languages, c)
       else packed.indexOf(tables.languageAlpha3, 3, tables.languages, c)

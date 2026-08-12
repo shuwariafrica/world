@@ -19,6 +19,8 @@ import scala.annotation.targetName
 
 import world.*
 
+import boilerplate.nullable.*
+
 /** Payment terms as a customer record stores them: net days counted from the
   * invoice date or from the end of its month, with an optional early-settlement
   * discount. "2/10 net 30" is `Terms.net(30).discount(Percent(2), 10)`.
@@ -40,7 +42,8 @@ object Terms:
   sealed abstract class Invalid(message: String) extends WorldError(message) derives CanEqual
   object Invalid:
     final case class Days(value: Int) extends Invalid("terms days cannot be negative")
-    final case class Window(value: Int) extends Invalid("a settlement window is at least one day at a rate below one hundred percent")
+    final case class Window(value: Int) extends Invalid("a settlement window is at least one day")
+    final case class Rate(value: BigDecimal) extends Invalid("a settlement discount rate is below one hundred percent")
 
   /** Net days from the invoice date; zero is due on invoice, and negative days
     * are refused.
@@ -65,10 +68,16 @@ object Terms:
   extension (t: Terms)
     /** Adds an early-settlement discount; the window is at least one day and
       * the rate below one hundred percent.
+      *
+      * The window counts from the invoice date under both counting bases - no
+      * published source states an end-of-month window base, so the invoice-date
+      * reading is this library's documented choice, and an agreement counting
+      * otherwise composes its own predicate over [[world.Date Date]].
       */
     @targetName("ext_discount")
     def discount(rate: Percent, within: Int): Either[Invalid, Terms] =
-      if within < 1 || rate.fraction >= BigDecimal(1) then Left(Invalid.Window(within))
+      if within < 1 then Left(Invalid.Window(within))
+      else if rate.fraction >= BigDecimal(1) then Left(Invalid.Rate(rate.value))
       else Right(t.copy(discount = Some(Discount(rate, within))))
 
     /** The calendar due date, failing only at the edges of the representable
@@ -83,3 +92,93 @@ object Terms:
       t.discount.exists(d => invoiced.until(paid) >= 0 && invoiced.until(paid) <= d.within)
   end extension
 end Terms
+
+/** The Incoterms (R) 2020 rule vocabulary, as UN/ECE Recommendation No. 5 codes it
+  * (sixth edition, ECE/TRADE/C/CEFACT/2020/10, 2020-02-12, annex "Incoterms (R) 2020"):
+  * the eleven three-letter rules, their names, the standard's own transport grouping -
+  * seven for any mode, four for sea and inland waterway - and the kind of named place
+  * each rule requires, which is the label a capture form puts on the place field. The
+  * rule texts themselves are ICC's publication and out of scope; this is the code list an
+  * interchange document carries. Resolution via [[Incoterm$ Incoterm]].
+  */
+enum Incoterm derives CanEqual:
+  case EXW, FCA, CPT, CIP, DAP, DPU, DDP, FAS, FOB, CFR, CIF
+
+/** Resolution and the annex's own data for [[Incoterm]]. */
+object Incoterm:
+  /** What the rule's named place is: the delivery point, the destination, or - for the
+    * maritime shipment-side rules - the port of shipment.
+    */
+  enum Place derives CanEqual:
+    case Delivery, Destination, Shipment
+
+  /** Resolves a three-letter code; an unknown code is `None`, as register lookups read. */
+  def of(code: String): Option[Incoterm] = values.find(_.code == code)
+
+  extension (i: Incoterm)
+    /** The three-letter code the annex lists the rule under - the argument that resolves
+      * it through [[Incoterm.of]].
+      */
+    def code: String = i.toString
+
+    /** The rule's name as the annex states it. */
+    def name: String = i match
+      case EXW => "Ex Works"
+      case FCA => "Free Carrier"
+      case CPT => "Carriage Paid To"
+      case CIP => "Carriage and Insurance Paid To"
+      case DAP => "Delivered at Place"
+      case DPU => "Delivered at Place Unloaded"
+      case DDP => "Delivered Duty Paid"
+      case FAS => "Free Alongside Ship"
+      case FOB => "Free on Board"
+      case CFR => "Cost and Freight"
+      case CIF => "Cost, Insurance and Freight"
+
+    /** Whether the rule belongs to the annex's sea and inland waterway group - the four
+      * rules whose named places are ports.
+      */
+    def maritime: Boolean = i match
+      case FAS | FOB | CFR | CIF => true
+      case _                     => false
+
+    /** The kind of named place the rule requires. */
+    def place: Place = i match
+      case EXW | FCA                               => Place.Delivery
+      case FAS | FOB                               => Place.Shipment
+      case CPT | CIP | DAP | DPU | DDP | CFR | CIF => Place.Destination
+  end extension
+end Incoterm
+
+/** A trade-terms statement as a document carries one: the rule and its named place, as in
+  * "CIF Mombasa". The standard itself quotes the pair, since a rule without its named
+  * place is incomplete under the ICC's own golden rules. Instances via
+  * [[Delivery$ Delivery]].
+  */
+final case class Delivery private (term: Incoterm, place: String) derives CanEqual
+
+/** Validated construction and the wire pair for [[Delivery]]. */
+object Delivery:
+  /** Carries the rejected statement. */
+  final case class Invalid(raw: String) extends WorldError("not a trade term") derives CanEqual
+
+  /** A statement from its parts; the named place is required text. */
+  def of(term: Incoterm, place: String): Either[Invalid, Delivery] =
+    val named = place.trim.unsafe
+    if named.isEmpty then Left(Invalid(s"${term.code} ")) else Right(Delivery(term, named))
+
+  /** Parses the quoted form: the code, one space, then the named place, which may itself
+    * carry spaces.
+    */
+  def parse(raw: String): Either[Invalid, Delivery] =
+    raw.indexOf(' ') match
+      case -1 => Left(Invalid(raw))
+      case at =>
+        Incoterm.of(raw.substring(0, at).unsafe).toRight(Invalid(raw)).flatMap(of(_, raw.substring(at + 1).unsafe))
+
+  extension (d: Delivery)
+    /** The quoted wire form - the argument that reconstructs the value through
+      * [[Delivery.parse]].
+      */
+    def value: String = s"${d.term.code} ${d.place}"
+end Delivery

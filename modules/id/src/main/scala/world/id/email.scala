@@ -16,11 +16,12 @@
 package world.id
 
 import scala.annotation.tailrec
+import scala.annotation.targetName
 
 import world.*
 
 import boilerplate.ValueCodec
-import boilerplate.codec.Ascii
+import boilerplate.codec.ASCII
 import boilerplate.codec.Percent
 import boilerplate.nullable.*
 
@@ -49,7 +50,7 @@ object Email:
   // RFC 6531 widens atext to any non-ASCII code point rather than enumerating one, so the
   // predicate admits everything above the ASCII range.
   private def atext(ch: Char): Boolean =
-    world.ascii.letterOrDigit(ch) || "!#$%&'*+-/=?^_`{|}~".indexOf(ch.toInt) >= 0 || ch > 127
+    ASCII.isAlphanumeric(ch) || "!#$%&'*+-/=?^_`{|}~".indexOf(ch.toInt) >= 0 || ch > 127
 
   private def dotAtom(s: String): Boolean =
     s.nonEmpty && !s.startsWith(".") && !s.endsWith(".") && !s.contains("..")
@@ -103,6 +104,8 @@ object Email:
     end match
   end parse
 
+  def sameMailbox(e: Email, o: Email): Boolean = e.sameMailbox(o)
+
   extension (e: Email)
     /** The address as stored: the local part as given, the domain lower-cased. */
     def value: String = e
@@ -118,21 +121,22 @@ object Email:
     /** Whether delivery needs the SMTPUTF8 extension. */
     def international: Boolean = e.exists(_ > 127)
 
-    /** The all-ASCII form, its domain a Punycode A-label. `None` for a
+    /** The all-ASCII address, its domain a Punycode A-label. `None` for a
       * non-ASCII local part, which RFC 6530 gives no ASCII equivalent.
       */
-    def ascii: Option[String] =
+    def ascii: Option[Email] =
       if e.local.exists(_ > 127) then None else Some(e.local + "@" + e.domain.ascii.value)
 
     /** A grouping key that folds the local part's case. Two addresses sharing
       * one are probably one mailbox, but only the receiving host can say: RFC
       * 5321 leaves local-part semantics to it.
       */
-    def key: String = Ascii.lower(e.local) + "@" + e.domain.value
+    def key: String = ASCII.lower(e.local) + "@" + e.domain.value
 
     /** Whether both addresses reach one mailbox: local parts equal
       * character-for-character, domains equal as A-labels.
       */
+    @targetName("ext_sameMailbox")
     def sameMailbox(o: Email): Boolean = e.local == o.local && e.domain.same(o.domain)
 
     /** The RFC 6068 `mailto` URI, its local part percent-encoded down to the
@@ -145,4 +149,5 @@ object Email:
   given CanEqual[Email, Email] = CanEqual.derived
   given Ordering[Email] = Ordering.String.on(identity)
   given ValueCodec.Aux[Email, Invalid] = ValueCodec(parse, e => Email.value(e))
+  given Classified[Email] = Classified.of(Classification.Personal)
 end Email

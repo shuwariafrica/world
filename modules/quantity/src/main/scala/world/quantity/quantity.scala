@@ -32,6 +32,8 @@ sealed trait Length extends Kind
 sealed trait Area extends Kind
 sealed trait Count extends Kind
 sealed trait Duration extends Kind
+sealed trait Energy extends Kind
+sealed trait Data extends Kind
 
 /** A unit within kind `K`: a symbol and an exact positive factor to the kind's
   * base scale. Measures are values, so per-product packaging such as a crate of
@@ -95,7 +97,87 @@ object Measure:
   val Hour: Measure[Duration] = make("h", Ratio(3600))
   val Day: Measure[Duration] = make("d", Ratio(86400))
 
+  // The joule is the SI unit and the watt-hour its exact multiple (1 Wh = 3600 J). kWh is the
+  // retail electricity unit, MJ a gas-billing unit, and MWh the wholesale denomination.
+  val Joule: Measure[Energy] = make("J", Ratio.One)
+  val Kilojoule: Measure[Energy] = make("kJ", Ratio(1000))
+  val Megajoule: Measure[Energy] = make("MJ", Ratio(1000000))
+  val WattHour: Measure[Energy] = make("Wh", Ratio(3600))
+  val KilowattHour: Measure[Energy] = make("kWh", Ratio(3600000))
+  val MegawattHour: Measure[Energy] = make("MWh", Ratio(3600000000L))
+
+  // IEC 80000-13: the bit is the elementary unit and the byte is the eight-bit byte the
+  // standard reserves the name for (item 13-9). The decimal family carries SI prefixes and the
+  // binary family the standard's own binary prefixes, so 1 MB is 10^6 B while 1 MiB is 2^20 B -
+  // a billing trap named apart exactly as the two gallons are.
+  val Bit: Measure[Data] = make("bit", Ratio.One)
+  val Byte: Measure[Data] = make("B", Ratio(8))
+  val Kilobyte: Measure[Data] = make("kB", Ratio(8000))
+  val Megabyte: Measure[Data] = make("MB", Ratio(8000000))
+  val Gigabyte: Measure[Data] = make("GB", Ratio(8000000000L))
+  val Terabyte: Measure[Data] = make("TB", Ratio(8000000000000L))
+  val Kibibyte: Measure[Data] = make("KiB", Ratio(8192))
+  val Mebibyte: Measure[Data] = make("MiB", Ratio(8388608))
+  val Gibibyte: Measure[Data] = make("GiB", Ratio(8589934592L))
+  val Tebibyte: Measure[Data] = make("TiB", Ratio(8796093022208L))
+
+  // UN/CEFACT Recommendation 20 common codes for the shipped measures, the correspondence an
+  // EN 16931 invoice line needs (BR-CL-23 admits the active Rec 20 set). Codes are not derivable
+  // from symbols, so the correspondence is explicit data. Hectare's HAR is deprecated and
+  // inadmissible - an area reaching an invoice line re-expresses through `in(SquareMetre)` - and
+  // the binary data family carries no Rec 20 code at all.
+  private val codes: Map[Measure[?], String] = Map
+    (
+      Kilogram -> "KGM",
+      Gram -> "GRM",
+      Milligram -> "MGM",
+      Tonne -> "TNE",
+      Litre -> "LTR",
+      Millilitre -> "MLT",
+      CubicMetre -> "MTQ",
+      Metre -> "MTR",
+      Centimetre -> "CMT",
+      Millimetre -> "MMT",
+      Kilometre -> "KMT",
+      SquareMetre -> "MTK",
+      Pound -> "LBR",
+      Ounce -> "ONZ",
+      Inch -> "INH",
+      Foot -> "FOT",
+      Yard -> "YRD",
+      Mile -> "SMI",
+      GallonUS -> "GLL",
+      GallonImperial -> "GLI",
+      Each -> "EA",
+      Pair -> "PR",
+      Dozen -> "DZN",
+      Gross -> "GRO",
+      Second -> "SEC",
+      Minute -> "MIN",
+      Hour -> "HUR",
+      Day -> "DAY",
+      Joule -> "JOU",
+      Kilojoule -> "KJO",
+      Megajoule -> "3B",
+      WattHour -> "WHR",
+      KilowattHour -> "KWH",
+      MegawattHour -> "MWH",
+      Bit -> "A99",
+      Byte -> "AD",
+      Kilobyte -> "2P",
+      Megabyte -> "4L",
+      Gigabyte -> "E34",
+      Terabyte -> "E35"
+    )
+
   extension [K <: Kind](m: Measure[K])
+    /** The UN/CEFACT Recommendation 20 common code for this measure, where one
+      * is admissible - `None` for consumer-minted measures, for the binary data
+      * units, and for the hectare, whose code is deprecated (re-express an
+      * invoiced area through `in(SquareMetre)`).
+      */
+    def code: Option[String] = codes.get(m)
+
     /** A quantity of this measure, as `Measure.Dozen(3)` or
       * `Measure.Kilogram(BigDecimal("2.5"))`.
       */
@@ -106,6 +188,7 @@ object Measure:
       scala.compiletime.error("binary floating-point cannot carry exact amounts; construct from a decimal string or integer")
     inline def apply(amount: Float): Quantity[K] =
       scala.compiletime.error("binary floating-point cannot carry exact amounts; construct from a decimal string or integer")
+  end extension
 
   given [K <: Kind] => CanEqual[Measure[K], Measure[K]] = CanEqual.derived
 end Measure
@@ -342,7 +425,7 @@ extension (i: Instant)
   @targetName("instantPlus")
   def plus(q: Quantity[Duration]): Either[Instant.Invalid, Instant] =
     q.in(Measure.Second).amount.whole match
-      case Some(s) if s.isValidLong => Right(Instant.epoch(i.seconds + s.toLong))
+      case Some(s) if s.isValidLong => Right(Instant.seconds(i.seconds + s.toLong))
       case _                        => Left(Instant.Invalid(s"${i.seconds} + a sub-second duration"))
 
   /** The exact elapsed duration to `other`, as a quantity the price algebra

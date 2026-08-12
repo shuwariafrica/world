@@ -39,4 +39,8 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
   given Arbitrary[Coordinate] = Arbitrary(coordinates)
 
   valueCodecLaws[Coordinate]("Coordinate")
+
+  // The one decimal-bearing instance world ships: the render alphabet catches scientific notation
+  // and locale leakage at every member, which the round-trip law alone would not.
+  valueCodecRenderWithin[Coordinate]("Coordinate")(c => (c >= '0' && c <= '9') || c == '-' || c == '.' || c == ',')
 end CodecLawsSuite

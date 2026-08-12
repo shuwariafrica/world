@@ -25,6 +25,12 @@ subsection:
   - title: Names, organisations, and parties
     page: parties.md
 
+  - title: Presenting values to people
+    page: presentation.md
+
+  - title: Personal data
+    page: personal-data.md
+
   - title: Reference
     index: reference/index.md
     directory: reference

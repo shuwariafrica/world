@@ -55,9 +55,13 @@ object Curate:
   private def expand(token: String): Vector[String] =
     token.indexOf('~') match
       case -1 => Vector(token)
+      // A range whose tilde opens the token, or whose end precedes its start, would expand to
+      // nothing and silently shrink the validity set rather than fail.
+      case 0  => sys.error(s"validity range '$token' opens with its range separator")
       case at =>
         val start = token.take(at)
         val last = token.charAt(token.length - 1)
+        if last < start.last then sys.error(s"validity range '$token' ends before it starts")
         (start.last to last).iterator.map(c => start.dropRight(1) + c).toVector
 
   private def validity(xml: String, kind: String, status: String): Vector[String] =
@@ -118,7 +122,12 @@ object Curate:
     val start = byTerritory("weekendStart", "day")
     val end = byTerritory("weekendEnd", "day")
     def day(source: Map[String, String], territory: String): Int =
-      weekdays.indexOf(source.getOrElse(territory, source("001")))
+      val name = source.getOrElse(territory, source("001"))
+      // `indexOf` answers -1 for a name this vocabulary does not carry, which would pack as a
+      // weekday ordinal and read as Monday one row later.
+      weekdays.indexOf(name) match
+        case -1 => sys.error(s"week data $territory: '$name' is not a weekday name")
+        case at => at
     val territories = (minimal.keySet ++ first.keySet ++ start.keySet ++ end.keySet - "001").toVector.sorted
     val rows = territories.map { territory =>
       val days = minimal.getOrElse(territory, minimal("001"))
