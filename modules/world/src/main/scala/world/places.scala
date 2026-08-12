@@ -15,6 +15,8 @@
  ****************************************************************************/
 package world
 
+import boilerplate.codec.ASCII
+
 /** What a BCP 47 region subtag admits: an ISO 3166-1 territory, or a UN M49
   * macro area. Every [[Territory]] is a region; a macro area is a region that
   * is not a territory. Instances via [[Region$ Region]] and
@@ -79,7 +81,7 @@ object Territory extends Territories:
 
   /** Parses an alpha-2 or alpha-3 code, case-insensitively. */
   def from(code: String): Either[Unknown, Territory] =
-    val c = ascii.upper(code)
+    val c = ASCII.upper(code)
     val i =
       if c.length == 2 then packed.indexOf(tables.alpha2, 2, tables.territories, c)
       else if c.length == 3 then packed.indexOf(tables.alpha3, 3, tables.territories, c)

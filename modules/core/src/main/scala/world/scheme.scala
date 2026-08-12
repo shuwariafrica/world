@@ -193,4 +193,7 @@ object Id:
 
   given [S <: Scheme[?] & Singleton] => CanEqual[Id[S], Id[S]] = CanEqual.derived
   given [S <: Scheme[?] & Singleton] => Ordering[Id[S]] = Ordering.String.on(id => id: String)
+  // Every scheme world admits issues to a party: a tax registration identifies its holder as
+  // squarely as a national number does.
+  given [S <: Scheme[?] & Singleton] => Classified[Id[S]] = Classified.of(Classification.Personal)
 end Id

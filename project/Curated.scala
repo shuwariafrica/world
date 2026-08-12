@@ -345,6 +345,13 @@ object Curated:
   def rows(root: File, dataset: Dataset): Vector[String] =
     IO.readLines(file(root, dataset)).iterator.filterNot(_.startsWith("#")).toVector
 
+  /** The rows of a dataset cleared for compilation - the seam every generator reads through, so
+    * clearance is checked once for all of them rather than in whichever one remembered to.
+    */
+  def compiled(root: File, dataset: Dataset): Vector[String] =
+    if !dataset.compiledIn then sys.error(s"${dataset.name} is not cleared for compilation; its redistribution terms are unverified")
+    else rows(root, dataset)
+
   /** Fails the build unless every dataset carries the provenance the registry
     * declares, its pin is registered with the upstream watchers, and every
     * dataset marked for compilation names the authority it is redistributed
@@ -359,9 +366,13 @@ object Curated:
         val lines = IO.readLines(target)
         val drift = header(dataset).filterNot(lines.contains)
         List(
-          Option.when(!pins.contains(s""""name": "${dataset.source}""""))(
-            s"${dataset.name}: source ${dataset.source} is not registered in data/upstream-pins.json"
-          ),
+          registration(pins, dataset.source) match
+            case Left(reason)                             => Some(s"${dataset.name}: $reason")
+            case Right(version) if version != dataset.pin =>
+              Some(
+                s"${dataset.name}: curated at pin ${dataset.pin} while data/upstream-pins.json registers $version"
+              )
+            case Right(_) => None,
           Option.when(drift.nonEmpty)(
             s"${dataset.name}: header does not match the registry - ${drift.mkString("; ")}"
           ),
@@ -375,14 +386,39 @@ object Curated:
         ).flatten
       end if
     }
+    // Provenance first: a shape check over a dataset whose provenance already failed reports the
+    // wrong defect, and a throwing one would hide the accumulated list entirely.
+    if failures.nonEmpty then sys.error(failures.mkString("data gate failed:\n  ", "\n  ", ""))
     val widths = phoneFormatWidths(root, log)
     val addresses = addressRuleShapes(root, log)
-    if failures.nonEmpty then sys.error(failures.mkString("data gate failed:\n  ", "\n  ", ""))
     log.info(
-      s"[data] ${all.count(_.compiledIn)} compiled-in and ${all.count(!_.compiledIn)} held datasets verified; " +
+      s"[data] ${all.count(_.compiledIn)} compiled-in and ${all.count(!_.compiledIn)} held datasets verified " +
+        s"against ${all.size} registered pins; " +
         s"$widths phone format rows width-checked; $addresses addressing rules shape-checked."
     )
   end verify
+
+  // The pin gate binds the fetch. A name present in the watchers' file proves only that somebody
+  // is watching the source; the version recorded beside it is what the curated rows were actually
+  // taken from, so a dataset whose declared pin has drifted from the registered one is generating
+  // from rows nobody re-fetched.
+  private def registration(pins: String, source: String): Either[String, String] =
+    val at = pins.indexOf(s""""name": "$source"""")
+    if at < 0 then Left(s"source $source is not registered in data/upstream-pins.json")
+    else
+      val next = pins.indexOf(""""name": """", at + 1)
+      val entry = if next < 0 then pins.substring(at) else pins.substring(at, next)
+      val pinned = entry.indexOf(""""pinned"""")
+      if pinned < 0 then Left(s"source $source registers no pinned version in data/upstream-pins.json")
+      else
+        val marker = """"version": """"
+        val opens = entry.indexOf(marker, pinned)
+        val from = opens + marker.length
+        val closes = if opens < 0 then -1 else entry.indexOf('"', from)
+        if opens < 0 || closes < 0 then Left(s"source $source registers an unreadable pinned version")
+        else Right(entry.substring(from, closes))
+    end if
+  end registration
 
   // A comma-separated line, honouring the doubled-quote escaping the extract writes.
   private def csv(line: String): Vector[String] =

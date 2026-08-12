@@ -18,7 +18,7 @@ package world
 import scala.annotation.publicInBinary
 import scala.quoted.*
 
-import boilerplate.codec.Ascii
+import boilerplate.codec.ASCII
 import boilerplate.nullable.*
 
 // The scheme engine and the literal macro live beside each other: the literal path and
@@ -30,8 +30,8 @@ import boilerplate.nullable.*
   private def fold(norm: Norm, raw: String): String =
     val stripped = raw.trim.unsafe.filterNot(ch => norm.strip.indexOf(ch.toInt) >= 0)
     norm.fold match
-      case Fold.Upper    => ascii.upper(stripped)
-      case Fold.Lower    => Ascii.lower(stripped)
+      case Fold.Upper    => ASCII.upper(stripped)
+      case Fold.Lower    => ASCII.lower(stripped)
       case Fold.Preserve => stripped
 
   // Compact class notation: "0-9A-Z" ranges plus listed characters. Shared with the packed-pattern
@@ -57,7 +57,7 @@ import boilerplate.nullable.*
       mask.exists {
         case Seg.Run(set, _, _)  => in(c, set)
         case Seg.Text(value)     => value.indexOf(c.toInt) >= 0
-        case Seg.Number(_, _, _) => ascii.digit(c)
+        case Seg.Number(_, _, _) => ASCII.isDigit(c)
       }
     }
 
@@ -74,7 +74,7 @@ import boilerplate.nullable.*
           case Seg.Number(width, min, max) =>
             pos + width <= s.length && {
               val piece = s.substring(pos, pos + width).unsafe
-              ascii.digits(piece) && {
+              ASCII.isDigits(piece) && {
                 val n = piece.toInt
                 n >= min && n <= max && loop(pos + width, i + 1)
               }
@@ -101,7 +101,7 @@ import boilerplate.nullable.*
   // ISO 11649 apply it.
   private[world] def mod97(s: String): Int =
     (s.drop(4) + s.take(4)).foldLeft(0) { (acc, ch) =>
-      val v = if ascii.digit(ch) then ch - '0' else ch - 'A' + 10
+      val v = if ASCII.isDigit(ch) then ch - '0' else ch - 'A' + 10
       if v >= 10 then (acc * 100 + v) % 97 else (acc * 10 + v) % 97
     }
 
@@ -109,7 +109,7 @@ import boilerplate.nullable.*
   // checking the last (letters, a selector prefix for instance, are not operands of
   // the hybrid system).
   private def mod1110(s: String): Boolean =
-    val digits = s.filter(ch => ascii.digit(ch))
+    val digits = s.filter(ch => ASCII.isDigit(ch))
     val product = digits.dropRight(1).foldLeft(10) { (acc, ch) =>
       val sum = (ch - '0' + acc) % 10
       (if sum == 0 then 10 else sum) * 2 % 11

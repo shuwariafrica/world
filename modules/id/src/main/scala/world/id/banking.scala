@@ -24,6 +24,7 @@ import world.Scheme.Rules
 import world.Scheme.Seg
 
 import boilerplate.ValueCodec
+import boilerplate.codec.ASCII
 
 /** An international bank account number in its electronic form - no spaces,
   * upper case. Parsing proves two things and no more: the number fits the ISO
@@ -112,8 +113,9 @@ object Reference extends Scheme[Scheme.Reference](Authority("ISO"), "REFERENCE")
     * spaces in it are ignored.
     */
   def of(body: String): Either[Scheme.Invalid, Id[Reference.type]] =
-    val b = ascii.upper(body.filterNot(_ == ' '))
-    if b.isEmpty || b.length > 21 || !b.forall(ascii.letterOrDigit) then Left(Scheme.Invalid.Mask(body))
+    val b = ASCII.upper(body.filterNot(_ == ' '))
+    if !b.forall(c => ASCII.isAlphanumeric(c)) then Left(Scheme.Invalid.Characters(body))
+    else if b.isEmpty || b.length > 21 then Left(Scheme.Invalid.Length(body))
     else parse(f"RF${98 - schemes.mod97("RF00" + b)}%02d$b")
 
   extension (r: Id[Reference.type])
@@ -150,8 +152,8 @@ object NUBAN:
     * it.
     */
   def parse(institution: String, account: String): Either[Invalid, NUBAN] =
-    if !ascii.digits(institution) then Left(Invalid.Institution(institution))
-    else if account.length != 10 || !ascii.digits(account) then Left(Invalid.Format(account))
+    if !ASCII.isDigits(institution) then Left(Invalid.Institution(institution))
+    else if account.length != 10 || !ASCII.isDigits(account) then Left(Invalid.Format(account))
     else if !check(institution + account.take(9)).contains(account.last - '0') then Left(Invalid.Checksum(account))
     else Right(account)
 
@@ -162,7 +164,7 @@ object NUBAN:
     */
   def check(digits: String): Option[Int] =
     // The published weight cycle is 3-7-3, so every middle position of a triple takes 7.
-    Option.when(ascii.digits(digits)) {
+    Option.when(ASCII.isDigits(digits)) {
       val sum = digits.zipWithIndex.map((ch, at) => (ch - '0') * (if at % 3 == 1 then 7 else 3)).sum
       val remainder = 10 - sum % 10
       if remainder == 10 then 0 else remainder

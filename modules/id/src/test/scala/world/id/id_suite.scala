@@ -55,7 +55,10 @@ class IdSuite extends munit.FunSuite:
   }
 
   test("email: punycode a-label form") {
-    assertEquals(ulabel.ascii, Some("amina@xn--bcher-kva.example"))
+    assertEquals(ulabel.ascii.map(_.value), Some("amina@xn--bcher-kva.example"))
+  }
+  test("email: the ascii form is itself the same typed mailbox") {
+    assert(ulabel.ascii.exists(a => a.sameMailbox(ulabel) && !a.international))
   }
   test("email: u-label and a-label are the same mailbox") {
     assert(ulabel.sameMailbox(alabel))
@@ -64,9 +67,9 @@ class IdSuite extends munit.FunSuite:
     assert(ulabel.international && !alabel.international)
   }
   test("email: punycode reproduces the corpus deviation vectors") {
-    assertEquals(Email.parse("a@faß.de").toOption.get.ascii, Some("a@xn--fa-hia.de"))
-    assertEquals(Email.parse("a@βόλος.com").toOption.get.ascii, Some("a@xn--nxasmm1c.com"))
-    assertEquals(Email.parse("a@ツ.life").toOption.get.ascii, Some("a@xn--bdk.life"))
+    assertEquals(Email.parse("a@faß.de").toOption.get.ascii.map(_.value), Some("a@xn--fa-hia.de"))
+    assertEquals(Email.parse("a@βόλος.com").toOption.get.ascii.map(_.value), Some("a@xn--nxasmm1c.com"))
+    assertEquals(Email.parse("a@ツ.life").toOption.get.ascii.map(_.value), Some("a@xn--bdk.life"))
   }
   test("email: non-ascii local has no ascii form by design") {
     // The leading letter is Cyrillic, not the ASCII one it is indistinguishable from on sight:
@@ -202,11 +205,13 @@ class IdSuite extends munit.FunSuite:
   test("reference: round trip") {
     assertEquals(Reference.of("539007547034").flatMap(r => Reference.parse(r.print).map(_ == r)), Right(true))
   }
-
-  test("reference: a body the scheme cannot carry is refused") {
-    assertEquals(Reference.of(""), Left(Scheme.Invalid.Mask("")))
-    assertEquals(Reference.of("A" * 22), Left(Scheme.Invalid.Mask("A" * 22)))
-    assertEquals(Reference.of("a-b"), Left(Scheme.Invalid.Mask("a-b")))
+  test("reference: generation failures carry the engine's own families") {
+    assert
+      (
+        Reference.of("a" * 22) == Left(Scheme.Invalid.Length("a" * 22))
+          && Reference.of("") == Left(Scheme.Invalid.Length(""))
+          && Reference.of("53900754!") == Left(Scheme.Invalid.Characters("53900754!"))
+          && Reference.of("a-b") == Left(Scheme.Invalid.Characters("a-b")))
   }
   test("reference: generation and the body accessor invert each other") {
     val bodies = Vector("1", "539007547034", "INV2026001", "A" * 21)
@@ -414,5 +419,8 @@ class IdSuite extends munit.FunSuite:
     Domain.parse(fine + ".aa") match
       case Left(_: Domain.Invalid.TooLong) => ()
       case other                           => fail(s"expected an octet-limit failure, got ${other.toString}")
+  }
+  test("classified: an email address is personal data") {
+    assertEquals(summon[Classified[Email]].classification, Classification.Personal)
   }
 end IdSuite

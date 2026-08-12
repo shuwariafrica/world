@@ -21,6 +21,7 @@ import world.*
 import world.id.tables
 
 import boilerplate.ValueCodec
+import boilerplate.codec.ASCII
 import boilerplate.nullable.*
 
 /** A telephone number in E.164 form, `+254712345678`. That string is the value,
@@ -69,9 +70,9 @@ object Phone:
       else trimmed
     // E.164 is an ASCII scheme, so a Unicode digit class must never reach the canonical string. The
     // punctuation people type into forms is admitted here and dropped below.
-    if !body.forall(ch => ascii.digit(ch) || " ()-./".indexOf(ch.toInt) >= 0) then Left(Invalid.Characters(raw))
+    if !body.forall(ch => ASCII.isDigit(ch) || " ()-./".indexOf(ch.toInt) >= 0) then Left(Invalid.Characters(raw))
     else
-      val digits = body.filter(ascii.digit)
+      val digits = body.filter(c => ASCII.isDigit(c))
       val plan = if international then plans.byCode(digits) else home.map(plans.byTerritory).getOrElse(-1)
       if plan < 0 then Left(Invalid.Code(raw))
       else
@@ -204,7 +205,7 @@ private object plans:
     @tailrec def longest(length: Int): Int =
       if length == 0 then -1
       else
-        ascii.int(digits.take(length)).filter(_ => digits.length >= length).map(rowOf).getOrElse(-1) match
+        ASCII.uint(digits.take(length)).filter(_ => digits.length >= length).map(rowOf).getOrElse(-1) match
           case -1  => longest(length - 1)
           case row => row
     longest(3)

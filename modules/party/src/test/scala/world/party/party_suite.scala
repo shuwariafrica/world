@@ -166,4 +166,14 @@ class PartySuite extends munit.FunSuite:
       .full("Dr Maria Jose de la Garcia Lopez II")
     assertEquals(full.surname2, Some("Lopez"))
   }
+  // Per-field rather than uniform: a party can be wholly juristic, so the organisation names of
+  // one are register data under the natural-person reading.
+  test("classified: a party mixes personal and non-personal fields") {
+    val classes = summon[Classified[Party]]
+    assert
+      (
+        classes.classification == Classification.Personal
+          && classes.fields.contains("organisation" -> Classification.None)
+          && classes.fields.contains("name" -> Classification.Personal))
+  }
 end PartySuite

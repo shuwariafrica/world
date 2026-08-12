@@ -28,8 +28,8 @@ object Instant:
   /** Carries the rejected operation, rendered. */
   final case class Invalid(value: String) extends WorldError("invalid instant") derives CanEqual
 
-  /** The instant an epoch-second count denotes. */
-  def epoch(seconds: Long): Instant = seconds
+  /** The instant an epoch-second count denotes - the canonical form. */
+  def seconds(value: Long): Instant = value
 
   /** Ingestion from a millisecond clock, flooring to the containing second on
     * both sides of the epoch.
@@ -37,9 +37,8 @@ object Instant:
   def millis(value: Long): Instant = Math.floorDiv(value, 1000L)
 
   extension (i: Instant)
-    /** The epoch-second count, which reconstructs the instant through
-      * [[Instant.epoch]].
-      */
+    /** The epoch-second count - the argument that reconstructs the instant. */
+    @scala.annotation.targetName("secondsOf")
     def seconds: Long = i
 
     /** The epoch-millisecond form, for handing back to platform clocks. */

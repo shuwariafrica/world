@@ -143,3 +143,22 @@ object Anka extends Calendar.Offset("ANKA", -1000)
 ```scala mdoc
 Anka.at(Date(2026, 7, 23))
 ```
+
+## Age and majority
+
+A majority check is a composition, not an operation: add the years to the birth date and
+compare. The leap-day convention is the one `Overflow` names, so 29 February plus eighteen
+years is 28 February under `Constrain` - stated rather than assumed:
+
+```scala mdoc
+val born = Date(2008, 2, 29)
+val today = Date(2026, 7, 23)
+
+born.plus(Years(18), Overflow.Constrain).map(Ordering[Date].lteq(_, today))
+```
+
+`years` answers the same question as a count where a form needs the number itself:
+
+```scala mdoc
+born.years(today)
+```

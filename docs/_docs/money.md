@@ -263,6 +263,58 @@ flat-rate quoting is a real and expensive error:
 Currency.KES(100000).annuity(Ratio(BigDecimal("0.01")), 12, Rounding.HalfUp).map(_.amount)
 ```
 
+`amortisation` prints the schedule behind that payment - each row its interest share, its
+principal share, and the balance it leaves:
+
+```scala mdoc
+Currency.KES(1000).amortisation(Ratio(1, 100), 12, Rounding.HalfUp).map(_.take(2))
+```
+
+Two invariants make the schedule usable as a book rather than an illustration: the
+principal shares sum to exactly the principal, and the balance closes at exactly zero. The
+rounding residual lands on the final instalment, which is where a printed schedule puts it -
+unlike `allocate`, which spreads a remainder across its parts:
+
+```scala mdoc
+Currency.KES(1000)
+  .amortisation(Ratio(1, 100), 12, Rounding.HalfUp)
+  .map(rows => (rows.foldLeft(Money.zero[Currency.KES])(_ + _.principal).amount, rows.last.balance.isZero))
+```
+
+No published schedule is cited against these figures. The differential was gated on finding
+one in a lender or regulator document; Regulation Z's own Appendix J gives the actuarial
+equations and an APR figure rather than a period-by-period table, and the schedules that are
+freely published are calculator output rather than an authority's worked example. The two
+invariants above stand in its place, and they are asserted in the test suite rather than
+here.
+
+## Trade terms
+
+A document's delivery terms are a rule and its named place, and the standard quotes the
+pair - a rule alone is incomplete. The vocabulary is the eleven Incoterms 2020 rules as
+UN/ECE Recommendation No. 5 codes them (sixth edition, ECE/TRADE/C/CEFACT/2020/10,
+2020-02-12, annex "Incoterms (R) 2020"):
+
+```scala mdoc
+Delivery.parse("CIF Mombasa").map(_.term.name)
+
+Delivery.of(Incoterm.FCA, "Nairobi ICD").map(_.value)
+```
+
+Each rule says what kind of place it names, which is the label a capture form puts on its
+place field, and whether it belongs to the standard's sea and inland waterway group:
+
+```scala mdoc
+Incoterm.FOB.place
+
+Incoterm.DDP.place
+
+Incoterm.values.filter(_.maritime).map(_.code)
+```
+
+The rule texts themselves are ICC's publication and are not reproduced here; this is the
+code list an interchange document carries.
+
 ## Margin and markup
 
 Named apart, because they are a recurring pricing bug:

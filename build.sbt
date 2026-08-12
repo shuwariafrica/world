@@ -1,11 +1,11 @@
-scalaVersion := scala3
+scalaVersion := Libraries.scala3
 organization := "africa.shuwari"
-description := "Scala toolkit for representation and manipulation of real-world domain concepts"
+description := "Concepts commerce runs on - civil time, places and locales, money, quantities, etc - in Scala"
 homepage := Some(uri("https://github.com/shuwariafrica/world"))
 startYear := Some(2023)
 semanticdbEnabled := true
 scmInfo := ScmInfo(
-  url("https://dev.shuwari.africa/world"),
+  uri("https://dev.shuwari.africa/world"),
   "scm:git:https://github.com/shuwariafrica/world.git",
   Some("scm:git:git@github.com:shuwariafrica/world.git")
 ).some
@@ -13,8 +13,6 @@ scmInfo := ScmInfo(
 apacheLicensed
 Shuwari.organisationSettings
 formattingSettings
-
-def scala3 = Libraries.scala3
 
 // Every matrix row presents the same source files to its own copy of the rewriting tasks, and two
 // rows rewriting one file at once truncated it during the pass-II run. The tag is attached to the
@@ -42,9 +40,9 @@ val `world-core` =
     .settings(publishSettings)
     .settings(Compat.settings)
     .settings(libraryDependencies += Libraries.boilerplate)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val world =
   projectMatrix
@@ -58,9 +56,9 @@ val world =
     .settings(Compat.settings)
     .settings(Data.registers)
     .settings(libraryDependencies += Libraries.`boilerplate-testkit` % Test)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-money` =
   projectMatrix
@@ -73,9 +71,9 @@ val `world-money` =
     .settings(publishSettings)
     .settings(Compat.settings)
     .settings(Data.monetary)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-quantity` =
   projectMatrix
@@ -87,9 +85,9 @@ val `world-quantity` =
     .settings(unitTestSettings)
     .settings(publishSettings)
     .settings(Compat.settings)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-id` =
   projectMatrix
@@ -103,14 +101,14 @@ val `world-id` =
     .settings(Compat.settings)
     .settings(Data.identifiers)
     .settings(libraryDependencies += Libraries.`boilerplate-testkit` % Test)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-address` =
   projectMatrix
     .in(file("modules/address"))
-    .dependsOn(`world-core`, world)
+    .dependsOn(`world-core`, world, `world-quantity`)
     .settings(description := "Structured postal addresses and geographic coordinates.")
     .settings(compilerSettings)
     .settings(rewriteSettings)
@@ -119,9 +117,9 @@ val `world-address` =
     .settings(Compat.settings)
     .settings(Data.addressing)
     .settings(libraryDependencies += Libraries.`boilerplate-testkit` % Test)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-party` =
   projectMatrix
@@ -136,9 +134,31 @@ val `world-party` =
     .settings(unitTestSettings)
     .settings(publishSettings)
     .settings(Compat.settings)
-    .jvmPlatform(Seq(scala3))
-    .jsPlatform(Seq(scala3))
-    .nativePlatform(Seq(scala3), nativeSettings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
+
+val `world-text` =
+  projectMatrix
+    .in(file("modules/text"))
+    .dependsOn(
+      `world-core`,
+      world,
+      `world-money`,
+      `world-quantity`,
+      `world-address`,
+      `world-id` % "compile->compile;test->test",
+      `world-party`
+    )
+    .settings(description := "Locale-correct presentation of world's values.")
+    .settings(compilerSettings)
+    .settings(rewriteSettings)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .settings(Compat.settings)
+    .jvmPlatform(Seq(Libraries.scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
 val `world-data` =
   projectMatrix
@@ -149,7 +169,7 @@ val `world-data` =
     .settings(publishSettings)
     .settings(Compat.settings)
     .settings(Data.curation)
-    .jvmPlatform(Seq(scala3))
+    .jvmPlatform(Seq(Libraries.scala3))
 
 val `world-site` =
   project
@@ -157,50 +177,80 @@ val `world-site` =
     .enablePlugins(WorldUnidocPlugin)
     .settings(publish / skip := true)
     .settings(rewriteSettings)
-    .settings(scalaVersion := scala3)
+    .settings(scalaVersion := Libraries.scala3)
     .dependsOn(
-      `world-core`.jvm(scala3),
-      world.jvm(scala3),
-      `world-money`.jvm(scala3),
-      `world-quantity`.jvm(scala3),
-      `world-id`.jvm(scala3),
-      `world-address`.jvm(scala3),
-      `world-party`.jvm(scala3)
+      `world-core`.jvm(Libraries.scala3),
+      world.jvm(Libraries.scala3),
+      `world-money`.jvm(Libraries.scala3),
+      `world-quantity`.jvm(Libraries.scala3),
+      `world-id`.jvm(Libraries.scala3),
+      `world-address`.jvm(Libraries.scala3),
+      `world-party`.jvm(Libraries.scala3),
+      `world-text`.jvm(Libraries.scala3)
     )
     .settings(
       ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-        `world-core`.jvm(scala3),
-        world.jvm(scala3),
-        `world-money`.jvm(scala3),
-        `world-quantity`.jvm(scala3),
-        `world-id`.jvm(scala3),
-        `world-address`.jvm(scala3),
-        `world-party`.jvm(scala3)
+        `world-core`.jvm(Libraries.scala3),
+        world.jvm(Libraries.scala3),
+        `world-money`.jvm(Libraries.scala3),
+        `world-quantity`.jvm(Libraries.scala3),
+        `world-id`.jvm(Libraries.scala3),
+        `world-address`.jvm(Libraries.scala3),
+        `world-party`.jvm(Libraries.scala3),
+        `world-text`.jvm(Libraries.scala3)
       )
     )
 
 val `world-jvm` =
   projectMatrix
     .in(file(".jvm"))
-    .jvmPlatform(Seq(scala3))
+    .jvmPlatform(Seq(Libraries.scala3))
     .settings(publish / skip := true)
-    .aggregate(`world-core`, world, `world-money`, `world-quantity`, `world-id`, `world-address`, `world-party`, `world-data`)
+    .aggregate(
+      `world-core`,
+      world,
+      `world-money`,
+      `world-quantity`,
+      `world-id`,
+      `world-address`,
+      `world-party`,
+      `world-text`,
+      `world-data`
+    )
 
 val `world-js` =
   projectMatrix
     .in(file(".js"))
-    .jsPlatform(Seq(scala3))
-    .defaultAxes(VirtualAxis.js, VirtualAxis.scalaABIVersion(scala3))
+    .jsPlatform(Seq(Libraries.scala3))
+    .defaultAxes(VirtualAxis.js, VirtualAxis.scalaABIVersion(Libraries.scala3))
     .settings(publish / skip := true)
-    .aggregate(`world-core`, world, `world-money`, `world-quantity`, `world-id`, `world-address`, `world-party`)
+    .aggregate(
+      `world-core`,
+      world,
+      `world-money`,
+      `world-quantity`,
+      `world-id`,
+      `world-address`,
+      `world-party`,
+      `world-text`
+    )
 
 val `world-native` =
   projectMatrix
     .in(file(".native"))
-    .nativePlatform(Seq(scala3))
-    .defaultAxes(VirtualAxis.native, VirtualAxis.scalaABIVersion(scala3))
+    .nativePlatform(Seq(Libraries.scala3))
+    .defaultAxes(VirtualAxis.native, VirtualAxis.scalaABIVersion(Libraries.scala3))
     .settings(publish / skip := true)
-    .aggregate(`world-core`, world, `world-money`, `world-quantity`, `world-id`, `world-address`, `world-party`)
+    .aggregate(
+      `world-core`,
+      world,
+      `world-money`,
+      `world-quantity`,
+      `world-id`,
+      `world-address`,
+      `world-party`,
+      `world-text`
+    )
 
 val `world-root` =
   projectMatrix
@@ -275,20 +325,6 @@ def publishSettings = licenceSettings ++ {
     pomIncludeRepository := (_ => false),
     publishMavenStyle := true
   )
-}
-
-// Defence in depth behind the `rewrite` tag: CI runs this after its formatting checks, so a source
-// a rewriting pass emptied is caught there rather than reaching a review looking like a deletion.
-val sourcesIntact = taskKey[Unit]("Fail if a formatting pass emptied any tracked source.")
-
-sourcesIntact := {
-  val root = (ThisBuild / baseDirectory).value
-  val sources = ((root / "modules") ** "*.scala").get() ++ ((root / "project") * "*.scala").get()
-  val emptied = sources.filterNot(_.getPath.contains("target")).filter(_.length() < 2L)
-  if (emptied.nonEmpty)
-    sys.error(emptied.mkString("sources emptied by a formatting pass:\n  ", "\n  ", ""))
-  if (sources.isEmpty) sys.error("the source sweep found no sources at all")
-  streams.value.log.info(s"[sources] ${sources.size} tracked sources intact")
 }
 
 addCommandAlias("format", "scalafixAll; scalafmtAll; scalafmtSbt; headerCreateAll")

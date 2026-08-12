@@ -177,3 +177,89 @@ object UraTin extends Scheme[Scheme.Tax](Authority("Uganda Revenue Authority"), 
 `world` ships no tax or national-registration rows of its own: those change by statute in
 places this library cannot watch, and a stale row that rejects a valid registration is
 worse than no row at all.
+
+A registration is attached to a party through the scheme object itself, so a document
+prints the issuing authority's own label for it without the application keeping a parallel
+map. Two schemes can print the same label, which is why the scheme - not a string - is what
+selects.
+
+## When one business holds two registrations
+
+A jurisdiction is not always one authority. A business in Zanzibar holds a Tanzania Revenue
+Authority registration *and* a Zanzibar Revenue Authority one, and both have to resolve for
+the same party. Because a scheme is a value rather than a type, that is a register of rows
+rather than a special case:
+
+```scala
+val schemes = Register(
+  Territory.KE -> KRAPin,
+  Territory.TZ -> TRATin,
+  Territory.TZ -> ZRATin)
+
+schemes.in(Territory.TZ) // both Tanzanian schemes, in declaration order
+```
+
+The rows themselves are yours. `world` carries the concept and the engine; which authority
+issues what in which territory is a fact that changes by statute, and a compiled-in answer
+would be wrong somewhere the day after it shipped.
+
+## Market registries are consumer data
+
+Bank and branch registries are the same shape of question and get the same answer, for a
+different reason: no open-data licence covers them. They are published, they are
+authoritative, and they are not redistributable as library data. What `world` does supply
+is the shape - `bank`, `branch`, and a lookup that *enriches* rather than rejects, because
+a stale snapshot must never refuse a newly opened branch.
+
+Two markets, both verified at source, show how much the shapes differ:
+
+**Tanzania** splits a six-digit sort code as **3 + 3** - a three-digit bank code and a
+three-digit branch code - per the Bank of Tanzania's own account-and-sort-code
+specification; the register's `NEW SORT CODE` column matches the split exactly (Bank of
+Tanzania head office `001001`, CRDB Lumumba `003001`, People's Bank of Zanzibar head office
+`004001`). Account numbers run to ten digits. Zanzibar has no separate clearing arrangement
+and no separate registry: the National Payment Systems Act applies to Tanzania mainland and
+Tanzania Zanzibar alike, and the Zanzibar clearing house was one of five Bank of Tanzania
+branch houses superseded in 2015.
+
+**Zambia** splits its sort code as **2 + 2 + 2** - bank, area, branch - published as
+Schedule I of the Zambia Electronic Clearing House rules (*General Rules*, approved 11
+March 2022, pp. 25-34, with the area-code table at p. 35). There is no machine-readable
+edition: the register is a table inside a PDF, 458 branch rows across 20 bank codes.
+
+A consumer holding either register declares its own lookup over these shapes. The point of
+documenting them here is that the *width* and *meaning* of a sort code is market-specific,
+so a single "sort code" string field is a modelling error.
+
+## A consumer scheme over a national address system
+
+GhanaPost GPS digital addresses show the concept carrying something that is not a
+registration at all - a region letter, a district code, an area, and a unique - and show
+why the row belongs to the consumer:
+
+```scala
+trait Location extends Scheme.Kind
+
+object GhanaPost extends Scheme[Location](Authority("Ghana Post"), "DIGITAL ADDRESS"):
+  protected inline def rules: Scheme.Rules = Scheme.Rules(
+    Scheme.Norm("-", Scheme.Fold.Upper),
+    Vector(
+      Scheme.Seg.Run("A-Z", 1, 1), Scheme.Seg.Run("2-9A-Z", 1, 2),
+      Scheme.Seg.Run("0-9", 3, 3), Scheme.Seg.Run("0-9", 4, 4)),
+    Scheme.Check.None)
+  protected val active: Scheme.Rules = rules
+```
+
+`GhanaPost.parse("AK-039-5028")` is the operator's own worked example, the Kumasi Main Post
+Office. The district segment admits one *or two* characters after the region letter,
+because the operator's published table carries both two- and three-character district codes
+even though its stated rule says two. That contradiction is exactly why the row is not
+library data: shipping either reading would make `world` wrong about somebody's address.
+
+## Tax category reasons
+
+An invoice's exemption reason code - VATEX and its kin - is not modelled here. `world`
+carries the [tax category vocabulary](money.md) and its reason *discipline*, which says
+whether a category requires a reason at all; the reason code lists themselves belong to the
+document profile a given exchange runs under (Peppol, and each national profile above it),
+not to a domain library.

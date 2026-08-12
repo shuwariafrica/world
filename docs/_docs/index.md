@@ -71,12 +71,15 @@ taken from, so an artefact can state which vintage of each source it holds. See
 | capturing bank, telephone, or email identifiers | [Identifiers and schemes](identifiers.md) |
 | capturing or printing postal addresses | [Addresses and coordinates](addresses.md) |
 | modelling customers, suppliers, or counterparties | [Names, organisations, and parties](parties.md) |
+| showing any of it to a person | [Presenting values to people](presentation.md) |
+| deciding what to redact or retain | [Personal data](personal-data.md) |
 | changing `world` itself | [Contributing](contributing.md) |
 
 ## Status
 
 Civil time and calendars, places and locales, money, quantities, identifiers, addresses,
-and parties ship with their full API. Further domains follow in later releases.
+parties, and presentation ship with their full API. Further domains follow in later
+releases.
 
 ## Licence
 

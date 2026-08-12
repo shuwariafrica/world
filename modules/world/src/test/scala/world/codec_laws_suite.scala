@@ -32,6 +32,12 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
       day <- Gen.choose(1, 28)
     yield Date.of(year, month, day).toOption.get
 
+  private val intervals: Gen[Interval] =
+    for
+      start <- dates
+      span <- Gen.choose(0, 400)
+    yield Interval.of(start, start.plus(Days(span)).getOrElse(start)).getOrElse(Interval(start))
+
   private val times: Gen[Time] =
     Gen.oneOf
       (
@@ -72,12 +78,14 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
   given Arbitrary[DateTime] = Arbitrary(dateTimes)
   given Arbitrary[YearMonth] = Arbitrary(yearMonths)
   given Arbitrary[Locale] = Arbitrary(locales)
+  given Arbitrary[Interval] = Arbitrary(intervals)
 
   valueCodecLaws[Date]("Date")
   valueCodecLaws[Time]("Time")
   valueCodecLaws[DateTime]("DateTime")
   valueCodecLaws[YearMonth]("YearMonth")
   valueCodecLaws[Locale]("Locale")
+  valueCodecLaws[Interval]("Interval")
 
   valueCodecNormalisation[Locale]
     ("Locale", Gen.oneOf("sw-KE", "SW-ke", "en", "ar-Arab-EG", "es-419", "de-DE-1996", "x-duka-pos", "!!", "zz"))

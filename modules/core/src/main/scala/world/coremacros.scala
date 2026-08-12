@@ -18,6 +18,8 @@ package world
 import scala.annotation.publicInBinary
 import scala.quoted.*
 
+import boilerplate.codec.ASCII
+
 // Shared verifiers live beside the macros: the literal path and the runtime path run the
 // same arithmetic, and this file depends on nothing the package compiles later.
 @publicInBinary private[world] object civil:
@@ -60,11 +62,12 @@ import scala.quoted.*
     then Left(shown(year, month, day))
     else Right(fromCivil(year, month, day))
 
-  // The extended calendar form only: ordinal and week forms are deliberately not admitted.
+  // The extended calendar form only: ordinal and week forms are deliberately not admitted. The
+  // one reader of the wire grammar, shared by `Date.parse` and the string-literal macro.
   def parse(value: String): Either[String, Int] =
     value.split('-') match
       case Array(y, m, d) if y.length == 4 && m.length == 2 && d.length == 2 =>
-        (y.toIntOption, m.toIntOption, d.toIntOption) match
+        (ASCII.uint(y), ASCII.uint(m), ASCII.uint(d)) match
           case (Some(yy), Some(mm), Some(dd)) => date(yy, mm, dd).left.map(_ => value)
           case _                              => Left(value)
       case _ => Left(value)

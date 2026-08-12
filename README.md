@@ -4,9 +4,9 @@
 [![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
 The concepts commerce runs on - civil time, places and locales, money, quantities,
-identifiers, addresses, and the parties documents address - as Scala 3 types that compute
-exactly and carry their own reference data. Cross-published for the JVM, Scala.js, and
-Scala Native.
+identifiers, addresses, the parties documents address, and the form all of it takes in front
+of a person - as Scala 3 types that compute exactly and carry their own reference data.
+Cross-published for the JVM, Scala.js, and Scala Native.
 
 ```scala
 libraryDependencies += "africa.shuwari" %%% "world" % "<version>"
@@ -89,6 +89,27 @@ Party(Name("Mohammed", "Ali"))
   .identifier(IBAN)(IBAN("GB29 NWBK 6016 1331 9268 19"))
 ```
 
+**Addresses that print, validate, and locate.** Field-by-field capture under each
+territory's own rules - supplied as a value, so an operator with better local knowledge
+overrides them - plus the geometry dispatch actually needs.
+
+```scala
+Address(Territory.KE).line("Sarit Centre").locality("Nairobi").code("00100").display
+cbd.distance(jkia)                                    // 12825 m, to the whole metre
+Box.around(cbd, Measure.Kilometre(5))                 // the locator's prefilter
+```
+
+**Presentation as a first-class half.** Every value has a form a person reads, in their own
+language and conventions, with the culture an explicit argument rather than an ambient
+default.
+
+```scala
+given Culture = Culture.en
+Currency.KES(BigDecimal("1234.5")).display            // KSh 1,234.50
+Date(2026, 7, 23).display(DateStyle.Full)             // Thursday, July 23, 2026
+Currency.KES(BigDecimal("-1250")).display(CurrencyStyle.Symbol, Sign.Accounting)
+```
+
 ---
 
 ## What the types guarantee
@@ -112,6 +133,10 @@ Party(Name("Mohammed", "Ali"))
 ## Status
 
 > Pre-release and under active development. _Expect_ API changes.
+
+Civil time and calendars, places and locales, money and commercial arithmetic, quantities
+and tariffs, identifiers and schemes, addresses and geography, parties, and presentation all
+ship with their full API.
 
 The [documentation site](https://dev.shuwari.africa/world/docs) carries the guides, the
 module map, and the dependency graph.

@@ -19,6 +19,8 @@ import scala.annotation.targetName
 
 import world.*
 
+import boilerplate.codec.Decimal
+
 /** A proportion stored as its exact fraction, where `Percent(16)` is sixteen
   * percent - so the sixteen-versus-nought-point-one-six confusion cannot be
   * expressed. Instances via [[Percent$ Percent]].
@@ -65,7 +67,7 @@ object Percent:
     /** The percentage figure, so `Percent(16).value` is 16, in plain form at
       * every magnitude.
       */
-    def value: BigDecimal = BigDecimal((p * 100).underlying.stripTrailingZeros.toPlainString)
+    def value: BigDecimal = BigDecimal(Decimal.render(p * 100))
     @targetName("ext_of")
     def of[C <: Currency & Singleton](m: Money[C]): Money[C] = Money.apply[C](m.amount * p)
 
@@ -84,8 +86,60 @@ end Percent
   */
 final case class Tax private (components: Vector[Tax.Component]) derives CanEqual
 
-/** Component builders, assembly, and application for [[Tax]]. */
+/** Component builders, assembly, application, and the interchange category
+  * vocabulary for [[Tax]].
+  */
 object Tax:
+  /** The UNTC 5305 duty, tax, and fee category vocabulary as EN 16931 admits it -
+    * the ten codes a compliant invoice line or VAT breakdown carries - with each
+    * category's discipline as data. World models the semantics; documents and
+    * their profiles stay downstream.
+    */
+  enum Category derives CanEqual:
+    case S, Z, E, AE, K, G, O, L, M, B
+
+  /** The per-category discipline for [[Category]], from the EN 16931 validation
+    * artefacts: BR-CL-17 and BR-CL-18 fix the ten codes, each family's -09 rule
+    * the arithmetic, and each -10 rule the reason.
+    */
+  object Category:
+    /** A category's exemption-reason rule: forbidden, required as free text or
+      * code, required with the rule's own stated meaning, or unruled.
+      */
+    enum Reason derives CanEqual:
+      case Forbidden, Free
+      case Fixed(meaning: String)
+      case Unruled
+
+    extension (c: Category)
+      /** Whether the category's tax amount is forced to zero - six of the ten.
+        * `S`, `L`, and `M` compute taxable times rate; `B` carries no amount
+        * rule.
+        */
+      def zero: Boolean = c match
+        case Category.Z | Category.E | Category.AE | Category.K | Category.G | Category.O => true
+        case _                                                                            => false
+
+      /** The exemption-reason discipline - the only discriminator between a
+        * zero-rated supply and an exempt one, which are otherwise identical on
+        * the document.
+        */
+      def reason: Reason = c match
+        case Category.S | Category.Z | Category.L | Category.M => Reason.Forbidden
+        case Category.E                                        => Reason.Free
+        case Category.AE                                       => Reason.Fixed("Reverse charge")
+        case Category.G                                        => Reason.Fixed("Export outside the EU")
+        case Category.K                                        => Reason.Fixed("Intra-community supply")
+        case Category.O                                        => Reason.Fixed("Not subject to VAT")
+        case Category.B                                        => Reason.Unruled
+
+      /** Whether the category excludes all others from one document: `O` alone,
+        * since an out-of-scope invoice is wholly out of scope.
+        */
+      def exclusive: Boolean = c == Category.O
+    end extension
+  end Category
+
   /** One named component of a declared structure. Instances via the
     * [[Tax$ Tax]] builders.
     */

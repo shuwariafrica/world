@@ -195,6 +195,13 @@ class MoneySuite extends munit.FunSuite:
   test("money: division by zero is a value") {
     assertEquals(Currency.KES(1000).divided(0, 2, Rounding.HalfUp), Left(Undefined))
   }
+  // A quotient just below a half boundary: an intermediate-precision division rounds it up and a
+  // second rounding then crosses the boundary the exact quotient never reached.
+  test("money: division rounds once at the named boundary") {
+    assertEquals
+      (Currency.KES(BigDecimal(BigInt(10).pow(37) * 5 - 1)).divided(BigDecimal(BigInt(10).pow(40)), 2, Rounding.HalfUp).map(_.amount),
+       Right(BigDecimal("0.00")))
+  }
 
   test("money: comparison ops") {
     assert
@@ -302,6 +309,9 @@ class MoneySuite extends munit.FunSuite:
         Terms.net(-30) == Left(Terms.Invalid.Days(-30))
           && Terms.net(30).toOption.get.discount(Percent(2), 0) == Left(Terms.Invalid.Window(0)))
   }
+  test("terms: a full discount rate is a typed refusal naming the rate") {
+    assertEquals(Terms.net(30).toOption.get.discount(Percent(100), 10), Left(Terms.Invalid.Rate(BigDecimal(100))))
+  }
   test("terms: the discount reads back as a named pair") {
     assertEquals(terms.discount, Some(Terms.Discount(Percent(2), 10)))
   }
@@ -386,6 +396,77 @@ class MoneySuite extends munit.FunSuite:
   }
   test("money: non-positive periods are a value") {
     assertEquals(Currency.KES(1200).annuity(Ratio(BigDecimal("0.01")), 0, Rounding.HalfUp), Left(Undefined))
+  }
+
+  // The printed schedule behind the annuity: the balance closes at exactly zero and the principal
+  // shares sum to exactly the principal, closing on the final instalment as printed schedules do.
+  test("money: amortisation closes at zero with principals summing exactly") {
+    assert
+      (Currency.KES(1000).amortisation(Ratio(1, 100), 12, Rounding.HalfUp).exists { rows =>
+        rows.length == 12 && rows.last.balance.isZero
+        && rows.foldLeft(Money.zero[Currency.KES])(_ + _.principal) == Currency.KES(1000)
+        && rows.init.forall(_.payment == rows.head.payment)
+      })
+  }
+  test("money: each instalment's interest is the opening balance at the rate") {
+    assert
+      (
+        Currency
+          .KES(1000)
+          .amortisation(Ratio(1, 100), 12, Rounding.HalfUp)
+          .exists
+            (rows =>
+              rows.head.interest == Currency.KES(BigDecimal("10.00"))
+                && rows.head.payment == Currency.KES(BigDecimal("88.85"))
+                && rows.head.principal == Currency.KES(BigDecimal("78.85"))))
+  }
+  test("money: zero-rate amortisation closes on the last instalment") {
+    assert
+      (Currency.KES(100).amortisation(Ratio.Zero, 7, Rounding.HalfUp).exists { rows =>
+        rows.forall(_.interest.isZero) && rows.head.payment == Currency.KES(BigDecimal("14.29"))
+        && rows.last.payment == Currency.KES(BigDecimal("14.26")) && rows.last.balance.isZero
+      })
+  }
+  test("money: amortisation refuses what annuity refuses") {
+    assertEquals(Currency.KES(1000).amortisation(Ratio(1, 100), 0, Rounding.HalfUp), Left(Undefined))
+  }
+
+  // The interval composes with the money algebra: a charge prorates to the covered part of the
+  // period through the existing scaled boundary, with no new operation.
+  test("money: a charge prorates to the covered part of the period") {
+    assert
+      ((Interval.of(Date(2026, 1, 1), Date(2026, 12, 31)), Interval.of(Date(2026, 7, 1), Date(2026, 7, 31))) match
+        case (Right(policy), Right(statement)) =>
+          policy
+            .intersection(statement)
+            .flatMap(covered => Ratio.of(covered.length, policy.length).toOption)
+            .exists(share => Currency.KES(36500).scaled(share, Rounding.HalfUp) == Currency.KES(BigDecimal("3100.00")))
+        case _ => false)
+  }
+
+  test("category: the ten codes carry their own arithmetic discipline") {
+    assert
+      (
+        Tax.Category.values.length == 10 && Tax.Category.values.count(_.zero) == 6 && !Tax.Category.S.zero
+          && !Tax.Category.L.zero && !Tax.Category.M.zero && !Tax.Category.B.zero)
+  }
+  test("category: the reason discipline discriminates zero-rated from exempt") {
+    assert
+      (
+        Tax.Category.Z.reason == Tax.Category.Reason.Forbidden && Tax.Category.E.reason == Tax.Category.Reason.Free
+          && Tax.Category.K.reason == Tax.Category.Reason.Fixed("Intra-community supply")
+          && Tax.Category.B.reason == Tax.Category.Reason.Unruled && Tax.Category.Z.zero == Tax.Category.E.zero)
+  }
+  test("category: out of scope is the one exclusive category") {
+    assert(Tax.Category.O.exclusive && Tax.Category.values.count(_.exclusive) == 1)
+  }
+  // Tax computes once per category and rate group at the named two-decimal boundary (BR-CO-17);
+  // the totals chain is exact sums, and the grouping is the document layer's own fold.
+  test("money: the en 16931 category computation expresses directly") {
+    val taxableS = Currency.KES(1000) + Currency.KES(500)
+    val taxS = Percent(16).of(taxableS).rounded(2, Rounding.HalfUp)
+    val totalWithoutVat = taxableS + Currency.KES(200)
+    assert(taxS == Currency.KES(BigDecimal("240.00")) && (totalWithoutVat + taxS) == Currency.KES(BigDecimal("1940.00")))
   }
 
   test("money: explicit-scale scaling carries sub-minor accrual") {
@@ -653,5 +734,33 @@ class MoneySuite extends munit.FunSuite:
         vat
           .inclusive(Currency.XAU(BigDecimal("1.000")), 3, Rounding.HalfUp)
           .map(t => (t.net.amount, t.tax.amount)) == Right((BigDecimal("0.862"), BigDecimal("0.138"))))
+  }
+  // The Incoterms 2020 vocabulary as Rec 5 sixth edition codes it: eleven rules, the annex's own
+  // transport grouping, and the kind of place each rule names.
+  test("incoterm: eleven rules with the annex grouping") {
+    assert
+      (
+        Incoterm.values.length == 11 && Incoterm.values.count(_.maritime) == 4 && Incoterm.FOB.maritime
+          && !Incoterm.DAP.maritime && Incoterm.DPU.name == "Delivered at Place Unloaded")
+  }
+  test("incoterm: each rule names the kind of place a form must label") {
+    assert
+      (
+        Incoterm.EXW.place == Incoterm.Place.Delivery && Incoterm.FOB.place == Incoterm.Place.Shipment
+          && Incoterm.DDP.place == Incoterm.Place.Destination
+          && Incoterm.values.forall(i => !(i.place == Incoterm.Place.Shipment) || i.maritime))
+  }
+  test("delivery: the quoted pair round trips through its wire form") {
+    assert
+      (
+        Delivery.of(Incoterm.CIF, "Mombasa").map(_.value) == Right("CIF Mombasa")
+          && Delivery.parse("CIF Mombasa") == Delivery.of(Incoterm.CIF, "Mombasa")
+          && Delivery.parse("FCA Nairobi ICD").toOption.exists(_.place == "Nairobi ICD"))
+  }
+  test("delivery: an unknown rule and a missing place are typed refusals") {
+    assert
+      (
+        Delivery.parse("XXX Mombasa").isLeft && Delivery.parse("CIF").isLeft
+          && Delivery.of(Incoterm.EXW, "  ").isLeft)
   }
 end MoneySuite

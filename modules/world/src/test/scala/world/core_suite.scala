@@ -240,6 +240,82 @@ class CoreSuite extends munit.FunSuite:
   test("yearmonth: round trip") {
     assertEquals(YearMonth.parse("2002-03").map(_.value), Right("2002-03"))
   }
+  // Platform integer reads admit Unicode digit classes and signs, so the civil parsers take the
+  // same strict ASCII read every other wire parser here does.
+  test("date: unicode digits and signed components refuse") {
+    assert(Date.parse("٢٠٢٦-07-23").isLeft && Date.parse("+123-01-01").isLeft)
+  }
+  test("time: signed components refuse") {
+    assert(Time.parse("+4:00").isLeft && Time.parse("14:-5").isLeft)
+  }
+  test("yearmonth: unicode digits refuse") {
+    assert(YearMonth.parse("٢٠٠٢-03").isLeft && YearMonth.parse("+200-03").isLeft)
+  }
+
+  test("interval: iso interval form round trips") {
+    assertEquals(Interval.parse("2026-01-01/2026-12-31").map(_.value), Right("2026-01-01/2026-12-31"))
+  }
+  test("interval: reversed bounds are a typed refusal") {
+    assertEquals(Interval.of(Date(2026, 12, 31), Date(2026, 1, 1)), Left(Interval.Invalid("2026-12-31/2026-01-01")))
+  }
+  test("interval: a single day contains itself alone") {
+    val day = Interval(Date(2026, 7, 23))
+    assert(day.length == 1L && day.contains(Date(2026, 7, 23)) && !day.contains(Date(2026, 7, 24)))
+  }
+  test("interval: containment is inclusive at both edges") {
+    assert
+      (
+        Interval
+          .of(Date(2026, 1, 1), Date(2026, 12, 31))
+          .exists(i => i.contains(Date(2026, 1, 1)) && i.contains(Date(2026, 12, 31)) && !i.contains(Date(2027, 1, 1))))
+  }
+  test("interval: length counts both edges") {
+    assertEquals(Interval.of(Date(2026, 1, 1), Date(2026, 1, 31)).map(_.length), Right(31L))
+  }
+  test("interval: overlap yields the shared days") {
+    assert
+      ((Interval.of(Date(2026, 1, 1), Date(2026, 12, 31)), Interval.of(Date(2026, 7, 1), Date(2027, 6, 30))) match
+        case (Right(a), Right(b)) => a.overlaps(b) && a.intersection(b).map(_.value) == Some("2026-07-01/2026-12-31")
+        case _                    => false)
+  }
+  test("interval: disjoint intervals share nothing") {
+    assert
+      ((Interval.of(Date(2026, 1, 1), Date(2026, 1, 31)), Interval.of(Date(2026, 3, 1), Date(2026, 3, 31))) match
+        case (Right(a), Right(b)) => !a.overlaps(b) && a.intersection(b) == None
+        case _                    => false)
+  }
+  test("interval: wire negatives refuse") {
+    assert
+      (
+        Interval.parse("2026-01-01").isLeft && Interval.parse("2026-12-31/2026-01-01").isLeft
+          && Interval.parse("2026-13-01/2026-12-31").isLeft)
+  }
+  test("interval: order runs by start then end") {
+    assert
+      ((Interval.of(Date(2026, 1, 1), Date(2026, 6, 30)), Interval.of(Date(2026, 1, 1), Date(2026, 12, 31))) match
+        case (Right(a), Right(b)) => Ordering[Interval].lt(a, b)
+        case _                    => false)
+  }
+
+  test("classified: severity orders and folds to the dominant class") {
+    assert
+      (
+        Ordering[Classification].max(Classification.None, Classification.Personal) == Classification.Personal
+          && Vector(Classification.None, Classification.Special, Classification.Personal).max == Classification.Special)
+  }
+  test("classified: value types carry no personal data") {
+    assert(summon[Classified[Date]].classification == Classification.None && summon[Classified[Date]].fields.isEmpty)
+  }
+  test("classified: a consumer type joins with one line") {
+    assertEquals(Classified.of[CoreSuite.Diagnosis](Classification.Special).classification, Classification.Special)
+  }
+  test("locale: private-use content never reads as script or region") {
+    assert(Locale.parse("en-x-latn").map(_.script) == Right(None) && Locale.parse("en-x-latn").map(_.region) == Right(None))
+  }
+  test("locale: the accessors stop at the extension boundary") {
+    val tagged = Locale.parse("en-GB-t-sc-latn").toOption
+    assert(tagged.exists(l => l.script == None && l.region == Some(Territory.GB)))
+  }
 
   test("date: years counts completed anniversaries") {
     assert(dob.years(Date(2026, 7, 26)) == 18 && dob.years(Date(2026, 7, 25)) == 17)
@@ -410,3 +486,7 @@ class CoreSuite extends munit.FunSuite:
     assert(Locale.parse("en-\u0664\u0661\u0669").isLeft && Currency.of("BONG\u0410", 0).isLeft)
   }
 end CoreSuite
+
+object CoreSuite:
+  // A consumer type standing in for the special-category data world itself ships none of.
+  final case class Diagnosis(code: String)

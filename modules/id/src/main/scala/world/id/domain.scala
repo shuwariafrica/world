@@ -16,11 +16,12 @@
 package world.id
 
 import scala.annotation.tailrec
+import scala.annotation.targetName
 
 import world.*
 
 import boilerplate.ValueCodec
-import boilerplate.codec.Ascii
+import boilerplate.codec.ASCII
 import boilerplate.nullable.*
 
 /** A DNS domain name in lower case. An internationalised domain has two written
@@ -53,20 +54,22 @@ object Domain:
   private def wellFormed(label: String): Boolean =
     label.nonEmpty && octets(label) <= 63 && octets(punycode.alabel(label)) <= 63
       && !label.startsWith("-") && !label.endsWith("-")
-      && label.forall(ch => world.ascii.letterOrDigit(ch) || ch == '-' || ch > 127)
+      && label.forall(ch => ASCII.isAlphanumeric(ch) || ch == '-' || ch > 127)
 
   /** Parses a name and lower-cases its ASCII. Internationalised labels are kept
     * as written: UTS 46 case folding and the NFC form RFC 5891 requires are the
     * caller's to apply before parsing.
     */
   def parse(raw: String): Either[Invalid, Domain] =
-    val lowered = Ascii.lower(raw.trim.unsafe)
+    val lowered = ASCII.lower(raw.trim.unsafe)
     if lowered.startsWith(".") || lowered.endsWith(".") || lowered.contains("..")
       || !lowered.split('.').forall(wellFormed)
     then Left(Invalid.Label(raw))
     else if octets(lowered) > 255 || octets(lowered.split('.').map(punycode.alabel).mkString(".")) > 255
     then Left(Invalid.TooLong(raw))
     else Right(lowered)
+
+  def same(d: Domain, o: Domain): Boolean = d.same(o)
 
   extension (d: Domain)
     /** The name as stored, lower-cased - what [[Domain.parse]] reads back. */
@@ -87,6 +90,7 @@ object Domain:
     /** Whether both names are the same domain, whichever way each was written.
       * `==` answers the narrower question of whether they were written alike.
       */
+    @targetName("ext_same")
     def same(o: Domain): Boolean = Domain.ascii(d) == Domain.ascii(o)
   end extension
 

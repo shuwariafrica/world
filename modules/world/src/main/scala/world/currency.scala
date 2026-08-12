@@ -15,6 +15,8 @@
  ****************************************************************************/
 package world
 
+import boilerplate.codec.ASCII
+
 /** A monetary unit: an ISO 4217 currency, fund, or precious metal from the
   * curated register, or a unit the application mints for itself - a loyalty
   * point, a community currency - which gets the whole
@@ -52,7 +54,7 @@ object Currency extends Currencies:
     * units are values the application already holds and never resolve here.
     */
   def from(code: String): Either[Unknown, Currency] =
-    val i = packed.indexOf(tables.currencyCode, 3, tables.currencies, ascii.upper(code))
+    val i = packed.indexOf(tables.currencyCode, 3, tables.currencies, ASCII.upper(code))
     if i >= 0 then Right(i) else Left(Unknown(code))
 
   /** Resolves an ISO 4217 numeric code. */
@@ -67,8 +69,8 @@ object Currency extends Currencies:
     * so a minted unit cannot impersonate an ISO currency.
     */
   def of(code: String, digits: Int): Either[Invalid, Currency] =
-    val folded = ascii.upper(code.trim.nn)
-    val shaped = folded.length >= 2 && folded.length <= 8 && ascii.alphanumeric(folded)
+    val folded = ASCII.upper(code.trim.nn)
+    val shaped = folded.length >= 2 && folded.length <= 8 && ASCII.isAlphanumeric(folded)
     if !shaped || digits < 0 || digits > 9 then Left(Invalid(code))
     else if packed.indexOf(tables.currencyCode, 3, tables.currencies, folded) >= 0 then Left(Invalid(code))
     else Right(Custom(folded, digits))
@@ -156,7 +158,7 @@ object Currency extends Currencies:
     val all: Vector[Historic] = (0 until tables.historic).toVector
 
     def from(code: String): Either[Unknown, Historic] =
-      val i = packed.indexOf(tables.historicCode, 3, tables.historic, ascii.upper(code))
+      val i = packed.indexOf(tables.historicCode, 3, tables.historic, ASCII.upper(code))
       if i >= 0 then Right(i) else Left(Unknown(code))
 
     private[world] def index(h: Historic): Int = h
