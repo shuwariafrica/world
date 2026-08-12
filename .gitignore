@@ -7,7 +7,6 @@
 !.gitignore
 !.gitkeep
 !.gitmodules
-!.sbtopts
 !.scalafix.conf
 !.scalafmt.conf
 !docs/**/*.md

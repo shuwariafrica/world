@@ -45,7 +45,7 @@ object Bands:
     sealed abstract class Open private[Bands] () extends Invalid("only the last band may be open") derives CanEqual
     case object Open extends Open()
 
-  def band(upTo: BigDecimal, rate: Percent): Band = Band(Some(upTo), rate)
+  def upTo(limit: BigDecimal, rate: Percent): Band = Band(Some(limit), rate)
   def open(rate: Percent): Band = Band(None, rate)
 
   /** Assembles a scale: limits strictly ascending from zero, only the last band

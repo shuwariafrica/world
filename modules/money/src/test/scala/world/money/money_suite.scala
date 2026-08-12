@@ -36,7 +36,7 @@ class MoneySuite extends munit.FunSuite:
   private val invoice = withTax.exclusive(Currency.KES(BigDecimal("1000.00")), Rounding.HalfUp)
   private val terms = Terms.net(30).toOption.get.discount(Percent(2), 10).toOption.get
   private val scale =
-    Bands.of(Bands.band(BigDecimal(1000), Percent(10)), Bands.band(BigDecimal(2000), Percent(20)), Bands.open(Percent(30))).toOption.get
+    Bands.of(Bands.upTo(BigDecimal(1000), Percent(10)), Bands.upTo(BigDecimal(2000), Percent(20)), Bands.open(Percent(30))).toOption.get
   private val delivery = Charges
     .of
       (BigDecimal(0),
@@ -327,19 +327,19 @@ class MoneySuite extends munit.FunSuite:
     assertEquals(Bands.of(Bands.open(Percent(100))), Left(Bands.Invalid.Rate(BigDecimal(100))))
   }
   test("bands: an open band before the last cannot construct") {
-    assertEquals(Bands.of(Bands.open(Percent(10)), Bands.band(BigDecimal(100), Percent(20))), Left(Bands.Invalid.Open))
+    assertEquals(Bands.of(Bands.open(Percent(10)), Bands.upTo(BigDecimal(100), Percent(20))), Left(Bands.Invalid.Open))
   }
   test("bands: descending limits cannot construct") {
     assertEquals
       (
-        Bands.of(Bands.band(BigDecimal(2000), Percent(10)), Bands.band(BigDecimal(1000), Percent(20)), Bands.open(Percent(30))),
+        Bands.of(Bands.upTo(BigDecimal(2000), Percent(10)), Bands.upTo(BigDecimal(1000), Percent(20)), Bands.open(Percent(30))),
         Left
           (Bands.Invalid.Order(BigDecimal(1000)))
       )
   }
   test("bands: a non-positive first limit cannot construct") {
     assertEquals
-      (Bands.of(Bands.band(BigDecimal(-1000), Percent(10)), Bands.open(Percent(30))), Left(Bands.Invalid.Order(BigDecimal(-1000))))
+      (Bands.of(Bands.upTo(BigDecimal(-1000), Percent(10)), Bands.open(Percent(30))), Left(Bands.Invalid.Order(BigDecimal(-1000))))
   }
   test("bands: negative amounts mirror as the contra entry") {
     assert
@@ -352,7 +352,7 @@ class MoneySuite extends munit.FunSuite:
     assertEquals
       (
         Bands
-          .of(Bands.band(BigDecimal(1000), Percent(10)), Bands.open(Percent(30)))
+          .of(Bands.upTo(BigDecimal(1000), Percent(10)), Bands.open(Percent(30)))
           .toOption
           .get
           .gross(Currency.KES(BigDecimal("1000.01")), Rounding.HalfUp)

@@ -14,6 +14,12 @@ and carry their own reference data:
 - **money** - amounts closed over their currency, tax structures, graduated bands, and
   legally-correct cash rounding
 - **quantities** - measures and unit prices, block tariffs, and rate cards
+- **identifiers** - bank, telephone, and internet identifiers checked as far offline as
+  their standards allow, over a scheme concept your own registrations declare against
+- **addresses** - postal addresses structured, validated, and printed by the territory's
+  own rules, with the coordinate a pin-addressed delivery carries
+- **parties** - the person or organisation a document is addressed to, with their names,
+  contacts, addresses, and registrations on one value
 
 Every module cross-publishes for the JVM, Scala.js, and Scala Native. Territory,
 language, script, currency, and locale facts are curated from their issuing authorities
@@ -62,12 +68,15 @@ taken from, so an artefact can state which vintage of each source it holds. See
 | weighing, measuring, or metering | [Quantities and tariffs](quantities.md) |
 | handling dates, ages, or calendars | [Civil time and calendars](time.md) |
 | localising, or resolving territories | [Places, locales, and currencies](places.md) |
+| capturing bank, telephone, or email identifiers | [Identifiers and schemes](identifiers.md) |
+| capturing or printing postal addresses | [Addresses and coordinates](addresses.md) |
+| modelling customers, suppliers, or counterparties | [Names, organisations, and parties](parties.md) |
 | changing `world` itself | [Contributing](contributing.md) |
 
 ## Status
 
-Civil time and calendars, places and locales, money, and quantities ship with their full
-API. Further domains follow in later releases.
+Civil time and calendars, places and locales, money, quantities, identifiers, addresses,
+and parties ship with their full API. Further domains follow in later releases.
 
 ## Licence
 

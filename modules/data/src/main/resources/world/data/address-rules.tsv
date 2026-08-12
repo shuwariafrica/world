@@ -1,0 +1,266 @@
+# dataset: address-rules
+# source: google-address-data-service
+# authority: Google, the Address Data Service the libaddressinput project names
+# origin: ssl-address/data/<territory>, the live service record for every territory it lists
+# pin: 2026-08-10
+# published: 2026-08-10
+# licence: CC-BY-4.0
+# licence-url: https://creativecommons.org/licenses/by/4.0/
+# licence-note: the libaddressinput repository states verbatim that its data is licensed under the CC-BY 4.0
+# licence-verified: 2026-08-10
+# cadence: ad hoc
+# compiled-in: true
+# columns: territory,format,required,postcode
+AC	%N%n%O%n%A%n%C%n%Z		ASCN 1ZZ
+AD	%N%n%O%n%A%n%Z %C		AD[1-7]0\d
+AE	%N%n%O%n%A%n%S	AS	
+AF	%N%n%O%n%A%n%C%n%Z		\d{4}
+AG		A	
+AI	%N%n%O%n%A%n%C%n%Z		(?:AI-)?2640
+AL	%N%n%O%n%A%n%Z%n%C		\d{4}
+AM	%N%n%O%n%A%n%Z%n%C%n%S		(?:37)?\d{4}
+AO			
+AQ			
+AR	%N%n%O%n%A%n%Z %C%n%S		[A-HJ-NP-Z]\d{4}[A-Z]{3}
+AS	%N%n%O%n%A%n%C %S %Z	ACSZ	(96799)(?:[ \-](\d{4}))?
+AT	%O%n%N%n%A%n%Z %C	ACZ	\d{4}
+AU	%O%n%N%n%A%n%C %S %Z	ACSZ	\d{4}
+AW			
+AX	%O%n%N%n%A%nAX-%Z %C%nÅLAND	ACZ	22\d{3}
+AZ	%N%n%O%n%A%nAZ %Z %C		\d{4}
+BA	%N%n%O%n%A%n%Z %C		\d{5}
+BB	%N%n%O%n%A%n%C, %S %Z		BB\d{5}
+BD	%N%n%O%n%A%n%C - %Z		\d{4}
+BE	%O%n%N%n%A%n%Z %C	ACZ	\d{4}
+BF	%N%n%O%n%A%n%C %X		
+BG	%N%n%O%n%A%n%Z %C		\d{4}
+BH	%N%n%O%n%A%n%C %Z		(?:1[0-2]|[1-9])\d{2}
+BI			
+BJ			
+BL	%O%n%N%n%A%n%Z %C %X	ACZ	9[78][01]\d{2}
+BM	%N%n%O%n%A%n%C %Z		[A-Z]{2} ?[A-Z0-9]{2}
+BN	%N%n%O%n%A%n%C %Z		[A-Z]{2} ?\d{4}
+BO			
+BQ			
+BR	%O%n%N%n%A%n%D%n%C-%S%n%Z	ASCZ	\d{5}-?\d{3}
+BS	%N%n%O%n%A%n%C, %S		
+BT	%N%n%O%n%A%n%C %Z		\d{5}
+BV			
+BW			
+BY	%O%n%N%n%A%n%Z, %C%n%S		\d{6}
+BZ			
+CA	%N%n%O%n%A%n%C %S %Z	ACSZ	[ABCEGHJKLMNPRSTVXY]\d[ABCEGHJ-NPRSTV-Z] ?\d[ABCEGHJ-NPRSTV-Z]\d
+CC	%O%n%N%n%A%n%C %S %Z		6799
+CD			
+CF			
+CG			
+CH	%O%n%N%n%A%nCH-%Z %C	ACZ	\d{4}
+CI	%N%n%O%n%X %A %C %X		
+CK			
+CL	%N%n%O%n%A%n%Z %C%n%S		\d{7}
+CM			
+CN	%Z%n%S%C%D%n%A%n%O%n%N	ACSZ	\d{6}
+CO	%N%n%O%n%A%n%D%n%C, %S, %Z	AS	\d{6}
+CR	%N%n%O%n%A%n%S, %C%n%Z	ACS	\d{4,5}|\d{3}-\d{4}
+CU	%N%n%O%n%A%n%C %S%n%Z		\d{5}
+CV	%N%n%O%n%A%n%Z %C%n%S		\d{4}
+CW			
+CX	%O%n%N%n%A%n%C %S %Z		6798
+CY	%N%n%O%n%A%n%Z %C		\d{4}
+CZ	%N%n%O%n%A%n%Z %C	ACZ	\d{3} ?\d{2}
+DE	%N%n%O%n%A%n%Z %C	ACZ	\d{5}
+DJ			
+DK	%N%n%O%n%A%n%Z %C	ACZ	\d{4}
+DM			
+DO	%N%n%O%n%A%n%Z %C		\d{5}
+DZ	%N%n%O%n%A%n%Z %C		\d{5}
+EC	%N%n%O%n%A%n%Z%n%C		\d{6}
+EE	%N%n%O%n%A%n%Z %C %S	ACZ	\d{5}
+EG	%N%n%O%n%A%n%C%n%S%n%Z		\d{7}|\d{5}
+EH	%N%n%O%n%A%n%Z %C		\d{5}
+ER			
+ES	%N%n%O%n%A%n%Z %C %S	ACSZ	\d{5}
+ET	%N%n%O%n%A%n%Z %C		\d{4}
+FI	%O%n%N%n%A%nFI-%Z %C	ACZ	\d{5}
+FJ			
+FK	%N%n%O%n%A%n%C%n%Z	ACZ	FIQQ 1ZZ
+FM	%N%n%O%n%A%n%C %S %Z	ACSZ	(9694[1-4])(?:[ \-](\d{4}))?
+FO	%N%n%O%n%A%nFO%Z %C		\d{3}
+FR	%O%n%N%n%A%n%Z %C	ACZ	\d{2} ?\d{3}
+GA			
+GB	%N%n%O%n%A%n%C%n%Z	ACZ	GIR ?0AA|(?:(?:AB|AL|B|BA|BB|BD|BF|BH|BL|BN|BR|BS|BT|BX|CA|CB|CF|CH|CM|CO|CR|CT|CV|CW|DA|DD|DE|DG|DH|DL|DN|DT|DY|E|EC|EH|EN|EX|FK|FY|G|GL|GY|GU|HA|HD|HG|HP|HR|HS|HU|HX|IG|IM|IP|IV|JE|KA|KT|KW|KY|L|LA|LD|LE|LL|LN|LS|LU|M|ME|MK|ML|N|NE|NG|NN|NP|NR|NW|OL|OX|PA|PE|PH|PL|PO|PR|RG|RH|RM|S|SA|SE|SG|SK|SL|SM|SN|SO|SP|SR|SS|ST|SW|SY|TA|TD|TF|TN|TQ|TR|TS|TW|UB|W|WA|WC|WD|WF|WN|WR|WS|WV|YO|ZE)(?:\d[\dA-Z]? ?\d[ABD-HJLN-UW-Z]{2}))|BFPO ?\d{1,4}
+GD			
+GE	%N%n%O%n%A%n%Z %C		\d{4}
+GF	%O%n%N%n%A%n%Z %C %X	ACZ	9[78]3\d{2}
+GG	%N%n%O%n%A%n%C%nGUERNSEY%n%Z	ACZ	GY\d[\dA-Z]? ?\d[ABD-HJLN-UW-Z]{2}
+GH			
+GI	%N%n%O%n%A%nGIBRALTAR%n%Z	A	GX11 1AA
+GL	%N%n%O%n%A%n%Z %C	ACZ	39\d{2}
+GM			
+GN	%N%n%O%n%Z %A %C		\d{3}
+GP	%O%n%N%n%A%n%Z %C %X	ACZ	9[78][01]\d{2}
+GQ			
+GR	%N%n%O%n%A%n%Z %C	ACZ	\d{3} ?\d{2}
+GS	%N%n%O%n%A%n%n%C%n%Z	ACZ	SIQQ 1ZZ
+GT	%N%n%O%n%A%n%Z- %C		\d{5}
+GU	%N%n%O%n%A%n%C %Z	ACZ	(969(?:[12]\d|3[12]))(?:[ \-](\d{4}))?
+GW	%N%n%O%n%A%n%Z %C		\d{4}
+GY			
+HK	%S%n%C%n%A%n%O%n%N	AS	
+HM	%O%n%N%n%A%n%C %S %Z		\d{4}
+HN	%N%n%O%n%A%n%C, %S%n%Z	ACS	\d{5}
+HR	%N%n%O%n%A%nHR-%Z %C		\d{5}
+HT	%N%n%O%n%A%nHT%Z %C		\d{4}
+HU	%N%n%O%n%C%n%A%n%Z	ACZ	\d{4}
+ID	%N%n%O%n%A%n%C%n%S %Z	AS	\d{5}
+IE	%N%n%O%n%A%n%D%n%C%n%S%n%Z		[\dA-Z]{3} ?[\dA-Z]{4}
+IL	%N%n%O%n%A%n%C %Z		\d{5}(?:\d{2})?
+IM	%N%n%O%n%A%n%C%n%Z	ACZ	IM\d[\dA-Z]? ?\d[ABD-HJLN-UW-Z]{2}
+IN	%N%n%O%n%A%n%T%n%F%n%L%n%C %Z%n%S	ACSZ	\d{6}
+IO	%N%n%O%n%A%n%C%n%Z	ACZ	BBND 1ZZ
+IQ	%O%n%N%n%A%n%C, %S%n%Z	ACS	\d{5}
+IR	%O%n%N%n%S%n%C, %D%n%A%n%Z		\d{5}-?\d{5}
+IS	%N%n%O%n%A%n%Z %C		\d{3}
+IT	%N%n%O%n%A%n%Z %C %S	ACSZ	\d{5}
+JE	%N%n%O%n%A%n%C%nJERSEY%n%Z	ACZ	JE\d[\dA-Z]? ?\d[ABD-HJLN-UW-Z]{2}
+JM	%N%n%O%n%A%n%C%n%S %X	ACS	
+JO	%N%n%O%n%A%n%C %Z		\d{5}
+JP	〒%Z%n%S%n%A%n%O%n%N	ASZ	\d{3}-?\d{4}
+KE	%N%n%O%n%A%n%C%n%Z		\d{5}
+KG	%N%n%O%n%A%n%Z %C		\d{6}
+KH	%N%n%O%n%A%n%C %Z		\d{5,6}
+KI	%N%n%O%n%A%n%S%n%C		
+KM			
+KN	%N%n%O%n%A%n%C, %S	ACS	
+KP	%Z%n%S%n%C%n%A%n%O%n%N		
+KR	%S %C%D%n%A%n%O%n%N%n%Z	ACSZ	\d{5}
+KW	%N%n%O%n%A%n%Z %C		\d{5}
+KY	%N%n%O%n%A%n%S %Z	AS	KY\d-\d{4}
+KZ	%Z%n%S%n%C%n%A%n%O%n%N		\d{6}
+LA	%N%n%O%n%A%n%Z %C		\d{5}
+LB	%N%n%O%n%A%n%C %Z		(?:\d{4})(?: ?(?:\d{4}))?
+LC			
+LI	%O%n%N%n%A%nFL-%Z %C	ACZ	948[5-9]|949[0-8]
+LK	%N%n%O%n%A%n%C%n%Z		\d{5}
+LR	%N%n%O%n%A%n%Z %C		\d{4}
+LS	%N%n%O%n%A%n%C %Z		\d{3}
+LT	%O%n%N%n%A%nLT-%Z %C %S	ACZ	\d{5}
+LU	%O%n%N%n%A%nL-%Z %C	ACZ	\d{4}
+LV	%N%n%O%n%A%n%S%n%C, %Z	ACZ	LV-\d{4}
+LY			
+MA	%N%n%O%n%A%n%Z %C		\d{5}
+MC	%N%n%O%n%A%nMC-%Z %C %X		980\d{2}
+MD	%N%n%O%n%A%nMD-%Z %C		\d{4}
+ME	%N%n%O%n%A%n%Z %C		8\d{4}
+MF	%O%n%N%n%A%n%Z %C %X	ACZ	9[78][01]\d{2}
+MG	%N%n%O%n%A%n%Z %C		\d{3}
+MH	%N%n%O%n%A%n%C %S %Z	ACSZ	(969[67]\d)(?:[ \-](\d{4}))?
+MK	%N%n%O%n%A%n%Z %C		\d{4}
+ML			
+MM	%N%n%O%n%A%n%C, %Z		\d{5}
+MN	%N%n%O%n%A%n%C%n%S %Z		\d{5}
+MO	%A%n%O%n%N	A	
+MP	%N%n%O%n%A%n%C %S %Z	ACSZ	(9695[012])(?:[ \-](\d{4}))?
+MQ	%O%n%N%n%A%n%Z %C %X	ACZ	9[78]2\d{2}
+MR			
+MS			
+MT	%N%n%O%n%A%n%C %Z		[A-Z]{3} ?\d{2,4}
+MU	%N%n%O%n%A%n%Z%n%C		\d{3}(?:\d{2}|[A-Z]{2}\d{3})
+MV	%N%n%O%n%A%n%C %Z		\d{5}
+MW	%N%n%O%n%A%n%C %X		
+MX	%N%n%O%n%A%n%D%n%Z %C, %S	ACSZ	\d{5}
+MY	%N%n%O%n%A%n%D%n%Z %C%n%S	ACZ	\d{5}
+MZ	%N%n%O%n%A%n%Z %C%S		\d{4}
+NA	%N%n%O%n%A%n%C%n%Z		\d{5}
+NC	%O%n%N%n%A%n%Z %C %X	ACZ	988\d{2}
+NE	%N%n%O%n%A%n%Z %C		\d{4}
+NF	%O%n%N%n%A%n%C %S %Z		2899
+NG	%N%n%O%n%A%n%D%n%C %Z%n%S		\d{6}
+NI	%N%n%O%n%A%n%Z%n%C, %S		\d{5}
+NL	%O%n%N%n%A%n%Z %C	ACZ	[1-9]\d{3} ?(?:[A-RT-Z][A-Z]|S[BCE-RT-Z])
+NO	%N%n%O%n%A%n%Z %C	ACZ	\d{4}
+NP	%N%n%O%n%A%n%C %Z		\d{5}
+NR	%N%n%O%n%A%n%S	AS	
+NU			
+NZ	%N%n%O%n%A%n%D%n%C %Z	ACDZ	\d{4}
+OM	%N%n%O%n%A%n%Z%n%C		(?:PC )?\d{3}
+PA	%N%n%O%n%A%n%C%n%S		
+PE	%N%n%O%n%A%n%C %Z%n%S		(?:LIMA \d{1,2}|CALLAO 0?\d)|[0-2]\d{4}
+PF	%N%n%O%n%A%n%Z %C %S	ACSZ	987\d{2}
+PG	%N%n%O%n%A%n%C %Z %S	ACS	\d{3}
+PH	%N%n%O%n%A%n%D, %C%n%Z %S		\d{4}
+PK	%N%n%O%n%A%n%D%n%C-%Z		\d{5}
+PL	%N%n%O%n%A%n%Z %C	ACZ	\d{2}-\d{3}
+PM	%O%n%N%n%A%n%Z %C %X	ACZ	9[78]5\d{2}
+PN	%N%n%O%n%A%n%C%n%Z	ACZ	PCRN 1ZZ
+PR	%N%n%O%n%A%n%C PR %Z	ACZ	(00[679]\d{2})(?:[ \-](\d{4}))?
+PS			
+PT	%N%n%O%n%A%n%Z %C	ACZ	\d{4}-\d{3}
+PW	%N%n%O%n%A%n%C %S %Z	ACSZ	(969(?:39|40))(?:[ \-](\d{4}))?
+PY	%N%n%O%n%A%n%Z %C		\d{6}
+QA			
+RE	%O%n%N%n%A%n%Z %C %X	ACZ	9[78]4\d{2}
+RO	%N%n%O%n%A%n%Z %S %C	ACZ	\d{6}
+RS	%N%n%O%n%A%n%Z %C		\d{5,6}
+RU	%N%n%O%n%A%n%C%n%S%n%Z	ACSZ	\d{6}
+RW			
+SA	%N%n%O%n%A%n%C %Z		\d{5}
+SB			
+SC	%N%n%O%n%A%n%C%n%S		
+SD	%N%n%O%n%A%n%C%n%Z		\d{5}
+SE	%O%n%N%n%A%nSE-%Z %C	ACZ	\d{3} ?\d{2}
+SG	%N%n%O%n%A%nSINGAPORE %Z	AZ	\d{6}
+SH	%N%n%O%n%A%n%C%n%Z	ACZ	(?:ASCN|STHL) 1ZZ
+SI	%N%n%O%n%A%nSI-%Z %C		\d{4}
+SJ	%N%n%O%n%A%n%Z %C	ACZ	\d{4}
+SK	%N%n%O%n%A%n%Z %C	ACZ	\d{3} ?\d{2}
+SL			
+SM	%N%n%O%n%A%n%Z %C	AZ	4789\d
+SN	%N%n%O%n%A%n%Z %C		\d{5}
+SO	%N%n%O%n%A%n%C, %S %Z	ACS	[A-Z]{2} ?\d{5}
+SR	%N%n%O%n%A%n%C%n%S		
+SS			
+ST			
+SV	%N%n%O%n%A%n%Z-%C%n%S	ACS	[1-3][1-7][0-2]\d
+SX			
+SY			
+SZ	%N%n%O%n%A%n%C%n%Z		[HLMS]\d{3}
+TA	%N%n%O%n%A%n%C%n%Z		TDCU 1ZZ
+TC	%N%n%O%n%A%n%C%n%Z	ACZ	TKCA 1ZZ
+TD			
+TF			
+TG			
+TH	%N%n%O%n%A%n%D %C%n%S %Z		\d{5}
+TJ	%N%n%O%n%A%n%Z %C		\d{6}
+TK			
+TL			
+TM	%N%n%O%n%A%n%Z %C		\d{6}
+TN	%N%n%O%n%A%n%Z %C		\d{4}
+TO			
+TR	%N%n%O%n%A%n%Z %C/%S	ACZ	\d{5}
+TT	%N%n%O%n%A%n%C%n%Z		\d{6}
+TV	%N%n%O%n%A%n%C%n%S		
+TW	%Z%n%S%C%n%A%n%O%n%N	ACSZ	\d{3}(?:\d{2,3})?
+TZ	%N%n%O%n%A%n%Z %C		\d{4,5}
+UA	%N%n%O%n%A%n%C%n%S%n%Z	ACZ	\d{5}
+UG			
+UM	%N%n%O%n%A%n%C %S %Z	ACS	96898
+US	%N%n%O%n%A%n%C, %S %Z	ACSZ	(\d{5})(?:[ \-](\d{4}))?
+UY	%N%n%O%n%A%n%Z %C %S		\d{5}
+UZ	%N%n%O%n%A%n%Z %C%n%S		\d{6}
+VA	%N%n%O%n%A%n%Z %C		00120
+VC	%N%n%O%n%A%n%C %Z		VC\d{4}
+VE	%N%n%O%n%A%n%C %Z, %S	ACS	\d{4}
+VG	%N%n%O%n%A%n%C%n%Z	A	VG\d{4}
+VI	%N%n%O%n%A%n%C %S %Z	ACSZ	(008(?:(?:[0-4]\d)|(?:5[01])))(?:[ \-](\d{4}))?
+VN	%N%n%O%n%A%n%C%n%S %Z	AS	\d{5}\d?
+VU			
+WF	%O%n%N%n%A%n%Z %C %X	ACZ	986\d{2}
+WS			
+XK	%N%n%O%n%A%n%Z %C		[1-7]\d{4}
+YE			
+YT	%O%n%N%n%A%n%Z %C %X	ACZ	976\d{2}
+ZA	%N%n%O%n%A%n%D%n%C%n%Z	ACZ	\d{4}
+ZM	%N%n%O%n%A%n%Z %C		\d{5}
+ZW			
+ZZ	%N%n%O%n%A%n%C	AC	

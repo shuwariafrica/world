@@ -211,6 +211,13 @@ jobs:
         continue-on-error: true
         run: sbt --server headerCheckAll
 
+      # Defence in depth behind the tag that serialises the rewriting tasks: a source a formatting
+      # pass emptied would otherwise reach a review looking like a deletion.
+      - name: Verify Sources Survived Formatting
+        id: sources
+        continue-on-error: true
+        run: sbt --server sourcesIntact
+
       - name: Check for failures
         if: always()
         run: |
@@ -218,6 +225,7 @@ jobs:
           [[ "${{ steps.scalafmt.outcome }}" == "failure" ]] && failed="$failed scalafmtCheckAll"
           [[ "${{ steps.scalafix.outcome }}" == "failure" ]] && failed="$failed scalafixAll"
           [[ "${{ steps.headers.outcome }}" == "failure" ]] && failed="$failed headerCheckAll"
+          [[ "${{ steps.sources.outcome }}" == "failure" ]] && failed="$failed sourcesIntact"
           if [[ -n "$failed" ]]; then
             echo "::error::Static analysis checks failed:$failed"
             exit 1

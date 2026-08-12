@@ -1,0 +1,49 @@
+# Google libaddressinput address metadata - structural rules for the territories world's address
+#   surface and the interchange set need. Retrieved 2026-08-05.
+# PRIMARY SOURCE (the 'live_' columns): Google's Address Data Service, the authority the
+#   libaddressinput README names. https://chromium-i18n.appspot.com/ssl-address/data/<CC> now 302-
+#   redirects to https://www.gstatic.com/chrome/autofill/libaddressinput/chromium-i18n/ssl-address/data/<CC>
+# SNAPSHOT (the 'snap_fmt' column): .ext/libaddressinput HEAD 81eb9628382b07d371d8ea0b11badf7de3857fd5
+#   (2026-05-15), testdata/countryinfo.txt. THE SNAPSHOT IS STALE: of the 20 territories in this file,
+#   14 differ from the live service - see the snap_differs column, which is authoritative here. (An
+#   earlier exploratory pass over a 10-territory sample found 8 differing, plus the data/ZZ default
+#   record, which also differs; that sample figure is not this file's count.) See FACTS_address.md SS5.
+#   Re-checked 2026-08-05 by lane 11 against the live service: no row had changed.
+# LICENCE: repository README verbatim - 'Source code licensed under the Apache 2.0. Data licensed
+#   under the CC-BY 4.0.' See FACTS_address.md SS4.
+# Field legend (project wiki 'AddressValidationMetadata' + common/.../AddressDataKey.java):
+#   fmt      format template; %-prefixed one-letter field tokens, %n = line break; ALSO defines which
+#            fields are allowed - a field absent from fmt must not be filled.
+#   lfmt     latin-script alternative format where the country defines one.
+#   require  one-letter fields that must be non-empty. Country is always required and never listed.
+#   upper    one-letter fields upper-cased for postal presentation.
+#   zip      AT COUNTRY LEVEL a Java-compatible regex matching all postal codes in the country;
+#            BELOW country level the postal-code PREFIX expected in that region.
+#   sub_keys '~'-separated child region keys; its presence is what indicates sub-region data exists.
+# Field tokens (common/.../AddressField.java): R country, N recipient, O organisation, A street
+#   address, 1/2 address line 1/2, D dependent locality, C locality, S admin area, Z postal code,
+#   X sorting code, T landmark address descriptor, F landmark affix, L landmark name.
+#   The C++ parser (cpp/src/address_field_util.cc:38-48) knows only R S C D X Z A O N - not T F L.
+# Absent values fall back to the live data/ZZ record: fmt=%N%n%O%n%A%n%C require=AC upper=C
+# snap_sub_records counts records below data/<cc> in the pinned snapshot (0 = structure only).
+territory,name,live_fmt,live_lfmt,live_require,live_upper,live_zip,live_zipex,live_sub_keys_present,snap_sub_records,snap_fmt,snap_differs,state_name_type,zip_name_type
+KE,KENYA,%N%n%O%n%A%n%C%n%Z,,,,\d{5},"20100,00100",no,0,%N%n%O%n%A%n%C%n%Z,no,,
+TZ,TANZANIA (UNITED REP.),%N%n%O%n%A%n%Z %C,,,,"\d{4,5}","6090,34413",no,0,,yes,,
+UG,UGANDA,,,,,,,no,0,,no,,
+NG,NIGERIA,%N%n%O%n%A%n%D%n%C %Z%n%S,,,CS,\d{6},"930283,300001,931104",yes,37,%N%n%O%n%A%n%C %Z%n%S,yes,state,
+GH,GHANA,,,,,,,no,0,,no,,
+ZA,SOUTH AFRICA,%N%n%O%n%A%n%D%n%C%n%Z,,ACZ,,\d{4},"0083,1451,0001",no,0,%N%n%O%n%A%n%C%n%Z,yes,,
+EG,EGYPT,%N%n%O%n%A%n%C%n%S%n%Z,%N%n%O%n%A%n%C%n%S%n%Z,,,\d{7}|\d{5},"4460232,5734356",yes,27,%N%n%O%n%A%n%C%n%S%n%Z,yes,,
+RW,RWANDA,,,,AC,,,no,0,,no,,
+ET,ETHIOPIA,%N%n%O%n%A%n%Z %C,,,,\d{4},1000,no,0,%N%n%O%n%A%n%Z %C,no,,
+US,UNITED STATES,"%N%n%O%n%A%n%C, %S %Z",,ACSZ,CS,(\d{5})(?:[ \-](\d{4}))?,"95014,22162-1010",yes,62,%N%n%O%n%A%n%C %S %Z,yes,state,zip
+GB,UNITED KINGDOM,%N%n%O%n%A%n%C%n%Z,,ACZ,CZ,"GIR ?0AA|(?:(?:AB|AL|B|BA|BB|BD|BF|BH|BL|BN|BR|BS|BT|BX|CA|CB|CF|CH|CM|CO|CR|CT|CV|CW|DA|DD|DE|DG|DH|DL|DN|DT|DY|E|EC|EH|EN|EX|FK|FY|G|GL|GY|GU|HA|HD|HG|HP|HR|HS|HU|HX|IG|IM|IP|IV|JE|KA|KT|KW|KY|L|LA|LD|LE|LL|LN|LS|LU|M|ME|MK|ML|N|NE|NG|NN|NP|NR|NW|OL|OX|PA|PE|PH|PL|PO|PR|RG|RH|RM|S|SA|SE|SG|SK|SL|SM|SN|SO|SP|SR|SS|ST|SW|SY|TA|TD|TF|TN|TQ|TR|TS|TW|UB|W|WA|WC|WD|WF|WN|WR|WS|WV|YO|ZE)(?:\d[\dA-Z]? ?\d[ABD-HJLN-UW-Z]{2}))|BFPO ?\d{1,4}","EC1Y 8SY,GIR 0AA,M2 5BQ,M34 4AB,CR0 2YR,DN16 9AA,W1A 4ZZ,EC1A 1HQ,OX14 4PG,BS18 8HF,NR25 7HG,RH6 0NP,BH23 6AA,B6 5BA,SO23 9AP,PO1 3AX,BFPO 61",no,0,%N%n%O%n%A%n%C%n%S%n%Z,yes,,
+DE,GERMANY,%N%n%O%n%A%n%Z %C,,ACZ,,\d{5},"26133,53225",no,0,%N%n%O%n%A%n%Z %C,no,,
+ES,SPAIN,%N%n%O%n%A%n%Z %C %S,,ACSZ,CS,\d{5},"28039,28300,28070",yes,52,%N%n%O%n%A%n%Z %C %S,yes,,
+FR,FRANCE,%O%n%N%n%A%n%Z %C,,ACZ,CX,\d{2} ?\d{3},"33380,34092,33506",no,0,%O%n%N%n%A%n%Z %C %X,yes,,
+PL,POLAND,%N%n%O%n%A%n%Z %C,,ACZ,,\d{2}-\d{3},"00-950,05-470,48-300,32-015,00-940",no,0,%N%n%O%n%A%n%Z %C,yes,,
+CH,SWITZERLAND,%O%n%N%n%A%nCH-%Z %C,,ACZ,,\d{4},"2544,1211,1556,3030",no,78,%O%n%N%n%A%nCH-%Z %C,yes,,
+IN,INDIA,%N%n%O%n%A%n%T%n%F%n%L%n%C %Z%n%S,,ACSZ,,\d{6},"110034,110001",yes,35,%N%n%O%n%A%n%C %Z%n%S,yes,state,pin
+CN,CHINA,%Z%n%S%C%D%n%A%n%O%n%N,"%N%n%O%n%A%n%D%n%C%n%S, %Z",ACSZ,S,\d{6},"266033,317204,100096,100808",yes,3616,%Z%n%S%C%D%n%A%n%O%n%N,yes,,
+JP,JAPAN,〒%Z%n%S%n%A%n%O%n%N,"%N%n%O%n%A, %S%n%Z",ASZ,S,\d{3}-?\d{4},"154-0023,350-1106,951-8073,112-0001,208-0032,231-0012",yes,47,〒%Z%n%S%C%n%A%n%O%n%N,yes,prefecture,
+BR,BRAZIL,%O%n%N%n%A%n%D%n%C-%S%n%Z,,ASCZ,CS,\d{5}-?\d{3},"40301-110,70002-900",yes,5591,%O%n%N%n%A%n%C-%S%n%Z,yes,state,

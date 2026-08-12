@@ -186,8 +186,8 @@ every rate below one hundred percent, which is what makes the inverse total:
 
 ```scala mdoc
 val scale = Bands.of(
-  Bands.band(BigDecimal(1000), Percent(10)),
-  Bands.band(BigDecimal(2000), Percent(20)),
+  Bands.upTo(BigDecimal(1000), Percent(10)),
+  Bands.upTo(BigDecimal(2000), Percent(20)),
   Bands.open(Percent(30))).toOption.get
 
 scale.banded(Currency.KES(2500), Rounding.HalfUp).map(_.amount)

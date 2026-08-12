@@ -26,6 +26,7 @@ pinned upstream release, and its verified terms in its own provenance header.
 | Council of the European Union, via EUR-Lex | the fixed euro conversion rates of Regulation (EC) No 2866/98 |
 | The libphonenumber Authors | calling codes, national prefixes, possible lengths, presentation formats, and mobile ranges |
 | SWIFT (ISO 13616) | the IBAN Registry structures |
+| Google, via its Address Data Service | per-territory postal formats, required fields, and postal-code patterns |
 | National gazettes, statute portals, and central banks | jurisdiction cash-rounding practice, each fact cited to its own instrument |
 
 Licence terms per source are in `META-INF/NOTICE`.

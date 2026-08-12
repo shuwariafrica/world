@@ -34,8 +34,9 @@ import boilerplate.nullable.*
       case Fold.Lower    => Ascii.lower(stripped)
       case Fold.Preserve => stripped
 
-  // Compact class notation: "0-9A-Z" ranges plus listed characters.
-  private def in(c: Char, set: String): Boolean =
+  // Compact class notation: "0-9A-Z" ranges plus listed characters. Shared with the packed-pattern
+  // matcher, which reads the same notation out of the compiled tables.
+  private[world] def in(c: Char, set: String): Boolean =
     def walk(i: Int): Boolean =
       i < set.length && {
         if i + 2 < set.length && set(i + 1) == '-' then (c >= set(i) && c <= set(i + 2)) || walk(i + 3)

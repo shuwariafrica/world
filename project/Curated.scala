@@ -200,11 +200,14 @@ object Curated:
     six("currencies-historic", "list-three.xml", "code,numeric,withdrawnStart,withdrawnEnd")
 
   private def libphonenumber(name: String, columns: String): Dataset =
+    libphonenumber(name, "resources/PhoneNumberMetadata.xml", columns)
+
+  private def libphonenumber(name: String, origin: String, columns: String): Dataset =
     Dataset(
       name = name,
       source = "libphonenumber",
       authority = "The libphonenumber Authors",
-      origin = "resources/PhoneNumberMetadata.xml",
+      origin = origin,
       pin = "v9.0.35",
       published = "2026-07-26",
       licence = "Apache-2.0",
@@ -221,10 +224,39 @@ object Curated:
   // they gate on range allocations, which move faster than any pin can track honestly.
   val phone: Dataset = libphonenumber("phone", "territory,callingCode,main,trunk,lengths")
 
+  // The national template arrives with the upstream national-prefix formatting rule already
+  // substituted, so no trunk logic survives to runtime; the international template is the row's own
+  // intlFormat where it declares one, and otherwise the unsubstituted format, which is upstream's
+  // own reading of an absent intlFormat.
   val phoneFormats: Dataset =
-    libphonenumber("phone-formats", "territory,callingCode,order,leadingDigits,groups,national,international")
+    libphonenumber(
+      "phone-formats",
+      "resources/PhoneNumberMetadata.xml numberFormat rows, nationalPrefixFormattingRule substituted",
+      "territory,callingCode,order,leadingDigits,groups,national,international"
+    )
 
   val phoneMobile: Dataset = libphonenumber("phone-mobile", "territory,callingCode,lengths,pattern")
+
+  /** The structural addressing rule per territory: the field order and content
+    * of its postal format, the fields it requires, and the pattern its postal
+    * codes match. The `ZZ` row is the service's own default record, which a
+    * territory without a rule of its own falls back to.
+    */
+  val addressRules: Dataset = Dataset(
+    name = "address-rules",
+    source = "google-address-data-service",
+    authority = "Google, the Address Data Service the libaddressinput project names",
+    origin = "ssl-address/data/<territory>, the live service record for every territory it lists",
+    pin = "2026-08-10",
+    published = "2026-08-10",
+    licence = "CC-BY-4.0",
+    licenceUrl = "https://creativecommons.org/licenses/by/4.0/",
+    licenceNote = "the libaddressinput repository states verbatim that its data is licensed under the CC-BY 4.0",
+    licenceVerified = "2026-08-10",
+    cadence = "ad hoc",
+    columns = "territory,format,required,postcode",
+    compiledIn = true
+  )
 
   val iban: Dataset = snapshot(
     "iban-registry",
@@ -280,7 +312,8 @@ object Curated:
     phone,
     phoneFormats,
     phoneMobile,
-    iban
+    iban,
+    addressRules
   )
 
   def file(root: File, dataset: Dataset): File =
@@ -343,12 +376,89 @@ object Curated:
       end if
     }
     val widths = phoneFormatWidths(root, log)
+    val addresses = addressRuleShapes(root, log)
     if failures.nonEmpty then sys.error(failures.mkString("data gate failed:\n  ", "\n  ", ""))
     log.info(
       s"[data] ${all.count(_.compiledIn)} compiled-in and ${all.count(!_.compiledIn)} held datasets verified; " +
-        s"$widths phone format rows width-checked."
+        s"$widths phone format rows width-checked; $addresses addressing rules shape-checked."
     )
   end verify
+
+  // A comma-separated line, honouring the doubled-quote escaping the extract writes.
+  private def csv(line: String): Vector[String] =
+    val (fields, last, _) = line.foldLeft((Vector.empty[String], "", false)) { case ((done, current, quoted), ch) =>
+      if ch == '"' then (done, current, !quoted)
+      else if ch == ',' && !quoted then (done :+ current, "", quoted)
+      else (done, current + ch, quoted)
+    }
+    fields :+ last
+
+  /** The addressing tier's two gates. The territories read at source during the research
+    * are the CORRECTNESS gate: their curated rows must still say exactly what the extract
+    * recorded. Every row in the tier, those and the rest alike, is then gated on SHAPE:
+    * a template whose tokens the service documents, and a postal-code pattern the packer's
+    * own compiler accepts.
+    *
+    * Returns the number of rows measured, because a gate that measures nothing reads as a
+    * gate that passed.
+    */
+  private def addressRuleShapes(root: File, log: Logger): Int =
+    val curated = rows(root, addressRules).map { row =>
+      val parts = row.split('\t')
+      parts(0) -> (if parts.length > 1 then parts.drop(1).toVector.padTo(3, "") else Vector("", "", ""))
+    }.toMap
+
+    val extract = IO
+      .readLines(root / "data" / "address-rules-core.csv")
+      .filterNot(line => line.startsWith("#") || line.isBlank)
+      .map(csv)
+    val header = extract.headOption.getOrElse(sys.error("the address extract carries no header"))
+    def column(name: String): Int =
+      val at = header.indexOf(name)
+      if at < 0 then sys.error(s"the address extract carries no $name column") else at
+    val (fmt, require, zip) = (column("live_fmt"), column("live_require"), column("live_zip"))
+
+    val drift = extract.tail.flatMap { recorded =>
+      val territory = recorded.head
+      curated.get(territory) match
+        case None       => Some(s"address-rules: $territory was read at source and is no longer in the tier")
+        case Some(rule) =>
+          val read = Vector(recorded(fmt), recorded(require), recorded(zip))
+          Option.when(rule != read)(
+            s"address-rules: $territory reads ${rule.mkString("|")} where the extract recorded ${read.mkString("|")}"
+          )
+    }
+
+    // The service's own token alphabet. Nine of these carry an address field world models; the
+    // landmark three it does not are dropped as absent fields, and anything outside the alphabet
+    // is a token nobody has decided the behaviour of.
+    val alphabet = "RNOA12DCSZXTFLn"
+    val shapes = curated.toVector.sortBy(_._1).flatMap { (territory, rule) =>
+      val tokens = "%(.)".r.findAllMatchIn(rule(0)).map(_.group(1).head).toVector
+      val stray = tokens.filterNot(alphabet.contains)
+      val postcode =
+        if rule(2).isEmpty then None
+        else
+          scala.util
+            .Try(Pattern.arms(rule(2), s"address-rules $territory"))
+            .failed
+            .toOption
+            .map(failure => s"address-rules: $territory postal-code pattern - ${failure.getMessage}")
+      Option.when(stray.nonEmpty)(
+        s"address-rules: $territory template carries ${stray.map("%" + _).mkString(", ")}, outside the service's alphabet"
+      ) ++ postcode
+    }
+
+    if curated.isEmpty then sys.error("address-rules: the tier is empty")
+    if extract.tail.isEmpty then sys.error("address-rules: the correctness extract carries no rows")
+    val breaches = drift ++ shapes
+    if breaches.nonEmpty then sys.error(breaches.mkString("data gate failed:\n  ", "\n  ", ""))
+    log.info(
+      s"[data] address rules: ${curated.size} territories, ${extract.tail.size} of them asserted against the " +
+        s"research extract, ${curated.count(_._2.apply(2).nonEmpty)} carrying a postal-code pattern."
+    )
+    curated.size
+  end addressRuleShapes
 
   /** The width-sum gate: no presentation format may lay out a number LONGER
     * than the longest length its territory's possible tier admits, and any

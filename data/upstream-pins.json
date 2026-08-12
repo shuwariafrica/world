@@ -256,6 +256,21 @@
         "url": "https://www.cbn.gov.ng/"
       },
       "cadence": "ad hoc"
+    },
+    {
+      "name": "google-address-data-service",
+      "authority": "Google, the Address Data Service the libaddressinput project names",
+      "content": "Postal format template, required fields, and postal-code pattern for every territory the service lists",
+      "pinned": {
+        "version": "2026-08-10",
+        "published": null
+      },
+      "check": {
+        "method": "manual",
+        "url": "https://chromium-i18n.appspot.com/ssl-address/data"
+      },
+      "cadence": "ad hoc",
+      "notes": "the service publishes no version or release date; its root record lists the territories, and drift is detectable only by re-reading the records themselves."
     }
   ]
 }

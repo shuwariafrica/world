@@ -73,6 +73,18 @@ Embedded: per-country IBAN and BBAN structures, identifier positions, and the
 SEPA membership flag.
 
 --------------------------------------------------------------------------------
+Google Address Data Service (libaddressinput)
+--------------------------------------------------------------------------------
+(C) Google. Licensed under the Creative Commons Attribution 4.0 International
+Licence, as the libaddressinput project states verbatim for its data. The licence
+is at https://creativecommons.org/licenses/by/4.0/ and includes a disclaimer of
+warranties, which governs this material as it is redistributed here.
+
+Embedded: per-territory postal format templates, required-field sets, and
+postal-code patterns. The records were changed: each is read from the service,
+reduced to the fields this product uses, and compiled into packed tables.
+
+--------------------------------------------------------------------------------
 Cash-rounding practice survey
 --------------------------------------------------------------------------------
 Compiled from national legal gazettes, consolidated statute portals, and
