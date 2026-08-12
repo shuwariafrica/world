@@ -75,7 +75,7 @@ object Week:
         Date.of(y, 1, 1).toOption.flatMap { jan1 =>
           val offset = (jan1.weekday.ordinal - w.first.ordinal + 7) % 7
           val shift = if 7 - offset >= w.minimalDays then -offset else 7 - offset
-          jan1.plusDays(shift).toOption
+          jan1.plus(Days(shift)).toOption
         }
       def within(y: Int): Option[Number] =
         weekOne(y).filter(s => s.until(d) >= 0).map(s => Number(y, (s.until(d) / 7 + 1).toInt))
@@ -187,14 +187,13 @@ object Date:
     */
   def parse(value: String): Either[Invalid, Date] = civil.parse(value).left.map(Invalid(_))
 
-  /** Calendar-day arithmetic; a result outside years 1 to 9999 is a typed
-    * failure.
-    */
-  def plusDays(d: Date, n: Int): Either[Invalid, Date] = d.plusDays(n)
-
   /** Month arithmetic with the day-overflow policy named at the call site. */
-  def plusMonths(d: Date, n: Int, overflow: Overflow): Either[Invalid, Date] =
-    d.plusMonths(n, overflow)
+  @targetName("plusMonthsWithOverflow")
+  inline def plus(d: Date, n: Months, overflow: Overflow): Either[Invalid, Date] = d.plus(n, overflow)
+
+  /** Twelve months per year, under the same policy. */
+  @targetName("plusYearsWithOverflow")
+  inline def plus(d: Date, n: Years, overflow: Overflow): Either[Invalid, Date] = d.plus(n, overflow)
 
   /** Signed calendar days from `d` to `other`. */
   def until(d: Date, other: Date): Long = d.until(other)
@@ -237,22 +236,30 @@ object Date:
       YearMonth.fromPacked(civilDate.year * 100 + civilDate.month)
     def weekday: Weekday = Weekday.fromOrdinal(Math.floorMod(d + 3, 7))
 
-    @targetName("ext_plusDays")
-    def plusDays(n: Int): Either[Invalid, Date] =
-      val nd = d.toLong + n
+    /** Calendar arithmetic under one verb: the operand's type selects the unit, and
+      * only the irregular units take an [[Overflow]] policy. A result outside years
+      * 1 to 9999 is a typed failure.
+      */
+    @targetName("plusDays")
+    def plus(n: Days): Either[Invalid, Date] =
+      val nd = d.toLong + n.value
       if nd >= first && nd <= last then Right(nd.toInt)
       else if nd >= Int.MinValue && nd <= Int.MaxValue then
         val overflowed = civil.civilOf(nd.toInt)
         Left(Invalid(civil.shown(overflowed.year, overflowed.month, overflowed.day)))
       else Left(Invalid(nd.toString))
 
+    /** Seven exact days per week. */
+    @targetName("plusWeeks")
+    def plus(n: Weeks): Either[Invalid, Date] = d.plus(Days(n.value * 7))
+
     /** Adds months, resolving a day the target month lacks by the stated
       * policy: 2026-01-31 plus one month is 2026-02-28 under `Constrain` and a
       * failure under `Reject`.
       */
-    @targetName("ext_plusMonths")
-    def plusMonths(n: Int, overflow: Overflow): Either[Invalid, Date] =
-      val months = d.year * 12 + (d.month.value - 1) + n
+    @targetName("plusMonths")
+    def plus(n: Months, overflow: Overflow): Either[Invalid, Date] =
+      val months = d.year * 12 + (d.month.value - 1) + n.value
       val y = Math.floorDiv(months, 12)
       val m = Math.floorMod(months, 12) + 1
       val limit = Date.length(y, m)
@@ -262,6 +269,11 @@ object Date:
           case Overflow.Constrain => of(y, m, limit)
           case Overflow.Reject    => Left(Invalid(civil.shown(y, m, d.day)))
 
+    /** Twelve months per year, under the same policy. */
+    @targetName("plusYears")
+    def plus(n: Years, overflow: Overflow): Either[Invalid, Date] =
+      d.plus(Months(n.value * 12), overflow)
+
     @targetName("ext_until")
     def until(other: Date): Long = (other - d).toLong
 
@@ -270,7 +282,7 @@ object Date:
       *
       * A 29 February anniversary falls on 28 February in common years. Where a
       * statute reads it as 1 March instead, compose that reading explicitly:
-      * `d.plusDays(1).map(_.years(until))`.
+      * `d.plus(Days(1)).map(_.years(until))`.
       */
     @targetName("ext_years")
     def years(until: Date): Long =
@@ -285,7 +297,7 @@ object Date:
     @targetName("ext_next")
     def next(w: Weekday): Either[Invalid, Date] =
       val ahead = (w.ordinal - d.weekday.ordinal + 7) % 7
-      d.plusDays(if ahead == 0 then 7 else ahead)
+      d.plus(Days(if ahead == 0 then 7 else ahead))
   end extension
 
   given CanEqual[Date, Date] = CanEqual.derived
@@ -373,7 +385,7 @@ object DateTime:
   // except at 9999-12-31, which has no following day to normalise onto.
   private def pack(date: Date, time: Time): DateTime =
     if time == 86400 then
-      Date.plusDays(date, 1) match
+      Date.plus(date)(Days(1)) match
         case Right(next) => next.toLong * 86401L
         case Left(_)     => date.toLong * 86401L + time
     else date.toLong * 86401L + time
@@ -448,9 +460,6 @@ object YearMonth:
           case _                    => Left(Invalid(value))
       case _ => Left(Invalid(value))
 
-  /** Month arithmetic; a result outside years 1 to 9999 is a typed failure. */
-  def plusMonths(ym: YearMonth, n: Int): Either[Invalid, YearMonth] = ym.plusMonths(n)
-
   private[world] def fromPacked(packed: Int): YearMonth = packed
 
   extension (ym: YearMonth)
@@ -469,9 +478,9 @@ object YearMonth:
     def last: Date = Date.fromCivil(ym.year, ym.month.value, ym.length)
     def length: Int = Date.length(ym.year, ym.month.value)
 
-    @targetName("ext_plusMonths")
-    def plusMonths(n: Int): Either[Invalid, YearMonth] =
-      val months = ym.year * 12 + (ym.month.value - 1) + n
+    /** Month arithmetic; a result outside years 1 to 9999 is a typed failure. */
+    def plus(n: Months): Either[Invalid, YearMonth] =
+      val months = ym.year * 12 + (ym.month.value - 1) + n.value
       of(Math.floorDiv(months, 12), Math.floorMod(months, 12) + 1)
   end extension
 

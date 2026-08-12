@@ -16,6 +16,15 @@ subsection:
   - title: Places, locales, and currencies
     page: places.md
 
+  - title: Identifiers and schemes
+    page: identifiers.md
+
+  - title: Addresses and coordinates
+    page: addresses.md
+
+  - title: Names, organisations, and parties
+    page: parties.md
+
   - title: Reference
     index: reference/index.md
     directory: reference

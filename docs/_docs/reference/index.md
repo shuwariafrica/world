@@ -12,6 +12,9 @@ Each runtime module is published for the JVM, Scala.js, and Scala Native.
 | `world` | territories, regions, languages, scripts, locales, and currencies | `world-core` |
 | `world-money` | monetary amounts, exchange rates, percentages, tax structures, graduated bands, and fee schedules | `world`, `world-core` |
 | `world-quantity` | measurement kinds, units, quantities, unit prices, block tariffs, and rate cards | `world-money`, `world`, `world-core` |
+| `world-id` | IBANs, BICs, creditor references, NUBAN accounts, telephone numbers, email addresses, and domain names | `world`, `world-core` |
+| `world-address` | structured postal addresses and geographic coordinates | `world`, `world-core` |
+| `world-party` | names, organisations, and the party a document addresses | `world-id`, `world-address`, `world`, `world-core` |
 
 `world-core` holds no dataset: it is the arithmetic and the vocabulary. The registers that
 need curated data begin at `world`.
@@ -41,6 +44,9 @@ locale, formatting, or time facility.
 | `Territory`, `Region`, `Language`, `Script`, `Locale`, `Currency`, `Localised` | `world` | [Places and locales](../places.md) |
 | `Money`, `Percent`, `Tax`, `Taxed`, `Bands`, `Charges`, `Rate`, `Terms`, `Cash`, `Bag` | `world.money` | [Money](../money.md) |
 | `Measure`, `Quantity`, `Price`, `Conversion`, `Blocks`, `Breaks` | `world.quantity` | [Quantities](../quantities.md) |
+| `IBAN`, `BIC`, `Reference`, `NUBAN`, `Phone`, `Email`, `Domain` | `world.id` | [Identifiers](../identifiers.md) |
+| `Address`, `Coordinate` | `world.address` | [Addresses](../addresses.md) |
+| `Name`, `Organisation`, `Party` | `world.party` | [Parties](../parties.md) |
 
 `Scheme`, `Id`, `Authority`, and `Register` are in `world` from `world-core`: the concept
 an identifier scheme is declared against, and the register that resolves which schemes

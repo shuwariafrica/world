@@ -322,7 +322,7 @@ extension (dt: DateTime)
         if !days.isValidInt then Left(DateTime.Invalid(dt.value))
         else
           dt.date
-            .plusDays(days.toInt)
+            .plus(Days(days.toInt))
             .map(d => DateTime(d, Time.fromSeconds(ofDay.toInt)))
             .left
             .map(invalid => DateTime.Invalid(invalid.value))

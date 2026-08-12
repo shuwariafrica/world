@@ -275,7 +275,17 @@ class CoreSuite extends munit.FunSuite:
     assertEquals(YearMonth.of(2028, 2).toOption.get.length, 29)
   }
   test("yearmonth: month arithmetic crosses years") {
-    assertEquals(YearMonth.of(2026, 11).toOption.get.plusMonths(3), YearMonth.of(2027, 2))
+    assertEquals(YearMonth.of(2026, 11).toOption.get.plus(Months(3)), YearMonth.of(2027, 2))
+  }
+
+  test("period: one verb, typed operands") {
+    assertEquals(Date(2026, 1, 31).plus(Weeks(2)), Date.of(2026, 2, 14))
+    assertEquals(Date(2026, 1, 31).plus(Years(1), Overflow.Constrain), Date.of(2027, 1, 31))
+    assertEquals(Date(2026, 3, 1).plus(Days(-1)), Date.of(2026, 2, 28))
+  }
+  test("period: values are storable configuration") {
+    assertEquals(Vector(Months(3), Months(12)).map(_.value), Vector(3, 12))
+    assertEquals(Weeks(2).value, 2)
   }
 
   test("week: iso-style week one") {

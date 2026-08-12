@@ -76,7 +76,7 @@ object Terms:
       */
     @targetName("ext_due")
     def due(invoiced: Date): Either[Date.Invalid, Date] =
-      (if t.eom then invoiced.yearMonth.last else invoiced).plusDays(t.days)
+      (if t.eom then invoiced.yearMonth.last else invoiced).plus(Days(t.days))
 
     @targetName("ext_discounted")
     def discounted(invoiced: Date, paid: Date): Boolean =

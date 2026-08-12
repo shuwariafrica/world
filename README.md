@@ -3,9 +3,10 @@
 [![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://github.com/shuwariafrica/world/actions/workflows/build.yml/badge.svg)](https://github.com/shuwariafrica/world/actions/workflows/build.yml)
 
-The concepts commerce runs on - civil time, places and locales, money, and quantities -
-as Scala 3 types that compute exactly and carry their own reference data. Cross-published
-for the JVM, Scala.js, and Scala Native.
+The concepts commerce runs on - civil time, places and locales, money, quantities,
+identifiers, addresses, and the parties documents address - as Scala 3 types that compute
+exactly and carry their own reference data. Cross-published for the JVM, Scala.js, and
+Scala Native.
 
 ```scala
 libraryDependencies += "africa.shuwari" %%% "world" % "<version>"
@@ -20,7 +21,7 @@ Gregorian labelling other calendars convert from. Arithmetic names its overflow 
 the call site, so nobody has to guess what happened to the 31st.
 
 ```scala
-Date(2026, 1, 31).plusMonths(1, Overflow.Constrain)   // 2026-02-28
+Date(2026, 1, 31).plus(Months(1), Overflow.Constrain) // 2026-02-28
 Date(2008, 2, 29).years(Date(2026, 2, 28))            // 18 - the leapling's anniversary
 Calendar.Ethiopic.at(Date(2025, 9, 11))               // Parts(2018, 1, 1)
 ```
@@ -53,6 +54,39 @@ other, priced through the same algebra.
 Measure.Dozen(3) + Measure.Each(5)                    // 41/12 dozen, exactly
 Currency.KES(1500).per(Measure.Hour).total(Measure.Minute(210), Rounding.HalfUp)  // 5250.00
 Measure.Kilogram(1) + Measure.Litre(1)                // does not compile
+```
+
+**Identifiers that prove what they can, and say so.** Bank, telephone and internet
+identifiers are checked offline against the structures their own authorities publish. A
+constant is checked while the build runs; a number in a range the shipped data has not
+caught up with is still accepted, because turning away a real customer costs more than one
+failed call.
+
+```scala
+IBAN("GB29 NWBK 6016 1331 9268 19").print            // a mistyped constant fails the build
+Phone.parse("0712 345 678", Territory.KE)            // +254712345678, dialled 0712 345678
+Email.parse("amina@bücher.example").map(_.domain)    // one domain, either way it is written
+```
+
+**Addresses written the way each territory writes them.** Required fields, postal-code
+shape and field order are the territory's own, every structural problem is reported at
+once, and a half-filled address still prints legibly.
+
+```scala
+Address(Territory.DE).line("Unter den Linden 5").locality("Berlin").code("10117").display
+// "Unter den Linden 5\n10117 Berlin"
+Address(Territory.US).line("1600 Amphitheatre Pkwy").issues
+// Missing(Locality), Missing(Area), Missing(Code)
+```
+
+**One counterparty, not five overlapping records.** Names, numbers, addresses and
+registrations on a single value, each registration attached through the scheme that issued
+it, so the label on the invoice is the authority's own.
+
+```scala
+Party(Name("Mohammed", "Ali"))
+  .phone(Phone.parse("0712 345 678", Territory.KE).toOption.get)
+  .identifier(IBAN)(IBAN("GB29 NWBK 6016 1331 9268 19"))
 ```
 
 ---

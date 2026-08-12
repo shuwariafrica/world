@@ -98,7 +98,7 @@ class CalendarSuite extends munit.FunSuite:
   }
 
   test("calendar: date arithmetic never enters a calendar") {
-    assertEquals(Date(2025, 9, 11).plusDays(30).map(Ethiopic.at), Right(Parts(2018, 2, 1)))
+    assertEquals(Date(2025, 9, 11).plus(Days(30)).map(Ethiopic.at), Right(Parts(2018, 2, 1)))
   }
 
   test("calendar: a consumer offset labelling joins as an instance") {

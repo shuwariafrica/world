@@ -34,9 +34,9 @@ Adding a month to the 31st has two defensible answers, and `world` will not pick
 you: the policy is a parameter, so the reader of the call site can see which was chosen.
 
 ```scala mdoc
-Date(2026, 1, 31).plusMonths(1, Overflow.Constrain).map(_.value)
+Date(2026, 1, 31).plus(Months(1), Overflow.Constrain).map(_.value)
 
-Date(2026, 1, 31).plusMonths(1, Overflow.Reject).isLeft
+Date(2026, 1, 31).plus(Months(1), Overflow.Reject).isLeft
 ```
 
 Ages are their own operation rather than a composition, because composing them is subtly
@@ -50,7 +50,7 @@ Date(2008, 2, 29).years(Date(2026, 2, 28))
 Where a statute reads that anniversary as 1 March instead, say so explicitly:
 
 ```scala mdoc
-Date(2008, 2, 29).plusDays(1).map(_.years(Date(2026, 2, 28)))
+Date(2008, 2, 29).plus(Days(1)).map(_.years(Date(2026, 2, 28)))
 ```
 
 ## Months and end-of-month

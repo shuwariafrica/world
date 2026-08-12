@@ -329,7 +329,12 @@ object Curate:
   private def pattern(value: String): String = "\\s+".r.replaceAllIn(value, "")
 
   private def child(body: String, tag: String): Option[String] =
-    s"(?s)<$tag(?:\\s[^>]*)?>(.*?)</$tag>".r.findFirstMatchIn(body).map(m => pattern(m.group(1)))
+    text(body, tag).map(pattern)
+
+  // A presentation template's spaces are its separators, so it is read without the pattern
+  // reader's whitespace collapse: `($1) $2-$3` is not `($1)$2-$3`.
+  private def text(body: String, tag: String): Option[String] =
+    s"(?s)<$tag(?:\\s[^>]*)?>(.*?)</$tag>".r.findFirstMatchIn(body).map(_.group(1).trim)
 
   private def possibleLengths(body: String): Vector[String] =
     "possibleLengths[^/]*national=\"([^\"]*)\"".r
@@ -381,10 +386,22 @@ object Curate:
       }
       .mkString(" ")
 
+  // The upstream formatter's own substitution: `$NP` is the territory's national prefix and `$FG`
+  // the first group, and the expansion replaces the template's first group reference. Doing it here
+  // is what leaves no trunk logic to run at presentation time.
+  private def trunked(format: String, rule: String, prefix: String): String =
+    if rule.isEmpty then format
+    else
+      val expanded = rule.replace("$NP", prefix).replace("$FG", "$1")
+      "\\$\\d".r.findFirstMatchIn(format) match
+        case Some(group) => format.take(group.start) + expanded + format.substring(group.end)
+        case None        => format
+
   private def curatePhoneFormats(root: File, cache: File): Unit =
     val rows = territories(phoneMetadata(cache)).flatMap { (attributes, body) =>
       val id = attributes.getOrElse("id", "")
       val code = attributes.getOrElse("countryCode", "")
+      val prefix = attributes.getOrElse("nationalPrefix", "")
       val formats = section(body, "availableFormats")
       "(?s)<numberFormat\\s([^>]*?)>(.*?)</numberFormat>".r
         .findAllMatchIn(formats)
@@ -392,10 +409,12 @@ object Curate:
         .map { (m, order) =>
           val format = attribute.findAllMatchIn(m.group(1)).map(a => a.group(1) -> a.group(2)).toMap
           val inner = m.group(2)
-          // An absent intlFormat means the national format serves internationally; `NA` means the
-          // format has no international form at all, which the row carries verbatim.
-          val national = child(inner, "format").getOrElse("")
-          val international = child(inner, "intlFormat").getOrElse(national)
+          // An absent intlFormat means the format serves internationally WITHOUT the national
+          // prefix; `NA` means the format has no international form at all, which the row carries
+          // verbatim.
+          val template = text(inner, "format").getOrElse("")
+          val national = trunked(template, format.getOrElse("nationalPrefixFormattingRule", ""), prefix)
+          val international = text(inner, "intlFormat").getOrElse(template)
           val leading = child(inner, "leadingDigits").getOrElse("")
           s"$id\t$code\t$order\t$leading\t${groupWidths(format.getOrElse("pattern", ""), id)}\t$national\t$international"
         }
@@ -414,6 +433,61 @@ object Curate:
           }
     }.sorted
     Curated.write(root, Curated.phoneMobile, rows)
+
+  // The service enumerates its own territories at its root; `ZZ`, the default record every
+  // territory without rules of its own falls back to, is not in that list. Fetches go to the origin
+  // rather than the mirror it redirects to: the mirror is missing records the origin serves.
+  private val addressOrigin = "https://chromium-i18n.appspot.com/ssl-address/data"
+
+  // Flat JSON objects of string values; the service returns nothing nested at the record level.
+  private def jsonField(record: String, name: String): String =
+    s""""$name"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"""".r
+      .findFirstMatchIn(record)
+      .map(_.group(1))
+      .map { raw =>
+        "\\\\(u[0-9a-fA-F]{4}|.)".r.replaceAllIn(
+          raw,
+          m =>
+            java.util.regex.Matcher.quoteReplacement(m.group(1) match
+              case escape if escape.startsWith("u") => Integer.parseInt(escape.drop(1), 16).toChar.toString
+              case "n"                              => "\n"
+              case "t"                              => "\t"
+              case other                            => other)
+        )
+      }
+      .getOrElse("")
+
+  // A few postal-code patterns carry anchors. What they compile into matches whole strings, so an
+  // anchor at either end asserts what is already true; one anywhere else would not, and fails the
+  // curation rather than being quietly dropped.
+  private def anchorless(pattern: String, territory: String): String =
+    val open = Vector("(?:^|\\b)", "(?:\\b|^)", "^")
+    val close = Vector("(?:$|\\b)", "(?:\\b|$)", "$")
+    val head = open.find(pattern.startsWith).fold(pattern)(anchor => pattern.drop(anchor.length))
+    val trimmed = close.find(head.endsWith).fold(head)(anchor => head.dropRight(anchor.length))
+    if trimmed.contains("^") || trimmed.contains("$") || trimmed.contains("\\b") then
+      sys.error(s"address-rules $territory: an anchor sits inside the postal-code pattern '$pattern'")
+    trimmed
+
+  private def curateAddressRules(root: File, cache: File): Unit =
+    val listed = jsonField(cached(cache, "address-index.json", addressOrigin), "countries")
+      .split('~')
+      .iterator
+      .filter(_.nonEmpty)
+      .toVector
+    if listed.isEmpty then sys.error("the address service listed no territories at all")
+    val rows = (listed :+ "ZZ").map { territory =>
+      val record = cached(cache, s"address-$territory.json", s"$addressOrigin/$territory")
+      // `id` is the one field every record carries - the default record has no `key` at all.
+      if jsonField(record, "id") != s"data/$territory" then sys.error(s"the address service returned no record for $territory")
+      // The format carries its own line breaks as %n, which the tab-separated row cannot; the
+      // packing reads them back.
+      val postcode = jsonField(record, "zip")
+      val cleaned = if postcode.isEmpty then "" else anchorless(postcode, territory)
+      s"$territory\t${jsonField(record, "fmt")}\t${jsonField(record, "require")}\t$cleaned"
+    }
+    Curated.write(root, Curated.addressRules, rows)
+  end curateAddressRules
 
   /** Regenerates every dataset whose upstream carries a machine-checkable pin. */
   def run(root: File, cache: File, log: Logger): Unit =
@@ -435,6 +509,7 @@ object Curate:
     curatePhone(root, cache)
     curatePhoneFormats(root, cache)
     curatePhoneMobile(root, cache)
+    curateAddressRules(root, cache)
     // The manual snapshots keep their rows - only a human retrieval replaces those - but their
     // provenance is restated from the registry so a header can never drift from what it declares.
     List(Curated.iban, Curated.cashPractice)

@@ -41,6 +41,18 @@ object Data:
     */
   def monetary: List[Setting[?]] = packed(Pack.money, monetaryBudgets)
 
+  /** The telephone plans with their presentation formats and mobile ranges, and
+    * the ISO 13616 registry as scheme rows, packed and size-gated.
+    */
+  def identifiers: List[Setting[?]] = packed(Pack.identity, identifierBudgets) ++ List(
+    Test / sourceGenerators += Def.task {
+      Pack.examples(root.value, (Test / sourceManaged).value, streams.value.log)
+    }.taskValue
+  )
+
+  /** The per-territory structural addressing rules, packed and size-gated. */
+  def addressing: List[Setting[?]] = packed(Pack.addressing, addressingBudgets)
+
   // Re-base on a measured run plus a tenth of headroom.
   private def registerBudgets = Map(
     "tables.scala" -> 185000L,
@@ -54,6 +66,19 @@ object Data:
     "nir" -> 432000L
   )
 
+  private def identifierBudgets = Map(
+    "tables.scala" -> 351000L,
+    "ibanrules.scala" -> 14400L,
+    "classfiles" -> 319000L,
+    "nir" -> 386000L
+  )
+
+  private def addressingBudgets = Map(
+    "tables.scala" -> 45300L,
+    "classfiles" -> 103000L,
+    "nir" -> 124000L
+  )
+
   private def root = Def.setting((ThisBuild / baseDirectory).value)
 
   private def packed(generate: (File, File, Logger) => Seq[File], limits: Map[String, Long]): List[Setting[?]] = List(
@@ -63,14 +88,21 @@ object Data:
       Curated.verify(root.value, streams.value.log)
       generate(root.value, (Compile / sourceManaged).value, streams.value.log)
     }.taskValue,
+    // Depends on the compile that produces them: reading the paths alone measured a stale row
+    // silently, and a size gate reporting yesterday's artefact is not a size gate.
     budgets := Def.uncached(
-      Pack.budgets(
-        (Compile / classDirectory).value,
-        ((Compile / sourceManaged).value ** "tables.scala").get(),
-        limits,
-        virtualAxes.value.contains(VirtualAxis.native),
-        streams.value.log
-      )
+      Def.taskDyn {
+        val _ = (Compile / compile).value
+        Def.task(
+          Pack.budgets(
+            (Compile / classDirectory).value,
+            ((Compile / sourceManaged).value ** "*.scala").get(),
+            limits,
+            virtualAxes.value.contains(VirtualAxis.native),
+            streams.value.log
+          )
+        )
+      }.value
     )
   )
 end Data
