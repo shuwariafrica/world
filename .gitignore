@@ -9,14 +9,14 @@
 !.gitmodules
 !.scalafix.conf
 !.scalafmt.conf
-!docs/**/*.md
-!README.md
 
 # Build output directories
 target/
 
 # Miscellaneous
 *.md
+!docs/**/*.md
+!README.md
 null/
 PowerShell*/
 build.sbt.semanticdb
