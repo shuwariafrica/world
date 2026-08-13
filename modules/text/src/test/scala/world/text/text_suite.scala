@@ -41,6 +41,13 @@ class TextSuite extends munit.FunSuite:
     given Culture = Cultures.en
     assertEquals(BigDecimal("1234567.89").display, "1,234,567.89")
   }
+  test("text: a format that carries no grouping size renders ungrouped") {
+    // CLDR ships standard-length patterns with no grouping separator at all - `0%` and `0.00` among
+    // them - and a hand-composed bundle may carry one directly.
+    val plain = Culture.Data.Format(0, 0, Culture.Data.Affixes(Culture.Data.Affix.none, Culture.Data.Affix.none))
+    given Culture = Culture(Locale(Language.en), Culture.en.data.copy(decimal = plain))
+    assertEquals(BigDecimal("1234567.89").display, "1234567.89")
+  }
   test("text: en integer") {
     given Culture = Cultures.en
     assertEquals(3.display, "3")
@@ -149,12 +156,12 @@ class TextSuite extends munit.FunSuite:
     given Culture = Cultures.en
     assertEquals(Currency.KES(BigDecimal("1250.00")).display(CurrencyStyle.Symbol, Sign.Accounting), "KSh\u00a01,250.00")
   }
-  test("parts: accounting parentheses are sign parts, the minus absent") {
+  test("parts: accounting parentheses are bracket parts, the minus absent") {
     given Culture = Cultures.en
     val signed = Currency.KES(BigDecimal("-1250.00")).parts(CurrencyStyle.Symbol, Sign.Accounting)
     assert
       (
-        signed.head == Part(Part.Kind.Sign, "(") && signed.last == Part(Part.Kind.Sign, ")")
+        signed.head == Part(Part.Kind.Bracket, "(") && signed.last == Part(Part.Kind.Bracket, ")")
           && !signed.exists(p => p.kind == Part.Kind.Sign && p.text == "-"))
   }
 
@@ -225,6 +232,62 @@ class TextSuite extends munit.FunSuite:
     given Culture = Cultures.en
     val stamp = DateTime(day, Time.of(14, 30).toOption.get)
     assertEquals(stamp.display(DateStyle.Medium, TimeStyle.Short), "Jul 23, 2026, 2:30\u202fPM")
+  }
+  test("text: the date-time combiner prefers the declared at-form") {
+    given Culture = Cultures.en
+    val stamp = DateTime(day, Time.of(14, 30).toOption.get)
+    // Full declares an at-form; Medium declares none and serves the standard comma form.
+    assertEquals(stamp.display(DateStyle.Full, TimeStyle.Short), "Thursday, July 23, 2026 at 2:30\u202fPM")
+    assertEquals(stamp.display(DateStyle.Medium, TimeStyle.Short), "Jul 23, 2026, 2:30\u202fPM")
+  }
+  test("text: signs and percent follow the swapped numbering system") {
+    // The system owns its sign text as much as its digits: a swap leaves no Arabic-script mark on a
+    // Latin render.
+    val latin = Cultures.ar.numbered("latn").getOrElse(fail("ar declares no latn numbering"))
+    given Culture = latin
+    assertEquals(Percent(BigDecimal("-12.5")).display, "-12.5%")
+  }
+  test("text: money signs resolve against the active system, brackets stay") {
+    val latin = Cultures.ar.numbered("latn").getOrElse(fail("ar declares no latn numbering"))
+    given Culture = latin
+    val rendered = Currency.USD(BigDecimal("-1234.5")).display
+    assert(rendered.contains("-"), s"the live system's minus is absent from '$rendered'")
+    assert(!rendered.contains("\u061C"), s"an Arabic letter mark survived the swap in '$rendered'")
+  }
+  test("text: a declared alternate numbering system swaps in whole") {
+    assert
+      (
+        Cultures.ar
+          .numbered("latn")
+          .exists { latn =>
+            given Culture = latn
+            BigDecimal("1234567.89").display == "1,234,567.89"
+          }
+      )
+    assertEquals(Cultures.en.numbered("arab"), None)
+  }
+  test("text: the generic currency name serves the picker") {
+    given Culture = Cultures.en
+    assertEquals(Cultures.en.name(Currency.KES), "Kenyan Shilling")
+    assertEquals(Cultures.en.name(Currency.TZS), "TZS")
+  }
+  test("text: a quoted literal in a date pattern is text, not date fields") {
+    // CLDR quotes literal words inside patterns - the Spanish `d 'de' MMMM 'de' y` - and unquoted
+    // those letters are the day and weekday symbols.
+    val spanish = Culture.en.data.copy(dates = Map(DateStyle.Medium -> "d 'de' MMMM 'de' y"))
+    given Culture = Culture(Locale(Language.en), spanish)
+    assertEquals(day.display(DateStyle.Medium), "23 de July de 2026")
+  }
+  test("text: a doubled apostrophe in a pattern is one apostrophe") {
+    val possessive = Culture.en.data.copy(dates = Map(DateStyle.Short -> "d''MM"))
+    given Culture = Culture(Locale(Language.en), possessive)
+    assertEquals(day.display(DateStyle.Short), "23'07")
+  }
+  test("text: a combiner's quoted literal survives substitution") {
+    val quoted = Culture.en.data.copy(dateTimesAt = Map(DateStyle.Medium -> "{1} 'at' {0}"))
+    given Culture = Culture(Locale(Language.en), quoted)
+    val stamp = DateTime(day, Time.of(14, 30).toOption.get)
+    assertEquals(stamp.display(DateStyle.Medium, TimeStyle.Short), "Jul 23, 2026 at 2:30\u202fPM")
   }
   test("text: sw medium date") {
     given Culture = Cultures.sw

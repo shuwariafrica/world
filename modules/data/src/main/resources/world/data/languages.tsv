@@ -2,8 +2,8 @@
 # source: iana-language-subtag-registry
 # authority: IANA, under BCP 47 / RFC 5646
 # origin: language-subtag-registry Type: language records, with CLDR overlong aliases for the alpha-3 pairing
-# pin: 2026-06-14
-# published: 2026-06-14
+# pin: 2026-08-08
+# published: 2026-08-08
 # licence: iana-protocol-registry
 # licence-url: https://www.iana.org/help/licensing-terms
 # licence-note: IANA and IETF state the Protocol Registries may be freely used by any party for any purpose
@@ -4326,7 +4326,6 @@ mr	mar
 mra	mra
 mrb	mrb
 mrc	mrc
-mrd	mrd
 mre	mre
 mrf	mrf
 mrg	mrg
@@ -5950,7 +5949,6 @@ shh	shh
 shi	shi
 shj	shj
 shk	shk
-shl	shl
 shm	shm
 shn	shn
 sho	sho

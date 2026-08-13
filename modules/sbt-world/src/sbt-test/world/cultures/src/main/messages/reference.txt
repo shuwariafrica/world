@@ -1,0 +1,6 @@
+# The reference catalogue: every message this build renders, with its typed signature.
+cart.items(count: Int) = {count, plural, one {# item} other {# items}}
+weight(kg: BigDecimal) = {kg, plural, one {# kilogram} other {# kilograms}}
+greeting(name: String) = Hello, {name}!
+promo(item: shop.Sku) = Try {item} today!
+receipt.total(amount: world.money.Money.Value) = Total: {amount}

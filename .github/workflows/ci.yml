@@ -175,6 +175,40 @@ jobs:
         shell: bash
         run: sbt --server "world-native/package"
 
+  test_plugin:
+    name: "plugin / tests and scripted"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java ${{ env.JDK_RELEASE }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_RELEASE }}
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Set up Coursier cache
+        uses: coursier/cache-action@v8
+
+      # The plugin compiles against sbt's own Scala, so it carries a matrix row of its own and is not
+      # aggregated into the library lanes.
+      - name: Test
+        run: sbt --server "sbt-world/testOnly * -- "
+
+      # The scripted fixture is where the generated code exists: it compiles against the published
+      # library, runs the message checks, and carries the golden differential, the compile-time gate
+      # and the literal canary, each of which asserts it took a measurement.
+      - name: Scripted
+        run: sbt --server "sbt-world/scripted"
+
   static_analysis:
     name: analyse
     runs-on: ubuntu-26.04
@@ -268,6 +302,7 @@ jobs:
       - test_jvm
       - test_js
       - test_native
+      - test_plugin
       - static_analysis
       - compatibility
       - docs

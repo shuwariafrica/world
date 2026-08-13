@@ -1,0 +1,25 @@
+msgctxt "cart.items"
+msgid "# item"
+msgstr[0] "# przedmiot"
+msgstr[1] "# przedmioty"
+msgstr[2] "# przedmiotow"
+msgstr[3] "# przedmiotu"
+
+msgctxt "weight"
+msgid "# kilogram"
+msgstr[0] "# kilogram"
+msgstr[1] "# kilogramy"
+msgstr[2] "# kilogramow"
+msgstr[3] "# kilograma"
+
+msgctxt "greeting"
+msgid "Hello, {name}!"
+msgstr "Czesc, {name}!"
+
+msgctxt "promo"
+msgid "Try {item} today!"
+msgstr "Sprobuj {item} dzisiaj!"
+
+msgctxt "receipt.total"
+msgid "Total: {amount}"
+msgstr "Razem: {amount}"

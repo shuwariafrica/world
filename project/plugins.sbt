@@ -15,3 +15,19 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.6")
 // TASTy-MiMa publishes no sbt 2.x plugin. The build definition is itself Scala 3, so the
 // engine links directly onto the build classpath (see Compat.scala).
 libraryDependencies += "ch.epfl.scala" %% "tasty-mima" % "1.4.1"
+
+val sbtScalaVersion = settingKey[String]("Scala version used by sbt metabuild")
+sbtScalaVersion := scalaVersion.value
+
+Compile / sourceGenerators += Def.task {
+  val target = (Compile / sourceManaged).value / "world" / "sbt" / "build" / "MetaBuildInfo.scala"
+  IO.write(
+    target,
+    s"""package world.sbt.build
+       |
+       |object MetaBuildInfo:
+       |  inline val sbtScalaVersion = "${scalaVersion.value}"
+       |""".stripMargin
+  )
+  Seq(target)
+}.taskValue

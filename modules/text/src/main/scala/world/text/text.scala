@@ -92,7 +92,7 @@ final case class Part(kind: Part.Kind, text: String) derives CanEqual
 /** Part kinds for [[Part]]. */
 object Part:
   enum Kind derives CanEqual:
-    case Digits, Group, Decimal, Sign, Symbol, Gap, Mark, Literal
+    case Digits, Group, Decimal, Sign, Percent, PerMille, Bracket, Symbol, Gap, Mark, Literal
 
 /** Locale-correct presentation for any type: world's own values carry
   * instances, and a consumer's or third-party type joins by an instance in its
@@ -156,11 +156,13 @@ object Culture:
     (
       direction: Direction,
       numbering: Data.Numbering,
+      numberings: Map[String, Data.Numbering],
       decimal: Data.Format,
       percent: Data.Format,
       monetary: Data.Monetary,
       symbols: Map[Currency, String],
       currencies: Map[Currency, Map[Plural, String]],
+      currencyNames: Map[Currency, String],
       cardinal: Plural.Operands => Plural,
       ordinalRule: Long => Plural,
       territories: Map[Territory, String],
@@ -172,6 +174,7 @@ object Culture:
       calendar: Calendar,
       dates: Map[DateStyle, String],
       dateTimes: Map[DateStyle, String],
+      dateTimesAt: Map[DateStyle, String],
       months: Vector[String],
       monthsShort: Vector[String],
       monthsStandalone: Vector[String],
@@ -188,7 +191,17 @@ object Culture:
       * 1000-versus-10 000 rule. Symbols belong to the numbering system rather
       * than the locale, per CLDR's own model.
       */
-    final case class Numbering(digits: String, decimal: String, group: String, minimum: Int) derives CanEqual
+    final case class Numbering
+      (
+        digits: String,
+        decimal: String,
+        group: String,
+        minimum: Int,
+        minus: String,
+        plus: String,
+        percent: String,
+        perMille: String
+      ) derives CanEqual
 
     /** One subpattern's wrapping as classified parts. In a monetary affix a
       * Symbol part whose text is the currency sign marks where the currency's
@@ -316,7 +329,7 @@ object Culture:
     def name(s: Script): String = c.data.scripts.getOrElse(s, s.code)
 
     @targetName("nameCurrency")
-    def name(cur: Currency): String = fmt.currencyName(c, cur, Plural.Other)
+    def name(cur: Currency): String = fmt.currencyName(c, cur)
 
     /** Renders a person's name: the name's own locale decides ordering where
       * this culture's data knows it, so cross-script names keep their
@@ -345,6 +358,13 @@ object Culture:
       * is.
       */
     def isolate(s: String): String = "\u2068" + s + "\u2069"
+
+    /** The same culture with a DECLARED alternate numbering system active - the `u-nu` reader, so a
+      * tag such as `ar-u-nu-latn` selects through this seam. Symbols belong to the numbering system,
+      * so the whole system swaps; a system the data does not declare is absent, never a guess.
+      */
+    def numbered(system: String): Option[Culture] =
+      c.data.numberings.get(system).map(active => Culture(c.localeId, c.data.copy(numbering = active)))
   end extension
 
   given CanEqual[Culture, Culture] = CanEqual.derived
@@ -365,8 +385,10 @@ private object fmt:
       case at => (plain.substring(0, at).unsafe, plain.substring(at + 1).unsafe)
     // CLDR groups from the RIGHT: the primary group is the last one, and secondary groups
     // repeat above it (Indian 3;2 is the case where the two sizes differ).
+    // A size of zero is a format whose pattern carries no grouping separator at all (CLDR ships
+    // `0%` and `0.00` among them); it terminates the walk rather than consuming nothing forever.
     @tailrec def chunked(rest: String, size: Int, acc: Vector[String]): Vector[String] =
-      if rest.length <= size then rest +: acc
+      if size <= 0 || rest.length <= size then rest +: acc
       else chunked(rest.dropRight(size), secondary, rest.takeRight(size) +: acc)
     val chunks =
       if intPart.length < primary + c.data.numbering.minimum then Vector(intPart)
@@ -381,10 +403,27 @@ private object fmt:
         :+ Part(Part.Kind.Digits, transliterate(c, fracPart))
   end body
 
-  // A value through a compiled format: the subpattern's affix parts wrap the body verbatim.
+  // A sign, a percent sign and a per-mille sign belong to the numbering system exactly as the
+  // separators do, so the parts a consumer walks carry the ACTIVE system's own text: a numbering
+  // override swaps them with the digits rather than leaving a foreign-script mark on the render. The
+  // part's stored text is the generator's record for the default system; resolution reads the live
+  // one.
+  private def resolve(c: Culture, parts: Vector[Part], negative: Boolean): Vector[Part] =
+    parts.map { part =>
+      part.kind match
+        case Part.Kind.Sign =>
+          Part(Part.Kind.Sign, if negative then c.data.numbering.minus else c.data.numbering.plus)
+        case Part.Kind.Percent  => Part(Part.Kind.Percent, c.data.numbering.percent)
+        case Part.Kind.PerMille => Part(Part.Kind.PerMille, c.data.numbering.perMille)
+        case _                  => part
+    }
+
+  // A value through a compiled format: the subpattern's affix parts wrap the body, their
+  // system-owned symbols resolved against the active numbering.
   def render(c: Culture, n: BigDecimal, f: Culture.Data.Format): Vector[Part] =
-    val a = if n.signum < 0 then f.affixes.negative else f.affixes.positive
-    a.prefix ++ body(c, n.abs, f.primary, f.secondary) ++ a.suffix
+    val negative = n.signum < 0
+    val a = if negative then f.affixes.negative else f.affixes.positive
+    resolve(c, a.prefix, negative) ++ body(c, n.abs, f.primary, f.secondary) ++ resolve(c, a.suffix, negative)
 
   def numberParts(c: Culture, n: BigDecimal): Vector[Part] = render(c, n, c.data.decimal)
 
@@ -441,10 +480,12 @@ private object fmt:
           case Sign.Standard   => c.data.monetary.standard
         val affixes = if alphaApplies(form.plain.positive, text) then form.alpha else form.plain
         val a = if shown.signum < 0 then affixes.negative else affixes.positive
+        // The accounting wrapper is Bracket - pattern data, invariant under a numbering swap - so
+        // sign resolution against the active system is safe on the money path too.
         val wrapped = substitute(a, text)
-        wrapped.prefix
+        resolve(c, wrapped.prefix, shown.signum < 0)
           ++ body(c, shown.abs, c.data.monetary.primary, c.data.monetary.secondary)
-          ++ wrapped.suffix
+          ++ resolve(c, wrapped.suffix, shown.signum < 0)
     end match
   end moneyParts
 
@@ -502,6 +543,11 @@ private object fmt:
           case at => scan(at + separator.length, out :+ text.substring(start, at).unsafe)
       scan(0, Vector.empty)
 
+  // The count-less generic name is the currency picker's label, a different word from the counted
+  // forms an amount renders with; its absence degrades through the counted form to the code.
+  def currencyName(c: Culture, cur: Currency): String =
+    c.data.currencyNames.getOrElse(cur, currencyName(c, cur, Plural.Other))
+
   def currencyName(c: Culture, cur: Currency, category: Plural): String =
     c.data.currencies.get(cur) match
       case Some(names) => names.getOrElse(category, names.getOrElse(Plural.Other, cur.code))
@@ -531,13 +577,29 @@ private object fmt:
     if month >= 1 && month <= names.length then names(month - 1) else fallback
 
   // A CLDR skeleton walked one token run at a time; an unmodelled run renders as itself.
+  // CLDR quotes literal text inside a pattern - the Spanish `d 'de' MMMM 'de' y` - and a doubled
+  // apostrophe is one apostrophe. Unquoted, those letters are field symbols, so a quoted run passes
+  // through untouched rather than rendering as the day and weekday it spells.
   private def tokens(pattern: String)(render: String => String): String =
     @tailrec def scan(at: Int, out: String): String =
       if at >= pattern.length then out
+      else if pattern.charAt(at) == '\'' then
+        if at + 1 < pattern.length && pattern.charAt(at + 1) == '\'' then scan(at + 2, out + "'")
+        else
+          pattern.indexOf('\'', at + 1) match
+            // An unclosed quote runs to the end of the pattern, which is the specification's own reading.
+            case -1    => scan(pattern.length, out + pattern.substring(at + 1).unsafe)
+            case close => scan(close + 1, out + pattern.substring(at + 1, close).unsafe)
       else
         val run = pattern.segmentLength(_ == pattern.charAt(at), at)
         scan(at + run, out + render(pattern.substring(at, at + run).unsafe))
     scan(0, "")
+  end tokens
+
+  /** A combiner pattern's literal text: the placeholders are substituted rather than rendered, so
+    * its quoting is resolved here instead of by the field walker.
+    */
+  private def unquote(pattern: String): String = tokens(pattern)(identity)
 
   // Dates render under the culture's own CALENDAR: the labels come from `Calendar.at` over the
   // neutral day and the weekday from the day itself, so the engine is calendar-free by
@@ -588,8 +650,9 @@ private object fmt:
       )
 
   def dateTime(c: Culture, dt: DateTime, dateStyle: DateStyle, timeStyle: TimeStyle): String =
-    c.data.dateTimes
-      .getOrElse(dateStyle, "{1} {0}")
+    // The at-form is CLDR's own combiner for presenting a date WITH a time; the standard form serves
+    // where the locale declares no at-form of its own.
+    unquote(c.data.dateTimesAt.getOrElse(dateStyle, c.data.dateTimes.getOrElse(dateStyle, "{1} {0}")))
       .replace("{1}", date(c, dt.date, dateStyle))
       .unsafe
       .replace("{0}", time(c, dt.time, timeStyle))
@@ -641,7 +704,7 @@ private object builtin:
 
   // Affixes compiled from the pinned CLDR patterns: root/latn decimal `#,##0.###`, percent
   // `#,##0%`, standard currency `<sign><nbsp>#,##0.00` with accounting aliasing standard at root.
-  private val latn: Numbering = Numbering("0123456789", ".", ",", 1)
+  private val latn: Numbering = Numbering("0123456789", ".", ",", 1, "-", "+", "%", "\u2030")
   private val minus: Affix = Affix(Vector(Part(Part.Kind.Sign, "-")), Vector.empty)
   private val decimalFormat: Format = Format(3, 3, Affixes(Affix.none, minus))
   private val percentFormat: Format = Format
@@ -650,8 +713,8 @@ private object builtin:
       3,
       Affixes
         (
-          Affix(Vector.empty, Vector(Part(Part.Kind.Symbol, "%"))),
-          Affix(Vector(Part(Part.Kind.Sign, "-")), Vector(Part(Part.Kind.Symbol, "%")))
+          Affix(Vector.empty, Vector(Part(Part.Kind.Percent, "%"))),
+          Affix(Vector(Part(Part.Kind.Sign, "-")), Vector(Part(Part.Kind.Percent, "%")))
         )
     )
   private val symbolGap: Affix =
@@ -670,13 +733,13 @@ private object builtin:
     val standard = Monetary.Form(Affixes(tight, tightNegative), Affixes(symbolGap, symbolGapNegative))
     val accountingNegative = Affix
       (
-        Vector(Part(Part.Kind.Sign, "("), Part(Part.Kind.Symbol, "\u00a4")),
-        Vector(Part(Part.Kind.Sign, ")"))
+        Vector(Part(Part.Kind.Bracket, "("), Part(Part.Kind.Symbol, "\u00a4")),
+        Vector(Part(Part.Kind.Bracket, ")"))
       )
     val accountingAlphaNegative = Affix
       (
-        Vector(Part(Part.Kind.Sign, "("), Part(Part.Kind.Symbol, "\u00a4"), Part(Part.Kind.Gap, "\u00a0")),
-        Vector(Part(Part.Kind.Sign, ")"))
+        Vector(Part(Part.Kind.Bracket, "("), Part(Part.Kind.Symbol, "\u00a4"), Part(Part.Kind.Gap, "\u00a0")),
+        Vector(Part(Part.Kind.Bracket, ")"))
       )
     val accounting = Monetary.Form(Affixes(tight, accountingNegative), Affixes(symbolGap, accountingAlphaNegative))
     Monetary(3, 3, standard, accounting, "{0} {1}")
@@ -699,7 +762,8 @@ private object builtin:
       formalSurnameFirst = "{surname} {forename}",
       informal = "{forename}",
       sorting = "{surname}, {forename} {forename2}",
-      surnameFirst = Set("ja", "zh", "ko", "hu")
+      // CLDR's own surname-first set (personNames nameOrderLocales, release-48-2).
+      surnameFirst = Set("ja", "ko", "vi", "yue", "zh")
     )
 
   private val numeric: Vector[String] =
@@ -709,11 +773,13 @@ private object builtin:
     (
       direction = Direction.LeftToRight,
       numbering = latn,
+      numberings = Map.empty,
       decimal = decimalFormat,
       percent = percentFormat,
       monetary = rootMoney,
       symbols = Map.empty,
       currencies = Map.empty,
+      currencyNames = Map.empty,
       cardinal = plainCardinal,
       ordinalRule = _ => Plural.Other,
       territories = Map.empty,
@@ -737,6 +803,7 @@ private object builtin:
           DateStyle.Medium -> "{1} {0}",
           DateStyle.Short -> "{1} {0}"
         ),
+      dateTimesAt = Map.empty,
       months = numeric,
       monthsShort = numeric,
       monthsStandalone = numeric,
@@ -762,6 +829,7 @@ private object builtin:
           Currency.KES -> Map(Plural.One -> "Kenyan shilling", Plural.Other -> "Kenyan shillings"),
           Currency.USD -> Map(Plural.One -> "US dollar", Plural.Other -> "US dollars")
         ),
+      currencyNames = Map(Currency.KES -> "Kenyan Shilling", Currency.USD -> "US Dollar"),
       cardinal = plainCardinal,
       ordinalRule = enOrdinal,
       territories = Map
@@ -793,11 +861,14 @@ private object builtin:
         ),
       dateTimes = Map
         (
-          DateStyle.Full -> "{1} at {0}",
-          DateStyle.Long -> "{1} at {0}",
+          DateStyle.Full -> "{1}, {0}",
+          DateStyle.Long -> "{1}, {0}",
           DateStyle.Medium -> "{1}, {0}",
           DateStyle.Short -> "{1}, {0}"
         ),
+      // CLDR splits the combiner: the standard forms join with a comma, and the atTime forms - the
+      // combiner for presenting a date WITH a time - carry the word.
+      dateTimesAt = Map(DateStyle.Full -> "{1} at {0}", DateStyle.Long -> "{1} at {0}"),
       months = Vector
         (
           "January",

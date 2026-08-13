@@ -1,0 +1,18 @@
+# The generated cultures compile against the library and render through it.
+> checkGenerated
+
+# The corpus is build-time only: it never joins the consumer's compile classpath.
+> checkHidden
+
+# Generation is byte-stable: the same corpus and declarations write the same bytes.
+> checkStable
+
+# The generated sources' compile cost is budgeted, and the gate asserts it measured.
+> checkCompileTime
+
+# Validated literals run their engines at compile time; both ends measured against a baseline.
+> canaryWarmup
+> canaryBaseline
+> canaryIban
+> canaryBaselineDate
+> canaryDate

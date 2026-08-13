@@ -54,7 +54,7 @@ object Sku:
 private object data:
   private def part(kind: Part.Kind, text: String): Part = Part(kind, text)
 
-  private val latn: Numbering = Numbering("0123456789", ".", ",", 1)
+  private val latn: Numbering = Numbering("0123456789", ".", ",", 1, "-", "+", "%", "\u2030")
   private val minusAffix: Affix = Affix(Vector(part(Part.Kind.Sign, "-")), Vector.empty)
   private val rootDecimal: Format = Format(3, 3, Affixes(Affix.none, minusAffix))
   private val rootPercent: Format = Format
@@ -63,8 +63,8 @@ private object data:
       3,
       Affixes
         (
-          Affix(Vector.empty, Vector(part(Part.Kind.Symbol, "%"))),
-          Affix(Vector(part(Part.Kind.Sign, "-")), Vector(part(Part.Kind.Symbol, "%")))
+          Affix(Vector.empty, Vector(part(Part.Kind.Percent, "%"))),
+          Affix(Vector(part(Part.Kind.Sign, "-")), Vector(part(Part.Kind.Percent, "%")))
         )
     )
   private val symbolGap: Affix =
@@ -90,6 +90,7 @@ private object data:
     (
       direction = Direction.LeftToRight,
       numbering = latn,
+      numberings = Map.empty,
       decimal = rootDecimal,
       percent = rootPercent,
       monetary = rootMoney,
@@ -98,6 +99,7 @@ private object data:
         (
           Currency.KES -> Map(Plural.One -> "shilingi ya Kenya", Plural.Other -> "shilingi za Kenya")
         ),
+      currencyNames = Map.empty,
       cardinal = o => if o.i == BigInt(1) && o.v == 0 then Plural.One else Plural.Other,
       ordinalRule = _ => Plural.Other,
       territories = Map
@@ -129,6 +131,7 @@ private object data:
           DateStyle.Medium -> "{1} {0}",
           DateStyle.Short -> "{1} {0}"
         ),
+      dateTimesAt = Map.empty,
       months = Vector
         (
           "Januari",
@@ -175,11 +178,12 @@ private object data:
     val accounting = Affixes
       (
         Affix(Vector.empty, moneySuffix),
-        Affix(Vector(part(Part.Kind.Sign, "(")), moneySuffix :+ part(Part.Kind.Sign, ")"))
+        Affix(Vector(part(Part.Kind.Bracket, "(")), moneySuffix :+ part(Part.Kind.Bracket, ")"))
       )
     sw.copy
       (
-        numbering = Numbering("0123456789", ",", "\u00a0", 2),
+        numbering = Numbering("0123456789", ",", "\u00a0", 2, "-", "+", "%", "\u2030"),
+        numberings = Map.empty,
         monetary = Monetary(3, 3, Monetary.Form(plain, plain), Monetary.Form(accounting, accounting), "{0} {1}"),
         dates = Map
           (
@@ -226,7 +230,7 @@ private object data:
   // invisible control is stored data, exactly as CLDR stores it; accounting resolves to standard.
   val ar: Culture.Data =
     val minusArab = Vector(part(Part.Kind.Sign, "\u061c-"))
-    val percentSuffix = Vector(part(Part.Kind.Symbol, "٪\u061c"))
+    val percentSuffix = Vector(part(Part.Kind.Percent, "٪\u061c"))
     val moneyPrefix = Vector(part(Part.Kind.Mark, "\u200f"))
     val moneySuffix = Vector(part(Part.Kind.Gap, "\u00a0"), part(Part.Kind.Symbol, "¤"))
     val standard = Affixes(Affix(moneyPrefix, moneySuffix), Affix(minusArab ++ moneyPrefix, moneySuffix))
@@ -249,12 +253,14 @@ private object data:
     Culture.Data
       (
         direction = Direction.RightToLeft,
-        numbering = Numbering("٠١٢٣٤٥٦٧٨٩", "٫", "٬", 1),
+        numbering = Numbering("٠١٢٣٤٥٦٧٨٩", "٫", "٬", 1, "\u061C-", "\u061C+", "\u066A\u061C", "\u0609"),
+        numberings = Map("latn" -> Numbering("0123456789", ".", ",", 1, "-", "+", "%", "\u2030")),
         decimal = Format(3, 3, Affixes(Affix.none, Affix(minusArab, Vector.empty))),
         percent = Format(3, 3, Affixes(Affix(Vector.empty, percentSuffix), Affix(minusArab, percentSuffix))),
         monetary = Monetary(3, 3, form, form, "{0} {1}"),
         symbols = Map(Currency.USD -> "US$"),
         currencies = Map.empty,
+        currencyNames = Map.empty,
         cardinal = o =>
           if o.zero then Plural.Zero
           else if o.v != 0 then Plural.Other
@@ -288,6 +294,7 @@ private object data:
             DateStyle.Medium -> "{1}، {0}",
             DateStyle.Short -> "{1}، {0}"
           ),
+        dateTimesAt = Map.empty,
         months = arabicMonths,
         monthsShort = arabicMonths,
         monthsStandalone = arabicMonths,
@@ -303,7 +310,7 @@ end data
   * contract, which is what a private-use locale's own culture is made of.
   */
 object HandComposed:
-  private val latn = Numbering("0123456789", ".", ",", 1)
+  private val latn = Numbering("0123456789", ".", ",", 1, "-", "+", "%", "\u2030")
   private val decimal =
     Format(3, 3, Affixes(Affix.none, Affix(Vector(Part(Part.Kind.Sign, "-")), Vector.empty)))
   private val percent = Format
@@ -312,8 +319,8 @@ object HandComposed:
       3,
       Affixes
         (
-          Affix(Vector.empty, Vector(Part(Part.Kind.Symbol, "%"))),
-          Affix(Vector(Part(Part.Kind.Sign, "-")), Vector(Part(Part.Kind.Symbol, "%")))
+          Affix(Vector.empty, Vector(Part(Part.Kind.Percent, "%"))),
+          Affix(Vector(Part(Part.Kind.Sign, "-")), Vector(Part(Part.Kind.Percent, "%")))
         )
     )
   private val money =
@@ -342,11 +349,13 @@ object HandComposed:
     (
       direction = Direction.LeftToRight,
       numbering = latn,
+      numberings = Map.empty,
       decimal = decimal,
       percent = percent,
       monetary = money,
       symbols = Map.empty,
       currencies = Map.empty,
+      currencyNames = Map.empty,
       cardinal = o => if o.i == BigInt(1) && o.v == 0 then Plural.One else Plural.Other,
       ordinalRule = _ => Plural.Other,
       territories = Map.empty,
@@ -370,6 +379,7 @@ object HandComposed:
           DateStyle.Medium -> "{1} {0}",
           DateStyle.Short -> "{1} {0}"
         ),
+      dateTimesAt = Map.empty,
       months = gregorianMonths,
       monthsShort = Vector("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
       monthsStandalone = gregorianMonths,

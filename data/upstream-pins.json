@@ -7,6 +7,10 @@
     "text": "Fetch url as text; the whole trimmed body is the published version.",
     "manual": "No machine-checkable version endpoint. Reported for periodic human review at the stated cadence."
   },
+  "identity": {
+    "description": "What the curation asserts the FETCH is, before any dataset is regenerated from it. A source that has moved fails the curation, so a refresh is a deliberate pin bump.",
+    "digest": "SHA-256, lower-case hexadecimal, over the fetched text as UTF-8; recorded only for a source that publishes no version of its own."
+  },
   "sources": [
     {
       "name": "six-iso-4217-list-one",
@@ -58,8 +62,8 @@
       "authority": "IANA, under BCP 47 / RFC 5646",
       "content": "Language, script, region, variant and extension subtags",
       "pinned": {
-        "version": "2026-06-14",
-        "published": "2026-06-14"
+        "version": "2026-08-08",
+        "published": "2026-08-08"
       },
       "check": {
         "method": "regex",
@@ -74,7 +78,8 @@
       "content": "Script codes, their numeric codes and English names",
       "pinned": {
         "version": "2026-07-26",
-        "published": "2026-07-26"
+        "published": "2026-07-26",
+        "digest": "98a9be293c706f7e6302e9a54ed959c36f15f53e4ca618356d80c10be2928426"
       },
       "check": {
         "method": "manual",
@@ -263,7 +268,8 @@
       "content": "Postal format template, required fields, and postal-code pattern for every territory the service lists",
       "pinned": {
         "version": "2026-08-10",
-        "published": null
+        "published": null,
+        "digest": "92daad7916fe400ea858015ce8c995ccfda0be3de2ec8b8d72a68d48ac33fb45"
       },
       "check": {
         "method": "manual",
