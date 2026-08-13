@@ -144,8 +144,8 @@ object Curated:
     source = "iana-language-subtag-registry",
     authority = "IANA, under BCP 47 / RFC 5646",
     origin = "language-subtag-registry Type: language records, with CLDR overlong aliases for the alpha-3 pairing",
-    pin = "2026-06-14",
-    published = "2026-06-14",
+    pin = "2026-08-08",
+    published = "2026-08-08",
     licence = "iana-protocol-registry",
     licenceUrl = "https://www.iana.org/help/licensing-terms",
     licenceNote = "IANA and IETF state the Protocol Registries may be freely used by any party for any purpose",
@@ -258,6 +258,96 @@ object Curated:
     compiledIn = true
   )
 
+  private val cultureColumns: String = List(
+    "locale,numbering,decimal,group,minimum,minusSign,plusSign,percentSign,perMille",
+    "decimalPattern,percentPattern",
+    "currencyStandard,currencyStandardAlpha,currencyAccounting,currencyAccountingAlpha,currencyUnit",
+    "dateFull,dateLong,dateMedium,dateShort",
+    "dateTimeFull,dateTimeLong,dateTimeMedium,dateTimeShort",
+    "timeMedium,timeShort",
+    "months,monthsShort,monthsStandalone,days,am,pm",
+    "listAnd,listOr",
+    "nameFormal,nameFormalSurnameFirst,nameInformal,nameSorting,nameSurnameFirst",
+    "dateTimeAtFull,dateTimeAtLong,dateTimeAtMedium,dateTimeAtShort"
+  ).mkString(",")
+
+  /** What one locale file DECLARES of its own presentation: the symbols and
+    * formats of its numbering system, the gregorian patterns and names, the
+    * list and person-name patterns. An empty cell is a value the locale
+    * inherits, resolved by walking `parent-locales`, and a multi-valued cell
+    * separates its values with `|`.
+    */
+  val cultures: Dataset = cldr(
+    "cultures",
+    "common/main/*.xml numbers, dates gregorian, listPatterns, and personNames",
+    "two major releases per year, plus point releases",
+    cultureColumns
+  )
+
+  /** The separators and sign text of every numbering system one locale
+    * declares a `<symbols>` block for, its own default among them, so swapping
+    * the system swaps its marks with its digits and leaves none of the
+    * previous script behind. `minimum` is the locale's own
+    * `<minimumGroupingDigits>`, which CLDR states once per locale and every one
+    * of its systems groups by.
+    */
+  val cultureNumbering: Dataset = cldr(
+    "culture-numbering",
+    "common/main/*.xml numbers symbols, per numbering system",
+    "two major releases per year, plus point releases",
+    "locale,system,decimal,group,minimum,minusSign,plusSign,percentSign,perMille"
+  )
+
+  /** The territory, language, and script names one locale declares, the plain
+    * form of each - the short, variant, and menu forms name the same code a
+    * second way, which a single name per code does not carry.
+    */
+  val cultureNames: Dataset = cldr(
+    "culture-names",
+    "common/main/*.xml localeDisplayNames territories, languages, and scripts",
+    "two major releases per year, plus point releases",
+    "locale,kind,code,name"
+  )
+
+  /** The currency symbols and pluralised names one locale declares. A row
+    * carries either a symbol or a name, and a name carries the plural category
+    * it is selected by; the generic name a locale states without a category
+    * fills `other` only where it declares no `other` of its own.
+    */
+  val cultureCurrencies: Dataset = cldr(
+    "culture-currencies",
+    "common/main/*.xml numbers currencies",
+    "two major releases per year, plus point releases",
+    "locale,currency,symbol,count,name"
+  )
+
+  // The samples beside each rule are documentation of the rule, not part of it, so they are not
+  // curated: a generator compiling the condition has no use for the numbers that illustrate it.
+  val pluralRules: Dataset = cldr(
+    "plural-rules",
+    "common/supplemental/plurals.xml and ordinals.xml, rule conditions without their samples",
+    "two major releases per year, plus point releases",
+    "language,kind,category,rule"
+  )
+
+  // Every territory without a preference of its own falls back to the `001` row, which is why that
+  // row is curated rather than filtered out as a non-territory.
+  val calendarPreferences: Dataset = cldr(
+    "calendar-preferences",
+    "common/supplemental/supplementalData.xml calendarPreferenceData",
+    "two major releases per year, plus point releases",
+    "territory,calendars"
+  )
+
+  // Only the systems that carry a digit string: an algorithmic system spells its numbers by a
+  // rule set world does not model, and has no digits to transliterate through.
+  val numberingSystems: Dataset = cldr(
+    "numbering-systems",
+    "common/supplemental/numberingSystems.xml numeric systems",
+    "two major releases per year, plus point releases",
+    "system,digits"
+  )
+
   val iban: Dataset = snapshot(
     "iban-registry",
     "iban-registry",
@@ -313,7 +403,14 @@ object Curated:
     phoneFormats,
     phoneMobile,
     iban,
-    addressRules
+    addressRules,
+    cultures,
+    cultureNumbering,
+    cultureNames,
+    cultureCurrencies,
+    pluralRules,
+    calendarPreferences,
+    numberingSystems
   )
 
   def file(root: File, dataset: Dataset): File =
@@ -402,7 +499,12 @@ object Curated:
   // is watching the source; the version recorded beside it is what the curated rows were actually
   // taken from, so a dataset whose declared pin has drifted from the registered one is generating
   // from rows nobody re-fetched.
-  private def registration(pins: String, source: String): Either[String, String] =
+  private def registration(pins: String, source: String): Either[String, String] = registered(pins, source, "version")
+
+  /** One field of a source's registered pin, for the fetch-time gate that
+    * asserts a source still IS the release it is pinned to.
+    */
+  def registered(pins: String, source: String, field: String): Either[String, String] =
     val at = pins.indexOf(s""""name": "$source"""")
     if at < 0 then Left(s"source $source is not registered in data/upstream-pins.json")
     else
@@ -411,14 +513,14 @@ object Curated:
       val pinned = entry.indexOf(""""pinned"""")
       if pinned < 0 then Left(s"source $source registers no pinned version in data/upstream-pins.json")
       else
-        val marker = """"version": """"
+        val marker = s""""$field": """"
         val opens = entry.indexOf(marker, pinned)
         val from = opens + marker.length
         val closes = if opens < 0 then -1 else entry.indexOf('"', from)
-        if opens < 0 || closes < 0 then Left(s"source $source registers an unreadable pinned version")
+        if opens < 0 || closes < 0 then Left(s"source $source registers no readable $field in data/upstream-pins.json")
         else Right(entry.substring(from, closes))
     end if
-  end registration
+  end registered
 
   // A comma-separated line, honouring the doubled-quote escaping the extract writes.
   private def csv(line: String): Vector[String] =

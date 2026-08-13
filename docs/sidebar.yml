@@ -28,6 +28,9 @@ subsection:
   - title: Presenting values to people
     page: presentation.md
 
+  - title: Generating cultures and messages
+    page: build-tooling.md
+
   - title: Personal data
     page: personal-data.md
 

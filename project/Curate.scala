@@ -32,6 +32,41 @@ object Curate:
       IO.write(target, body)
       body
 
+  /** Fails the curation unless a fetched source still IS the release the
+    * registry pins it to, so a source that has moved becomes a deliberate pin
+    * bump rather than a dataset that changed under a pin nobody moved.
+    */
+  private def binding(source: String, pin: String, fetched: String): Unit =
+    if fetched != pin then
+      sys.error(
+        s"$source: the fetch is $fetched while the registry pins $pin - bump the pin in Curated.scala and " +
+          "data/upstream-pins.json to take the newer release, or restore the pinned one"
+      )
+
+  private def states(source: String, marker: scala.util.matching.Regex, text: String): String =
+    marker
+      .findFirstMatchIn(text)
+      .map(_.group(1))
+      .getOrElse(sys.error(s"$source: the fetch states no identity of its own to check the pin against"))
+
+  // A source publishing neither a version nor a release date is pinned by what it served, which is
+  // the only identity it has; the watchers' file records the digest beside the retrieval date.
+  private def served(text: String): String =
+    java.security.MessageDigest
+      .getInstance("SHA-256")
+      .digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+      .map(byte => f"${byte & 0xff}%02x")
+      .mkString
+
+  private def recorded(root: File, source: String): String =
+    Curated.registered(IO.read(root / "data" / "upstream-pins.json"), source, "digest") match
+      case Left(reason)  => sys.error(reason)
+      case Right(digest) => digest
+
+  private val fileDate = "(?m)^File-Date: (\\S+)".r
+  private val published = "<ISO_4217 Pblshd=\"([^\"]+)\"".r
+  private val celex = "CELEX:([0-9A-Z]+)".r
+
   // XML shapes here are flat elements with quoted attributes, so a scan over the comment-stripped
   // text reads them without adding an XML parser to the build.
   private val comments = "(?s)<!--.*?-->".r
@@ -71,6 +106,93 @@ object Curate:
       .flatMap(m => words(m.group(1)).flatMap(expand))
 
   private val weekdays = Vector("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+  // CLDR marks a leaf whose value is its parent's with three upward arrows, and states a whole
+  // subtree's inheritance as an <alias> element. Neither DECLARES anything: the generator walks
+  // parent-locales to resolve them, so an unresolved cell is written empty and never followed here.
+  private val inherited = "\u2191\u2191\u2191"
+
+  private val reference = "&(#[0-9]+|#[xX][0-9A-Fa-f]+|[A-Za-z]+);".r
+
+  /** CLDR states every supplementary-plane digit as a numeric reference, so an
+    * attribute's raw text is not its value until this has run over it.
+    */
+  private def entity(value: String): String =
+    if value.indexOf('&') < 0 then value
+    else
+      reference.replaceAllIn(
+        value,
+        m =>
+          java.util.regex.Matcher.quoteReplacement(m.group(1) match
+            case "amp"                                               => "&"
+            case "lt"                                                => "<"
+            case "gt"                                                => ">"
+            case "quot"                                              => "\""
+            case "apos"                                              => "'"
+            case hex if hex.startsWith("#x") || hex.startsWith("#X") =>
+              Character.toChars(Integer.parseInt(hex.drop(2), 16)).mkString
+            case decimal if decimal.startsWith("#") => Character.toChars(decimal.drop(1).toInt).mkString
+            case other                              => sys.error(s"CLDR carries the unknown XML entity '&$other;'"))
+      )
+
+  private def declared(value: String): String = if value == inherited then "" else entity(value)
+
+  private def attributes(source: String): Map[String, String] =
+    attribute.findAllMatchIn(source).map(a => a.group(1) -> a.group(2)).toMap
+
+  /** Every `<tag>` whose content is a leaf, with its attributes. The value is
+    * read untrimmed: a no-break space IS the group separator across a third of
+    * the corpus.
+    */
+  private def leaves(xml: String, tag: String): Vector[(Map[String, String], String)] =
+    s"(?s)<$tag((?:\\s[^>]*?)?)>([^<]*)</$tag>".r
+      .findAllMatchIn(xml)
+      .map(m => (attributes(m.group(1)), m.group(2)))
+      .toVector
+
+  private def blocks(xml: String, tag: String): Vector[(Map[String, String], String)] =
+    s"(?s)<$tag((?:\\s[^>]*?)?)>(.*?)</$tag>".r
+      .findAllMatchIn(xml)
+      .map(m => (attributes(m.group(1)), m.group(2)))
+      .toVector
+
+  // `draft` and `references` are editorial metadata on a CLDR element. Every other attribute
+  // beyond the element's own identifying key - `alt`, `menu`, `case`, `yeartype`, `numbers` -
+  // selects a VARIANT of the value, which a column carrying one value per locale does not hold.
+  private def plainly(attributes: Map[String, String], keys: String*): Boolean =
+    attributes.keysIterator.forall(key => key == "draft" || key == "references" || keys.contains(key))
+
+  /** The value declared for the plain form of `tag`, empty where none is. */
+  private def declaration(xml: String, tag: String): String =
+    leaves(xml, tag).collectFirst { case (a, v) if plainly(a) => declared(v) }.getOrElse("")
+
+  private def scoped(xml: String, tag: String, key: String, value: String): String =
+    blocks(xml, tag).collectFirst { case (a, b) if a.get(key).contains(value) && plainly(a, key) => b }.getOrElse("")
+
+  private def plain(xml: String, tag: String): String =
+    blocks(xml, tag).collectFirst { case (a, b) if plainly(a) => b }.getOrElse("")
+
+  private val categories = Vector("zero", "one", "two", "few", "many", "other")
+
+  /** A value carrying the separator would read back as two, so it fails the
+    * curation rather than reaching a dataset that cannot be split.
+    */
+  private def joined(key: String, field: String, values: Seq[String]): String =
+    values.foreach(value => if value.indexOf('|') >= 0 then sys.error(s"$key $field: '$value' carries the value separator"))
+    values.mkString("|")
+
+  /** One row, gated on the columns the registry declares for its dataset: a
+    * cell count that has drifted from the header, or a cell carrying a tab or a
+    * line break, fails the curation naming the row and the field rather than
+    * writing a file that reads back as a different shape.
+    */
+  private def row(columns: Vector[String], key: String, cells: Vector[String]): String =
+    if cells.length != columns.length then
+      sys.error(s"$key: ${cells.length} cells against the ${columns.length} columns the registry declares")
+    columns.lazyZip(cells).foreach { (name, value) =>
+      if value.exists(c => c == '\t' || c == '\n' || c == '\r') then sys.error(s"$key: field $name carries a tab or a line break")
+    }
+    cells.mkString("\t")
 
   /** ISO 3166-1 reserves AA, QM to QZ, XA to XZ and ZZ for private use; codes
     * there carry no ISO alpha-3 or numeric, whatever fillers a downstream
@@ -171,6 +293,7 @@ object Curate:
       "language-subtag-registry.txt",
       "https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry"
     )
+    binding("iana-language-subtag-registry", Curated.languages.pin, states("iana-language-subtag-registry", fileDate, registry))
     val records = registry.split("(?m)^%%$").toVector.map(_.linesIterator.toVector)
     def value(record: Vector[String], key: String): Option[String] =
       record.collectFirst { case line if line.startsWith(s"$key: ") => line.drop(key.length + 2).trim }
@@ -192,6 +315,7 @@ object Curate:
 
   private def curateScripts(root: File, cldr: File, cache: File): Unit =
     val iso = cached(cache, "iso15924.txt", "https://www.unicode.org/iso15924/iso15924.txt")
+    binding("iso-15924", recorded(root, "iso-15924"), served(iso))
     val numerics = iso.linesIterator
       .filterNot(line => line.startsWith("#") || line.isBlank)
       .map(_.split(';'))
@@ -242,6 +366,8 @@ object Curate:
       "list-three.xml",
       "https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-three.xml"
     )
+    binding("six-iso-4217-list-one", Curated.currencies.pin, states("six-iso-4217-list-one", published, listOne))
+    binding("six-iso-4217-list-three", Curated.historicCurrencies.pin, states("six-iso-4217-list-three", published, listThree))
     def text(entry: String, tag: String): Option[String] =
       s"(?s)<$tag(?:\\s[^>]*)?>(.*?)</$tag>".r.findFirstMatchIn(entry).map(_.group(1).trim)
     def entries(xml: String, tag: String): Vector[String] =
@@ -308,6 +434,7 @@ object Curate:
       "eur-lex-31998R2866.html",
       "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:31998R2866"
     )
+    binding("ec-regulation-2866-98", Curated.euroConversion.pin, states("ec-regulation-2866-98", celex, regulation))
     // Article 1 names each currency in words; the ISO code each name denotes is the one join the
     // regulation itself does not carry.
     val codes = Vector(
@@ -479,14 +606,15 @@ object Curate:
     trimmed
 
   private def curateAddressRules(root: File, cache: File): Unit =
-    val listed = jsonField(cached(cache, "address-index.json", addressOrigin), "countries")
-      .split('~')
-      .iterator
-      .filter(_.nonEmpty)
-      .toVector
+    val index = cached(cache, "address-index.json", addressOrigin)
+    val listed = jsonField(index, "countries").split('~').iterator.filter(_.nonEmpty).toVector
     if listed.isEmpty then sys.error("the address service listed no territories at all")
-    val rows = (listed :+ "ZZ").map { territory =>
-      val record = cached(cache, s"address-$territory.json", s"$addressOrigin/$territory")
+    val queried = listed :+ "ZZ"
+    val records = queried.map(territory => cached(cache, s"address-$territory.json", s"$addressOrigin/$territory"))
+    // The digest binds the index AND every record it names, in the order they are read, because the
+    // service publishes no version and any one record moving is the tier moving.
+    binding("google-address-data-service", recorded(root, "google-address-data-service"), served(index + records.mkString))
+    val rows = queried.lazyZip(records).map { (territory, record) =>
       // `id` is the one field every record carries - the default record has no `key` at all.
       if jsonField(record, "id") != s"data/$territory" then sys.error(s"the address service returned no record for $territory")
       // The format carries its own line breaks as %n, which the tab-separated row cannot; the
@@ -497,6 +625,343 @@ object Curate:
     }
     Curated.write(root, Curated.addressRules, rows)
   end curateAddressRules
+
+  /** The gregorian month names of one context and width, in numeric order. A
+    * month the locale leaves undeclared keeps its slot, so the walk fills that
+    * one from the parent without discarding the eleven beside it.
+    */
+  private def monthNames(months: String, context: String, width: String, key: String, field: String): String =
+    val declaredNames = leaves(scoped(scoped(months, "monthContext", "type", context), "monthWidth", "type", width), "month")
+      .collect {
+        case (a, v) if plainly(a, "type") => (a.getOrElse("type", sys.error(s"$key $field: a month carries no number")), declared(v))
+      }
+    // A number outside the gregorian twelve would land outside the vector the engine indexes by
+    // month, and a number declared twice would silently keep whichever the map wrote last.
+    declaredNames.foreach { (number, _) =>
+      if !number.forall(_.isDigit) || number.toInt < 1 || number.toInt > 12 then
+        sys.error(s"$key $field: '$number' is not a gregorian month number")
+    }
+    if declaredNames.map(_._1).distinct.length != declaredNames.length then sys.error(s"$key $field: a month number is declared twice")
+    val byNumber = declaredNames.toMap
+    val vector = (1 to 12).toVector.map(number => byNumber.getOrElse(number.toString, ""))
+    if vector.forall(_.isEmpty) then "" else joined(key, field, vector)
+  end monthNames
+
+  /** The gregorian format-wide day names, MONDAY first, which is the order
+    * world's day vector carries; CLDR stores them from Sunday.
+    */
+  private def dayNames(days: String, key: String): String =
+    val declaredNames = leaves(scoped(scoped(days, "dayContext", "type", "format"), "dayWidth", "type", "wide"), "day")
+      .collect {
+        case (a, v) if plainly(a, "type") =>
+          val name = a.getOrElse("type", sys.error(s"$key days: a day carries no name"))
+          // `indexOf` answers -1 for a name this vocabulary does not carry, which would pack as a
+          // weekday ordinal and read as Monday.
+          weekdays.indexOf(name) match
+            case -1 => sys.error(s"$key days: '$name' is not a weekday name")
+            case at => at -> declared(v)
+      }
+    if declaredNames.map(_._1).distinct.length != declaredNames.length then sys.error(s"$key days: a weekday is declared twice")
+    val byOrdinal = declaredNames.toMap
+    val vector = weekdays.indices.toVector.map(at => byOrdinal.getOrElse(at, ""))
+    if vector.forall(_.isEmpty) then "" else joined(key, "days", vector)
+  end dayNames
+
+  private def listPattern(body: String, key: String, field: String): String =
+    def part(kind: String): String =
+      leaves(body, "listPatternPart")
+        .collectFirst { case (a, v) if a.get("type").contains(kind) && plainly(a, "type") => declared(v) }
+        .getOrElse("")
+    val parts = Vector(part("2"), part("start"), part("middle"), part("end"))
+    if parts.forall(_.isEmpty) then "" else joined(key, field, parts)
+
+  /** CLDR's person-name fields under world's own vocabulary. The modifiers a
+    * pattern carries are read as UTS #35 part 8 defines them for a name that
+    * supplies the plain fields alone: an informal or core field falls back to
+    * the field it modifies, and a prefix field resolves to the empty string.
+    */
+  private val nameFields: Map[String, String] = Map(
+    "title" -> "{title}",
+    "given" -> "{forename}",
+    "given-informal" -> "{forename}",
+    "given2" -> "{forename2}",
+    "surname" -> "{surname}",
+    "surname-core" -> "{surname}",
+    "surname-prefix" -> "",
+    "surname2" -> "{surname2}",
+    "generation" -> "{generation}",
+    "credentials" -> "{credentials}"
+  )
+
+  private val placeholder = "\\{([^{}]*)\\}".r
+
+  /** The long referring `<personName>` pattern of one order and formality,
+    * under world's field vocabulary. A pattern whose fields world's name record
+    * cannot supply - initials, monograms, and capitalisation are transforms a
+    * formatter applies rather than data - is left empty rather than reduced by
+    * a convention no instrument states.
+    */
+  private def namePattern(names: String, order: String, formality: String): String =
+    val pattern = blocks(names, "personName")
+      .collectFirst {
+        case (a, b)
+            if a.get("order").contains(order) && a.get("length").contains("long")
+              && a.get("usage").contains("referring") && a.get("formality").contains(formality) =>
+          b
+      }
+      .map(body => declaration(body, "namePattern"))
+      .getOrElse("")
+    if pattern.isEmpty || placeholder.findAllMatchIn(pattern).exists(m => !nameFields.contains(m.group(1))) then ""
+    else
+      val mapped = placeholder.replaceAllIn(pattern, m => java.util.regex.Matcher.quoteReplacement(nameFields(m.group(1))))
+      // Dropping a prefix field leaves the space that separated it, and the renderer collapses
+      // runs of spaces itself, so the cell carries what it will render.
+      " +".r.replaceAllIn(mapped, " ").trim
+  end namePattern
+
+  private def cultureRow(columns: Vector[String], locale: String, xml: String): Option[String] =
+    val numbers = section(xml, "numbers")
+    val numbering = declaration(numbers, "defaultNumberingSystem")
+    // The cells below belong to ONE numbering system, and the walk that resolves an inherited name
+    // cannot be run here. A locale declaring no system of its own carries the one root declares.
+    val system = if numbering.isEmpty then "latn" else numbering
+    val symbols = scoped(numbers, "symbols", "numberSystem", system)
+    val money = scoped(numbers, "currencyFormats", "numberSystem", system)
+    val moneyLength = plain(money, "currencyFormatLength")
+    def moneyPattern(kind: String): String = declaration(scoped(moneyLength, "currencyFormat", "type", kind), "pattern")
+    def moneyAlpha(kind: String): String =
+      leaves(scoped(moneyLength, "currencyFormat", "type", kind), "pattern")
+        .collectFirst { case (a, v) if a.get("alt").contains("alphaNextToNumber") && plainly(a, "alt") => declared(v) }
+        .getOrElse("")
+
+    val gregorian = scoped(section(xml, "calendars"), "calendar", "type", "gregorian")
+    val dates = section(gregorian, "dateFormats")
+    val times = section(gregorian, "timeFormats")
+    val dateTimes = section(gregorian, "dateTimeFormats")
+    // The length's own glue pattern: the `atTime` and `relative` forms beside it are a different
+    // join, which one date-time pattern per length does not carry.
+    def dateTimeAt(length: String): String =
+      declaration(plain(scoped(dateTimes, "dateTimeFormatLength", "type", length), "dateTimeFormat"), "pattern")
+    // CLDR's second join per length, which reads "at" in English: a different pattern, not a
+    // different rendering of the one beside it.
+    def dateTimeAtTime(length: String): String =
+      declaration(scoped(scoped(dateTimes, "dateTimeFormatLength", "type", length), "dateTimeFormat", "type", "atTime"), "pattern")
+    val periods =
+      scoped(scoped(section(gregorian, "dayPeriods"), "dayPeriodContext", "type", "format"), "dayPeriodWidth", "type", "wide")
+    def period(kind: String): String =
+      leaves(periods, "dayPeriod")
+        .collectFirst { case (a, v) if a.get("type").contains(kind) && plainly(a, "type") => declared(v) }
+        .getOrElse("")
+
+    val lists = section(xml, "listPatterns")
+    val names = section(xml, "personNames")
+    val months = section(gregorian, "months")
+    val cells = Vector(
+      locale,
+      numbering,
+      declaration(symbols, "decimal"),
+      declaration(symbols, "group"),
+      declaration(numbers, "minimumGroupingDigits"),
+      declaration(symbols, "minusSign"),
+      declaration(symbols, "plusSign"),
+      declaration(symbols, "percentSign"),
+      declaration(symbols, "perMille"),
+      declaration(plain(scoped(numbers, "decimalFormats", "numberSystem", system), "decimalFormatLength"), "pattern"),
+      declaration(plain(scoped(numbers, "percentFormats", "numberSystem", system), "percentFormatLength"), "pattern"),
+      moneyPattern("standard"),
+      moneyAlpha("standard"),
+      moneyPattern("accounting"),
+      moneyAlpha("accounting"),
+      leaves(money, "unitPattern")
+        .collectFirst { case (a, v) if a.get("count").contains("other") && plainly(a, "count") => declared(v) }
+        .getOrElse(""),
+      declaration(scoped(dates, "dateFormatLength", "type", "full"), "pattern"),
+      declaration(scoped(dates, "dateFormatLength", "type", "long"), "pattern"),
+      declaration(scoped(dates, "dateFormatLength", "type", "medium"), "pattern"),
+      declaration(scoped(dates, "dateFormatLength", "type", "short"), "pattern"),
+      dateTimeAt("full"),
+      dateTimeAt("long"),
+      dateTimeAt("medium"),
+      dateTimeAt("short"),
+      declaration(scoped(times, "timeFormatLength", "type", "medium"), "pattern"),
+      declaration(scoped(times, "timeFormatLength", "type", "short"), "pattern"),
+      monthNames(months, "format", "wide", locale, "months"),
+      monthNames(months, "format", "abbreviated", locale, "monthsShort"),
+      monthNames(months, "stand-alone", "wide", locale, "monthsStandalone"),
+      dayNames(section(gregorian, "days"), locale),
+      period("am"),
+      period("pm"),
+      listPattern(plain(lists, "listPattern"), locale, "listAnd"),
+      listPattern(scoped(lists, "listPattern", "type", "or"), locale, "listOr"),
+      namePattern(names, "givenFirst", "formal"),
+      namePattern(names, "surnameFirst", "formal"),
+      namePattern(names, "givenFirst", "informal"),
+      namePattern(names, "sorting", "formal"),
+      leaves(names, "nameOrderLocales")
+        .collectFirst { case (a, v) if a.get("order").contains("surnameFirst") && plainly(a, "order") => declared(v) }
+        .map(order => joined(locale, "nameSurnameFirst", words(order)))
+        .getOrElse(""),
+      dateTimeAtTime("full"),
+      dateTimeAtTime("long"),
+      dateTimeAtTime("medium"),
+      dateTimeAtTime("short")
+    )
+    Option.when(cells.tail.exists(_.nonEmpty))(row(columns, locale, cells))
+  end cultureRow
+
+  private def numberingRows(columns: Vector[String], locale: String, xml: String): Vector[String] =
+    val numbers = section(xml, "numbers")
+    // `minimumGroupingDigits` is a child of `<numbers>` and never of `<symbols>` (common/dtd/ldml.dtd),
+    // so the locale states it once and every one of its systems groups by that one value.
+    val minimum = declaration(numbers, "minimumGroupingDigits")
+    val declaredSystems = blocks(numbers, "symbols").collect {
+      case (a, body) if plainly(a, "numberSystem") =>
+        a.getOrElse("numberSystem", sys.error(s"$locale: a symbols block names no numbering system")) -> body
+    }
+    if declaredSystems.map(_._1).distinct.length != declaredSystems.length then
+      sys.error(s"$locale: a numbering system carries two symbols blocks")
+    declaredSystems.flatMap { (system, body) =>
+      val separators = Vector("decimal", "group").map(tag => declaration(body, tag))
+      val signs = Vector("minusSign", "plusSign", "percentSign", "perMille").map(tag => declaration(body, tag))
+      // The row stands on what the BLOCK declares. `minimum` rides along from the locale, so it is
+      // no evidence of a system of its own: root writes most of its systems as an alias to latn,
+      // and every one of those states nothing whatever the locale groups by.
+      Option.when((separators ++ signs).exists(_.nonEmpty))(
+        row(columns, s"$locale $system", Vector(locale, system) ++ separators ++ Vector(minimum) ++ signs)
+      )
+    }
+  end numberingRows
+
+  private def nameRows(columns: Vector[String], locale: String, xml: String): Vector[String] =
+    val display = section(xml, "localeDisplayNames")
+    Vector("territory" -> "territories", "language" -> "languages", "script" -> "scripts").flatMap { (kind, container) =>
+      val entries = leaves(section(display, container), kind).collect {
+        case (a, v) if plainly(a, "type") =>
+          a.getOrElse("type", sys.error(s"$locale $kind: a display name names no code")) -> declared(v)
+      }
+      if entries.map(_._1).distinct.length != entries.length then sys.error(s"$locale $kind: a code is named twice")
+      entries.collect {
+        case (code, name) if name.nonEmpty =>
+          row(columns, s"$locale $kind $code", Vector(locale, kind, code.replace('_', '-'), name))
+      }
+    }
+  end nameRows
+
+  private def currencyRows(columns: Vector[String], locale: String, xml: String): Vector[String] =
+    blocks(section(xml, "currencies"), "currency").flatMap { (entry, body) =>
+      val code = entry.getOrElse("type", sys.error(s"$locale: a currency carries no code"))
+      val symbols = leaves(body, "symbol").collect { case (a, v) if plainly(a) => declared(v) }.filter(_.nonEmpty)
+      if symbols.length > 1 then sys.error(s"$locale $code: ${symbols.length} symbols declared without a variant")
+      val counted = leaves(body, "displayName")
+        .collect {
+          case (a, v) if a.contains("count") && plainly(a, "count") =>
+            val category = a("count")
+            if !categories.contains(category) then sys.error(s"$locale $code: '$category' is not a plural category")
+            category -> declared(v)
+        }
+        .filter(_._2.nonEmpty)
+      if counted.map(_._1).distinct.length != counted.length then sys.error(s"$locale $code: a plural category is named twice")
+      // The name a locale states without a category is its generic one - the picker label, a
+      // different word from the counted forms - and carries no category of its own. It also fills
+      // the `other` slot, but only where the locale declares no `other` to fill it.
+      val generic = declaration(body, "displayName")
+      val fallback = Option.when(generic.nonEmpty && !counted.exists(_._1 == "other"))("other" -> generic)
+      symbols.map(symbol => row(columns, s"$locale $code symbol", Vector(locale, code, symbol, "", ""))) ++
+        Option.when(generic.nonEmpty)(row(columns, s"$locale $code generic", Vector(locale, code, "", "", generic))) ++
+        (counted ++ fallback).map((category, name) => row(columns, s"$locale $code $category", Vector(locale, code, "", category, name)))
+    }
+  end currencyRows
+
+  /** Writes the four per-locale presentation datasets in one pass: a pass
+    * apiece would read the whole locale corpus four times over.
+    */
+  private def curateCultures(root: File, cldr: File): Unit =
+    val locales = ((cldr / "common" / "main") * "*.xml").get().toVector.sortBy(_.getName)
+    if locales.isEmpty then sys.error(s"CLDR carries no locale files under ${cldr / "common" / "main"}")
+    val cultureColumns = Curated.cultures.columns.split(',').toVector
+    val numberingColumns = Curated.cultureNumbering.columns.split(',').toVector
+    val nameColumns = Curated.cultureNames.columns.split(',').toVector
+    val currencyColumns = Curated.cultureCurrencies.columns.split(',').toVector
+    val curated = locales.map { file =>
+      val locale = file.getName.stripSuffix(".xml").replace('_', '-')
+      val xml = comments.replaceAllIn(IO.read(file), "")
+      (
+        cultureRow(cultureColumns, locale, xml),
+        numberingRows(numberingColumns, locale, xml),
+        nameRows(nameColumns, locale, xml),
+        currencyRows(currencyColumns, locale, xml)
+      )
+    }
+    Curated.write(root, Curated.cultures, curated.flatMap(_._1).sorted)
+    Curated.write(root, Curated.cultureNumbering, curated.flatMap(_._2).sorted)
+    Curated.write(root, Curated.cultureNames, curated.flatMap(_._3).sorted)
+    Curated.write(root, Curated.cultureCurrencies, curated.flatMap(_._4).sorted)
+  end curateCultures
+
+  private def curatePluralRules(root: File, cldr: File): Unit =
+    val columns = Curated.pluralRules.columns.split(',').toVector
+    def stated(file: String, kind: String): Vector[String] =
+      val xml = comments.replaceAllIn(IO.read(cldr / "common" / "supplemental" / file), "")
+      blocks(xml, "plurals").flatMap { (_, plurals) =>
+        blocks(plurals, "pluralRules").flatMap { (set, body) =>
+          val languages = words(set.getOrElse("locales", sys.error(s"$file: a rule set names no locales")))
+          leaves(body, "pluralRule").flatMap { (a, text) =>
+            val category = a.getOrElse("count", sys.error(s"$file: a rule carries no plural category"))
+            if !categories.contains(category) then sys.error(s"$file: '$category' is not a plural category")
+            // The samples are documentation of the rule, not part of it; anything else after the
+            // marker would be a rule fragment this drop silently loses.
+            val rule = text.indexOf('@') match
+              case -1 => text.trim
+              case at =>
+                val samples = text.substring(at)
+                if !samples.startsWith("@integer") && !samples.startsWith("@decimal") then
+                  sys.error(s"$file $category: '$samples' is not a sample suffix")
+                text.take(at).trim
+            languages.map(language =>
+              row(columns, s"$file $language $category", Vector(language.replace('_', '-'), kind, category, entity(rule))))
+          }
+        }
+      }
+    end stated
+    val rules = stated("plurals.xml", "cardinal") ++ stated("ordinals.xml", "ordinal")
+    val keys = rules.map(_.split('\t').take(3).mkString("\t"))
+    if keys.distinct.length != keys.length then sys.error("plural rules: a language states one category twice")
+    Curated.write(root, Curated.pluralRules, rules.sorted)
+  end curatePluralRules
+
+  private def curateCalendarPreferences(root: File, cldr: File): Unit =
+    val columns = Curated.calendarPreferences.columns.split(',').toVector
+    val supplemental = IO.read(cldr / "common" / "supplemental" / "supplementalData.xml")
+    val preferences = elements(section(supplemental, "calendarPreferenceData"), "calendarPreference").flatMap { entry =>
+      val ordering = words(entry.getOrElse("ordering", sys.error("calendar preferences: a preference states no ordering")))
+      words(entry.getOrElse("territories", sys.error("calendar preferences: a preference names no territories"))).map(_ -> ordering)
+    }
+    // Every territory without a preference of its own falls back to `001`, so a tier missing it
+    // resolves nothing at all.
+    if !preferences.exists(_._1 == "001") then sys.error("calendar preferences: the 001 default is absent")
+    if preferences.map(_._1).distinct.length != preferences.length then sys.error("calendar preferences: a territory states two orderings")
+    val rows = preferences
+      .map((territory, ordering) => row(columns, territory, Vector(territory, joined(territory, "calendars", ordering))))
+      .sorted
+    Curated.write(root, Curated.calendarPreferences, rows)
+  end curateCalendarPreferences
+
+  private def curateNumberingSystems(root: File, cldr: File): Unit =
+    val columns = Curated.numberingSystems.columns.split(',').toVector
+    val systems = elements(IO.read(cldr / "common" / "supplemental" / "numberingSystems.xml"), "numberingSystem")
+    val numeric = systems.filter(_.get("type").contains("numeric"))
+    if numeric.isEmpty then sys.error("numbering systems: the registry lists none that carry digits")
+    val rows = numeric.map { system =>
+      val id = system.getOrElse("id", sys.error("numbering systems: a system carries no identifier"))
+      val digits = entity(system.getOrElse("digits", sys.error(s"numbering system $id: declared numeric with no digits")))
+      // Zero through nine and nothing else: the engine transliterates by indexing this string with
+      // the ASCII digit's own offset, which a string of any other length cannot serve.
+      val counted = digits.codePointCount(0, digits.length)
+      if counted != 10 then sys.error(s"numbering system $id: $counted digits rather than ten")
+      row(columns, id, Vector(id, digits))
+    }.sorted
+    Curated.write(root, Curated.numberingSystems, rows)
+  end curateNumberingSystems
 
   /** Regenerates every dataset whose upstream carries a machine-checkable pin. */
   def run(root: File, cache: File, log: Logger): Unit =
@@ -519,6 +984,10 @@ object Curate:
     curatePhoneFormats(root, cache)
     curatePhoneMobile(root, cache)
     curateAddressRules(root, cache)
+    curateCultures(root, cldr)
+    curatePluralRules(root, cldr)
+    curateCalendarPreferences(root, cldr)
+    curateNumberingSystems(root, cldr)
     // The manual snapshots keep their rows - only a human retrieval replaces those - but their
     // provenance is restated from the registry so a header can never drift from what it declares.
     List(Curated.iban, Curated.cashPractice)

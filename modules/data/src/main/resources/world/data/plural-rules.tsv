@@ -1,0 +1,710 @@
+# dataset: plural-rules
+# source: cldr
+# authority: Unicode Consortium
+# origin: common/supplemental/plurals.xml and ordinals.xml, rule conditions without their samples
+# pin: release-48-2
+# published: 2026-03-17
+# licence: Unicode-3.0
+# licence-url: https://www.unicode.org/license.txt
+# licence-note: Unicode License v3 grants distribution of the Data Files
+# licence-verified: 2026-07-26
+# cadence: two major releases per year, plus point releases
+# compiled-in: true
+# columns: language,kind,category,rule
+af	cardinal	one	n = 1
+af	cardinal	other	
+af	ordinal	other	
+ak	cardinal	one	n = 0..1
+ak	cardinal	other	
+am	cardinal	one	i = 0 or n = 1
+am	cardinal	other	
+am	ordinal	other	
+an	cardinal	one	n = 1
+an	cardinal	other	
+an	ordinal	other	
+ar	cardinal	few	n % 100 = 3..10
+ar	cardinal	many	n % 100 = 11..99
+ar	cardinal	one	n = 1
+ar	cardinal	other	
+ar	cardinal	two	n = 2
+ar	cardinal	zero	n = 0
+ar	ordinal	other	
+ars	cardinal	few	n % 100 = 3..10
+ars	cardinal	many	n % 100 = 11..99
+ars	cardinal	one	n = 1
+ars	cardinal	other	
+ars	cardinal	two	n = 2
+ars	cardinal	zero	n = 0
+as	cardinal	one	i = 0 or n = 1
+as	cardinal	other	
+as	ordinal	few	n = 4
+as	ordinal	many	n = 6
+as	ordinal	one	n = 1,5,7,8,9,10
+as	ordinal	other	
+as	ordinal	two	n = 2,3
+asa	cardinal	one	n = 1
+asa	cardinal	other	
+ast	cardinal	one	i = 1 and v = 0
+ast	cardinal	other	
+ast	ordinal	other	
+az	cardinal	one	n = 1
+az	cardinal	other	
+az	ordinal	few	i % 10 = 3,4 or i % 1000 = 100,200,300,400,500,600,700,800,900
+az	ordinal	many	i = 0 or i % 10 = 6 or i % 100 = 40,60,90
+az	ordinal	one	i % 10 = 1,2,5,7,8 or i % 100 = 20,50,70,80
+az	ordinal	other	
+bal	cardinal	one	n = 1
+bal	cardinal	other	
+bal	ordinal	one	n = 1
+bal	ordinal	other	
+be	cardinal	few	n % 10 = 2..4 and n % 100 != 12..14
+be	cardinal	many	n % 10 = 0 or n % 10 = 5..9 or n % 100 = 11..14
+be	cardinal	one	n % 10 = 1 and n % 100 != 11
+be	cardinal	other	
+be	ordinal	few	n % 10 = 2,3 and n % 100 != 12,13
+be	ordinal	other	
+bem	cardinal	one	n = 1
+bem	cardinal	other	
+bez	cardinal	one	n = 1
+bez	cardinal	other	
+bg	cardinal	one	n = 1
+bg	cardinal	other	
+bg	ordinal	other	
+bho	cardinal	one	n = 0..1
+bho	cardinal	other	
+blo	cardinal	one	n = 1
+blo	cardinal	other	
+blo	cardinal	zero	n = 0
+blo	ordinal	few	i = 2,3,4,5,6
+blo	ordinal	one	i = 1
+blo	ordinal	other	
+blo	ordinal	zero	i = 0
+bm	cardinal	other	
+bn	cardinal	one	i = 0 or n = 1
+bn	cardinal	other	
+bn	ordinal	few	n = 4
+bn	ordinal	many	n = 6
+bn	ordinal	one	n = 1,5,7,8,9,10
+bn	ordinal	other	
+bn	ordinal	two	n = 2,3
+bo	cardinal	other	
+br	cardinal	few	n % 10 = 3..4,9 and n % 100 != 10..19,70..79,90..99
+br	cardinal	many	n != 0 and n % 1000000 = 0
+br	cardinal	one	n % 10 = 1 and n % 100 != 11,71,91
+br	cardinal	other	
+br	cardinal	two	n % 10 = 2 and n % 100 != 12,72,92
+brx	cardinal	one	n = 1
+brx	cardinal	other	
+bs	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14 or f % 10 = 2..4 and f % 100 != 12..14
+bs	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11 or f % 10 = 1 and f % 100 != 11
+bs	cardinal	other	
+bs	ordinal	other	
+ca	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+ca	cardinal	one	i = 1 and v = 0
+ca	cardinal	other	
+ca	ordinal	few	n = 4
+ca	ordinal	one	n = 1,3
+ca	ordinal	other	
+ca	ordinal	two	n = 2
+ce	cardinal	one	n = 1
+ce	cardinal	other	
+ce	ordinal	other	
+ceb	cardinal	one	v = 0 and i = 1,2,3 or v = 0 and i % 10 != 4,6,9 or v != 0 and f % 10 != 4,6,9
+ceb	cardinal	other	
+cgg	cardinal	one	n = 1
+cgg	cardinal	other	
+chr	cardinal	one	n = 1
+chr	cardinal	other	
+ckb	cardinal	one	n = 1
+ckb	cardinal	other	
+cs	cardinal	few	i = 2..4 and v = 0
+cs	cardinal	many	v != 0
+cs	cardinal	one	i = 1 and v = 0
+cs	cardinal	other	
+cs	ordinal	other	
+csw	cardinal	one	n = 0..1
+csw	cardinal	other	
+cv	cardinal	one	n = 1
+cv	cardinal	other	
+cv	cardinal	zero	n = 0
+cv	ordinal	other	
+cy	cardinal	few	n = 3
+cy	cardinal	many	n = 6
+cy	cardinal	one	n = 1
+cy	cardinal	other	
+cy	cardinal	two	n = 2
+cy	cardinal	zero	n = 0
+cy	ordinal	few	n = 3,4
+cy	ordinal	many	n = 5,6
+cy	ordinal	one	n = 1
+cy	ordinal	other	
+cy	ordinal	two	n = 2
+cy	ordinal	zero	n = 0,7,8,9
+da	cardinal	one	n = 1 or t != 0 and i = 0,1
+da	cardinal	other	
+da	ordinal	other	
+de	cardinal	one	i = 1 and v = 0
+de	cardinal	other	
+de	ordinal	other	
+doi	cardinal	one	i = 0 or n = 1
+doi	cardinal	other	
+dsb	cardinal	few	v = 0 and i % 100 = 3..4 or f % 100 = 3..4
+dsb	cardinal	one	v = 0 and i % 100 = 1 or f % 100 = 1
+dsb	cardinal	other	
+dsb	cardinal	two	v = 0 and i % 100 = 2 or f % 100 = 2
+dsb	ordinal	other	
+dv	cardinal	one	n = 1
+dv	cardinal	other	
+dz	cardinal	other	
+ee	cardinal	one	n = 1
+ee	cardinal	other	
+el	cardinal	one	n = 1
+el	cardinal	other	
+el	ordinal	other	
+en	cardinal	one	i = 1 and v = 0
+en	cardinal	other	
+en	ordinal	few	n % 10 = 3 and n % 100 != 13
+en	ordinal	one	n % 10 = 1 and n % 100 != 11
+en	ordinal	other	
+en	ordinal	two	n % 10 = 2 and n % 100 != 12
+eo	cardinal	one	n = 1
+eo	cardinal	other	
+es	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+es	cardinal	one	n = 1
+es	cardinal	other	
+es	ordinal	other	
+et	cardinal	one	i = 1 and v = 0
+et	cardinal	other	
+et	ordinal	other	
+eu	cardinal	one	n = 1
+eu	cardinal	other	
+eu	ordinal	other	
+fa	cardinal	one	i = 0 or n = 1
+fa	cardinal	other	
+fa	ordinal	other	
+ff	cardinal	one	i = 0,1
+ff	cardinal	other	
+fi	cardinal	one	i = 1 and v = 0
+fi	cardinal	other	
+fi	ordinal	other	
+fil	cardinal	one	v = 0 and i = 1,2,3 or v = 0 and i % 10 != 4,6,9 or v != 0 and f % 10 != 4,6,9
+fil	cardinal	other	
+fil	ordinal	one	n = 1
+fil	ordinal	other	
+fo	cardinal	one	n = 1
+fo	cardinal	other	
+fr	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+fr	cardinal	one	i = 0,1
+fr	cardinal	other	
+fr	ordinal	one	n = 1
+fr	ordinal	other	
+fur	cardinal	one	n = 1
+fur	cardinal	other	
+fy	cardinal	one	i = 1 and v = 0
+fy	cardinal	other	
+fy	ordinal	other	
+ga	cardinal	few	n = 3..6
+ga	cardinal	many	n = 7..10
+ga	cardinal	one	n = 1
+ga	cardinal	other	
+ga	cardinal	two	n = 2
+ga	ordinal	one	n = 1
+ga	ordinal	other	
+gd	cardinal	few	n = 3..10,13..19
+gd	cardinal	one	n = 1,11
+gd	cardinal	other	
+gd	cardinal	two	n = 2,12
+gd	ordinal	few	n = 3,13
+gd	ordinal	one	n = 1,11
+gd	ordinal	other	
+gd	ordinal	two	n = 2,12
+gl	cardinal	one	i = 1 and v = 0
+gl	cardinal	other	
+gl	ordinal	other	
+gsw	cardinal	one	n = 1
+gsw	cardinal	other	
+gsw	ordinal	other	
+gu	cardinal	one	i = 0 or n = 1
+gu	cardinal	other	
+gu	ordinal	few	n = 4
+gu	ordinal	many	n = 6
+gu	ordinal	one	n = 1
+gu	ordinal	other	
+gu	ordinal	two	n = 2,3
+guw	cardinal	one	n = 0..1
+guw	cardinal	other	
+gv	cardinal	few	v = 0 and i % 100 = 0,20,40,60,80
+gv	cardinal	many	v != 0
+gv	cardinal	one	v = 0 and i % 10 = 1
+gv	cardinal	other	
+gv	cardinal	two	v = 0 and i % 10 = 2
+ha	cardinal	one	n = 1
+ha	cardinal	other	
+haw	cardinal	one	n = 1
+haw	cardinal	other	
+he	cardinal	one	i = 1 and v = 0 or i = 0 and v != 0
+he	cardinal	other	
+he	cardinal	two	i = 2 and v = 0
+he	ordinal	other	
+hi	cardinal	one	i = 0 or n = 1
+hi	cardinal	other	
+hi	ordinal	few	n = 4
+hi	ordinal	many	n = 6
+hi	ordinal	one	n = 1
+hi	ordinal	other	
+hi	ordinal	two	n = 2,3
+hnj	cardinal	other	
+hr	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14 or f % 10 = 2..4 and f % 100 != 12..14
+hr	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11 or f % 10 = 1 and f % 100 != 11
+hr	cardinal	other	
+hr	ordinal	other	
+hsb	cardinal	few	v = 0 and i % 100 = 3..4 or f % 100 = 3..4
+hsb	cardinal	one	v = 0 and i % 100 = 1 or f % 100 = 1
+hsb	cardinal	other	
+hsb	cardinal	two	v = 0 and i % 100 = 2 or f % 100 = 2
+hsb	ordinal	other	
+hu	cardinal	one	n = 1
+hu	cardinal	other	
+hu	ordinal	one	n = 1,5
+hu	ordinal	other	
+hy	cardinal	one	i = 0,1
+hy	cardinal	other	
+hy	ordinal	one	n = 1
+hy	ordinal	other	
+ia	cardinal	one	i = 1 and v = 0
+ia	cardinal	other	
+ia	ordinal	other	
+id	cardinal	other	
+id	ordinal	other	
+ie	cardinal	one	i = 1 and v = 0
+ie	cardinal	other	
+ie	ordinal	other	
+ig	cardinal	other	
+ii	cardinal	other	
+in	cardinal	other	
+in	ordinal	other	
+io	cardinal	one	i = 1 and v = 0
+io	cardinal	other	
+is	cardinal	one	t = 0 and i % 10 = 1 and i % 100 != 11 or t % 10 = 1 and t % 100 != 11
+is	cardinal	other	
+is	ordinal	other	
+it	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+it	cardinal	one	i = 1 and v = 0
+it	cardinal	other	
+it	ordinal	many	n = 11,8,80,800
+it	ordinal	other	
+iu	cardinal	one	n = 1
+iu	cardinal	other	
+iu	cardinal	two	n = 2
+iw	cardinal	one	i = 1 and v = 0 or i = 0 and v != 0
+iw	cardinal	other	
+iw	cardinal	two	i = 2 and v = 0
+iw	ordinal	other	
+ja	cardinal	other	
+ja	ordinal	other	
+jbo	cardinal	other	
+jgo	cardinal	one	n = 1
+jgo	cardinal	other	
+ji	cardinal	one	i = 1 and v = 0
+ji	cardinal	other	
+jmc	cardinal	one	n = 1
+jmc	cardinal	other	
+jv	cardinal	other	
+jw	cardinal	other	
+ka	cardinal	one	n = 1
+ka	cardinal	other	
+ka	ordinal	many	i = 0 or i % 100 = 2..20,40,60,80
+ka	ordinal	one	i = 1
+ka	ordinal	other	
+kab	cardinal	one	i = 0,1
+kab	cardinal	other	
+kaj	cardinal	one	n = 1
+kaj	cardinal	other	
+kcg	cardinal	one	n = 1
+kcg	cardinal	other	
+kde	cardinal	other	
+kea	cardinal	other	
+kk	cardinal	one	n = 1
+kk	cardinal	other	
+kk	ordinal	many	n % 10 = 6 or n % 10 = 9 or n % 10 = 0 and n != 0
+kk	ordinal	other	
+kkj	cardinal	one	n = 1
+kkj	cardinal	other	
+kl	cardinal	one	n = 1
+kl	cardinal	other	
+km	cardinal	other	
+km	ordinal	other	
+kn	cardinal	one	i = 0 or n = 1
+kn	cardinal	other	
+kn	ordinal	other	
+ko	cardinal	other	
+ko	ordinal	other	
+kok	cardinal	one	i = 0 or n = 1
+kok	cardinal	other	
+kok	ordinal	few	n = 4
+kok	ordinal	one	n = 1
+kok	ordinal	other	
+kok	ordinal	two	n = 2,3
+kok-Latn	cardinal	one	i = 0 or n = 1
+kok-Latn	cardinal	other	
+kok-Latn	ordinal	few	n = 4
+kok-Latn	ordinal	one	n = 1
+kok-Latn	ordinal	other	
+kok-Latn	ordinal	two	n = 2,3
+ks	cardinal	one	n = 1
+ks	cardinal	other	
+ksb	cardinal	one	n = 1
+ksb	cardinal	other	
+ksh	cardinal	one	n = 1
+ksh	cardinal	other	
+ksh	cardinal	zero	n = 0
+ku	cardinal	one	n = 1
+ku	cardinal	other	
+kw	cardinal	few	n % 100 = 3,23,43,63,83
+kw	cardinal	many	n != 1 and n % 100 = 1,21,41,61,81
+kw	cardinal	one	n = 1
+kw	cardinal	other	
+kw	cardinal	two	n % 100 = 2,22,42,62,82 or n % 1000 = 0 and n % 100000 = 1000..20000,40000,60000,80000 or n != 0 and n % 1000000 = 100000
+kw	cardinal	zero	n = 0
+kw	ordinal	many	n = 5 or n % 100 = 5
+kw	ordinal	one	n = 1..4 or n % 100 = 1..4,21..24,41..44,61..64,81..84
+kw	ordinal	other	
+ky	cardinal	one	n = 1
+ky	cardinal	other	
+ky	ordinal	other	
+lag	cardinal	one	i = 0,1 and n != 0
+lag	cardinal	other	
+lag	cardinal	zero	n = 0
+lb	cardinal	one	n = 1
+lb	cardinal	other	
+lg	cardinal	one	n = 1
+lg	cardinal	other	
+lij	cardinal	one	i = 1 and v = 0
+lij	cardinal	other	
+lij	ordinal	many	n = 11,8,80..89,800..899
+lij	ordinal	other	
+lkt	cardinal	other	
+lld	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+lld	cardinal	one	i = 1 and v = 0
+lld	cardinal	other	
+lld	ordinal	many	n = 11,8,80,800
+lld	ordinal	other	
+ln	cardinal	one	n = 0..1
+ln	cardinal	other	
+lo	cardinal	other	
+lo	ordinal	one	n = 1
+lo	ordinal	other	
+lt	cardinal	few	n % 10 = 2..9 and n % 100 != 11..19
+lt	cardinal	many	f != 0
+lt	cardinal	one	n % 10 = 1 and n % 100 != 11..19
+lt	cardinal	other	
+lt	ordinal	other	
+lv	cardinal	one	n % 10 = 1 and n % 100 != 11 or v = 2 and f % 10 = 1 and f % 100 != 11 or v != 2 and f % 10 = 1
+lv	cardinal	other	
+lv	cardinal	zero	n % 10 = 0 or n % 100 = 11..19 or v = 2 and f % 100 = 11..19
+lv	ordinal	other	
+mas	cardinal	one	n = 1
+mas	cardinal	other	
+mg	cardinal	one	n = 0..1
+mg	cardinal	other	
+mgo	cardinal	one	n = 1
+mgo	cardinal	other	
+mk	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11 or f % 10 = 1 and f % 100 != 11
+mk	cardinal	other	
+mk	ordinal	many	i % 10 = 7,8 and i % 100 != 17,18
+mk	ordinal	one	i % 10 = 1 and i % 100 != 11
+mk	ordinal	other	
+mk	ordinal	two	i % 10 = 2 and i % 100 != 12
+ml	cardinal	one	n = 1
+ml	cardinal	other	
+ml	ordinal	other	
+mn	cardinal	one	n = 1
+mn	cardinal	other	
+mn	ordinal	other	
+mo	cardinal	few	v != 0 or n = 0 or n != 1 and n % 100 = 1..19
+mo	cardinal	one	i = 1 and v = 0
+mo	cardinal	other	
+mo	ordinal	one	n = 1
+mo	ordinal	other	
+mr	cardinal	one	n = 1
+mr	cardinal	other	
+mr	ordinal	few	n = 4
+mr	ordinal	one	n = 1
+mr	ordinal	other	
+mr	ordinal	two	n = 2,3
+ms	cardinal	other	
+ms	ordinal	one	n = 1
+ms	ordinal	other	
+mt	cardinal	few	n = 0 or n % 100 = 3..10
+mt	cardinal	many	n % 100 = 11..19
+mt	cardinal	one	n = 1
+mt	cardinal	other	
+mt	cardinal	two	n = 2
+my	cardinal	other	
+my	ordinal	other	
+nah	cardinal	one	n = 1
+nah	cardinal	other	
+naq	cardinal	one	n = 1
+naq	cardinal	other	
+naq	cardinal	two	n = 2
+nb	cardinal	one	n = 1
+nb	cardinal	other	
+nb	ordinal	other	
+nd	cardinal	one	n = 1
+nd	cardinal	other	
+ne	cardinal	one	n = 1
+ne	cardinal	other	
+ne	ordinal	one	n = 1..4
+ne	ordinal	other	
+nl	cardinal	one	i = 1 and v = 0
+nl	cardinal	other	
+nl	ordinal	other	
+nn	cardinal	one	n = 1
+nn	cardinal	other	
+nnh	cardinal	one	n = 1
+nnh	cardinal	other	
+no	cardinal	one	n = 1
+no	cardinal	other	
+no	ordinal	other	
+nqo	cardinal	other	
+nr	cardinal	one	n = 1
+nr	cardinal	other	
+nso	cardinal	one	n = 0..1
+nso	cardinal	other	
+ny	cardinal	one	n = 1
+ny	cardinal	other	
+nyn	cardinal	one	n = 1
+nyn	cardinal	other	
+om	cardinal	one	n = 1
+om	cardinal	other	
+or	cardinal	one	n = 1
+or	cardinal	other	
+or	ordinal	few	n = 4
+or	ordinal	many	n = 6
+or	ordinal	one	n = 1,5,7..9
+or	ordinal	other	
+or	ordinal	two	n = 2,3
+os	cardinal	one	n = 1
+os	cardinal	other	
+osa	cardinal	other	
+pa	cardinal	one	n = 0..1
+pa	cardinal	other	
+pa	ordinal	other	
+pap	cardinal	one	n = 1
+pap	cardinal	other	
+pcm	cardinal	one	i = 0 or n = 1
+pcm	cardinal	other	
+pl	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14
+pl	cardinal	many	v = 0 and i != 1 and i % 10 = 0..1 or v = 0 and i % 10 = 5..9 or v = 0 and i % 100 = 12..14
+pl	cardinal	one	i = 1 and v = 0
+pl	cardinal	other	
+pl	ordinal	other	
+prg	cardinal	one	n % 10 = 1 and n % 100 != 11 or v = 2 and f % 10 = 1 and f % 100 != 11 or v != 2 and f % 10 = 1
+prg	cardinal	other	
+prg	cardinal	zero	n % 10 = 0 or n % 100 = 11..19 or v = 2 and f % 100 = 11..19
+prg	ordinal	other	
+ps	cardinal	one	n = 1
+ps	cardinal	other	
+ps	ordinal	other	
+pt	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+pt	cardinal	one	i = 0..1
+pt	cardinal	other	
+pt	ordinal	other	
+pt-PT	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+pt-PT	cardinal	one	i = 1 and v = 0
+pt-PT	cardinal	other	
+rm	cardinal	one	n = 1
+rm	cardinal	other	
+ro	cardinal	few	v != 0 or n = 0 or n != 1 and n % 100 = 1..19
+ro	cardinal	one	i = 1 and v = 0
+ro	cardinal	other	
+ro	ordinal	one	n = 1
+ro	ordinal	other	
+rof	cardinal	one	n = 1
+rof	cardinal	other	
+root	cardinal	other	
+root	ordinal	other	
+ru	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14
+ru	cardinal	many	v = 0 and i % 10 = 0 or v = 0 and i % 10 = 5..9 or v = 0 and i % 100 = 11..14
+ru	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11
+ru	cardinal	other	
+ru	ordinal	other	
+rwk	cardinal	one	n = 1
+rwk	cardinal	other	
+sah	cardinal	other	
+saq	cardinal	one	n = 1
+saq	cardinal	other	
+sat	cardinal	one	n = 1
+sat	cardinal	other	
+sat	cardinal	two	n = 2
+sc	cardinal	one	i = 1 and v = 0
+sc	cardinal	other	
+sc	ordinal	many	n = 11,8,80,800
+sc	ordinal	other	
+scn	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+scn	cardinal	one	i = 1 and v = 0
+scn	cardinal	other	
+scn	ordinal	many	n = 11,8,80..89,800..899
+scn	ordinal	other	
+sd	cardinal	one	n = 1
+sd	cardinal	other	
+sd	ordinal	other	
+sdh	cardinal	one	n = 1
+sdh	cardinal	other	
+se	cardinal	one	n = 1
+se	cardinal	other	
+se	cardinal	two	n = 2
+seh	cardinal	one	n = 1
+seh	cardinal	other	
+ses	cardinal	other	
+sg	cardinal	other	
+sgs	cardinal	few	n != 2 and n % 10 = 2..9 and n % 100 != 11..19
+sgs	cardinal	many	f != 0
+sgs	cardinal	one	n % 10 = 1 and n % 100 != 11
+sgs	cardinal	other	
+sgs	cardinal	two	n = 2
+sh	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14 or f % 10 = 2..4 and f % 100 != 12..14
+sh	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11 or f % 10 = 1 and f % 100 != 11
+sh	cardinal	other	
+sh	ordinal	other	
+shi	cardinal	few	n = 2..10
+shi	cardinal	one	i = 0 or n = 1
+shi	cardinal	other	
+si	cardinal	one	n = 0,1 or i = 0 and f = 1
+si	cardinal	other	
+si	ordinal	other	
+sk	cardinal	few	i = 2..4 and v = 0
+sk	cardinal	many	v != 0
+sk	cardinal	one	i = 1 and v = 0
+sk	cardinal	other	
+sk	ordinal	other	
+sl	cardinal	few	v = 0 and i % 100 = 3..4 or v != 0
+sl	cardinal	one	v = 0 and i % 100 = 1
+sl	cardinal	other	
+sl	cardinal	two	v = 0 and i % 100 = 2
+sl	ordinal	other	
+sma	cardinal	one	n = 1
+sma	cardinal	other	
+sma	cardinal	two	n = 2
+smi	cardinal	one	n = 1
+smi	cardinal	other	
+smi	cardinal	two	n = 2
+smj	cardinal	one	n = 1
+smj	cardinal	other	
+smj	cardinal	two	n = 2
+smn	cardinal	one	n = 1
+smn	cardinal	other	
+smn	cardinal	two	n = 2
+sms	cardinal	one	n = 1
+sms	cardinal	other	
+sms	cardinal	two	n = 2
+sn	cardinal	one	n = 1
+sn	cardinal	other	
+so	cardinal	one	n = 1
+so	cardinal	other	
+sq	cardinal	one	n = 1
+sq	cardinal	other	
+sq	ordinal	many	n % 10 = 4 and n % 100 != 14
+sq	ordinal	one	n = 1
+sq	ordinal	other	
+sr	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14 or f % 10 = 2..4 and f % 100 != 12..14
+sr	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11 or f % 10 = 1 and f % 100 != 11
+sr	cardinal	other	
+sr	ordinal	other	
+ss	cardinal	one	n = 1
+ss	cardinal	other	
+ssy	cardinal	one	n = 1
+ssy	cardinal	other	
+st	cardinal	one	n = 1
+st	cardinal	other	
+su	cardinal	other	
+sv	cardinal	one	i = 1 and v = 0
+sv	cardinal	other	
+sv	ordinal	one	n % 10 = 1,2 and n % 100 != 11,12
+sv	ordinal	other	
+sw	cardinal	one	i = 1 and v = 0
+sw	cardinal	other	
+sw	ordinal	other	
+syr	cardinal	one	n = 1
+syr	cardinal	other	
+ta	cardinal	one	n = 1
+ta	cardinal	other	
+ta	ordinal	other	
+te	cardinal	one	n = 1
+te	cardinal	other	
+te	ordinal	other	
+teo	cardinal	one	n = 1
+teo	cardinal	other	
+th	cardinal	other	
+th	ordinal	other	
+ti	cardinal	one	n = 0..1
+ti	cardinal	other	
+tig	cardinal	one	n = 1
+tig	cardinal	other	
+tk	cardinal	one	n = 1
+tk	cardinal	other	
+tk	ordinal	few	n % 10 = 6,9 or n = 10
+tk	ordinal	other	
+tl	cardinal	one	v = 0 and i = 1,2,3 or v = 0 and i % 10 != 4,6,9 or v != 0 and f % 10 != 4,6,9
+tl	cardinal	other	
+tl	ordinal	one	n = 1
+tl	ordinal	other	
+tn	cardinal	one	n = 1
+tn	cardinal	other	
+to	cardinal	other	
+tpi	cardinal	other	
+tpi	ordinal	other	
+tr	cardinal	one	n = 1
+tr	cardinal	other	
+tr	ordinal	other	
+ts	cardinal	one	n = 1
+ts	cardinal	other	
+tzm	cardinal	one	n = 0..1 or n = 11..99
+tzm	cardinal	other	
+ug	cardinal	one	n = 1
+ug	cardinal	other	
+uk	cardinal	few	v = 0 and i % 10 = 2..4 and i % 100 != 12..14
+uk	cardinal	many	v = 0 and i % 10 = 0 or v = 0 and i % 10 = 5..9 or v = 0 and i % 100 = 11..14
+uk	cardinal	one	v = 0 and i % 10 = 1 and i % 100 != 11
+uk	cardinal	other	
+uk	ordinal	few	n % 10 = 3 and n % 100 != 13
+uk	ordinal	other	
+ur	cardinal	one	i = 1 and v = 0
+ur	cardinal	other	
+ur	ordinal	other	
+uz	cardinal	one	n = 1
+uz	cardinal	other	
+uz	ordinal	other	
+ve	cardinal	one	n = 1
+ve	cardinal	other	
+vec	cardinal	many	e = 0 and i != 0 and i % 1000000 = 0 and v = 0 or e != 0..5
+vec	cardinal	one	i = 1 and v = 0
+vec	cardinal	other	
+vec	ordinal	many	n = 11,8,80,800
+vec	ordinal	other	
+vi	cardinal	other	
+vi	ordinal	one	n = 1
+vi	ordinal	other	
+vo	cardinal	one	n = 1
+vo	cardinal	other	
+vun	cardinal	one	n = 1
+vun	cardinal	other	
+wa	cardinal	one	n = 0..1
+wa	cardinal	other	
+wae	cardinal	one	n = 1
+wae	cardinal	other	
+wo	cardinal	other	
+xh	cardinal	one	n = 1
+xh	cardinal	other	
+xog	cardinal	one	n = 1
+xog	cardinal	other	
+yi	cardinal	one	i = 1 and v = 0
+yi	cardinal	other	
+yo	cardinal	other	
+yue	cardinal	other	
+yue	ordinal	other	
+zh	cardinal	other	
+zh	ordinal	other	
+zu	cardinal	one	i = 0 or n = 1
+zu	cardinal	other	
+zu	ordinal	other	

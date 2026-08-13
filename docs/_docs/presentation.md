@@ -128,8 +128,11 @@ Culture.en.isolate("Bob")
 ## Where cultures come from
 
 `Culture.en` and `Culture.root` ship so that presentation works with no build configuration
-at all. An application's own set is generated from the locales it declares, and a
-private-use locale that no dataset can source is hand-composed through the same public
-`Culture.Data` contract. Placement is compiled data throughout: signs, symbols, gaps,
-parentheses and the invisible bidi marks are all values in the dataset, and the engines
-synthesise no locale convention of their own.
+at all. Every other locale your application presents in is generated from the set it
+declares, and a private-use locale that no dataset can source is hand-composed through the
+same public `Culture.Data` contract. Placement is compiled data throughout: signs, symbols,
+gaps, parentheses and the invisible bidi marks are all values in the dataset, and the
+engines synthesise no locale convention of their own.
+
+[Generating cultures and messages](build-tooling.md) is where declaring that set, and
+generating translated messages against it, is covered.

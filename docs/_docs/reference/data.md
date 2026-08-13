@@ -19,7 +19,7 @@ pinned upstream release, and its verified terms in its own provenance header.
 
 | Authority | What it contributes |
 |---|---|
-| Unicode Consortium (CLDR) | territories, macro areas, week data, likely subtags, parent locales, language and script data, currency usage |
+| Unicode Consortium (CLDR) | territories, macro areas, week data, likely subtags, parent locales, language and script data, currency usage, and the presentation corpus: per-locale number and date patterns, display names, currency names and symbols, plural rules, calendar preferences, and numbering systems |
 | Unicode Consortium (ISO 15924) | script codes, numbers, and writing direction |
 | IANA, under BCP 47 | the language subtag registry |
 | SIX Financial Information AG (ISO 4217) | current and withdrawn currency codes, and withdrawal dates |
@@ -59,9 +59,24 @@ wrong everywhere else.
   the churn defeats honest curation.
 - **Administrative subdivisions.** Nothing in the current surface reads them.
 
+## Data your build reads, and data your artefact carries
+
+Most of the curated data is compiled into the library artefacts. The presentation corpus is
+not: it is several megabytes covering every locale CLDR describes, and an application needs
+only the locales it declares. It is published separately and reaches a build through a
+hidden configuration, so it never joins a compile or runtime classpath, and only the
+generated cultures for the declared locales end up in an artefact. Declaring them is covered
+in [Generating cultures and messages](../build-tooling.md).
+
 ## Keeping data current
 
 Each source is pinned in `data/upstream-pins.json` with the version taken, when it was
 taken, and where to check for a newer one. A scheduled workflow compares each pin against
 its published latest and opens an issue when a source moves. It never updates data: a pin
 moves through a reviewed change, so a release always states a vintage somebody checked.
+
+Regeneration enforces that too. A source fetched live is checked against its registered pin
+before its rows are curated - by the date it publishes, its version string, or a recorded
+digest where it publishes neither - and curation fails naming both identities when they
+differ. A newer upstream release therefore cannot enter a dataset silently; taking one is a
+deliberate change to the pin.

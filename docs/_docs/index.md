@@ -77,9 +77,7 @@ taken from, so an artefact can state which vintage of each source it holds. See
 
 ## Status
 
-Civil time and calendars, places and locales, money, quantities, identifiers, addresses,
-parties, and presentation ship with their full API. Further domains follow in later
-releases.
+> Pre-release and under active development. _Expect_ API changes.
 
 ## Licence
 

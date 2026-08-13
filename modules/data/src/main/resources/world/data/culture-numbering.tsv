@@ -1,0 +1,395 @@
+# dataset: culture-numbering
+# source: cldr
+# authority: Unicode Consortium
+# origin: common/main/*.xml numbers symbols, per numbering system
+# pin: release-48-2
+# published: 2026-03-17
+# licence: Unicode-3.0
+# licence-url: https://www.unicode.org/license.txt
+# licence-note: Unicode License v3 grants distribution of the Data Files
+# licence-verified: 2026-07-26
+# cadence: two major releases per year, plus point releases
+# compiled-in: true
+# columns: locale,system,decimal,group,minimum,minusSign,plusSign,percentSign,perMille
+ab	latn	,	 					
+af	latn	,	 					
+agq	latn	,	 					
+an	latn	,	.					
+ar	latn				‎-	‎+	‎%‎	
+ar-DZ	latn	,	.					
+ar-LB	latn	,	.					
+ar-LY	latn	,	.					
+ar-MA	latn	,	.					
+ar-MR	latn	,	.					
+ar-SA	latn						٪	
+ar-SO	latn						٪	
+ar-TN	latn	,	.					
+ast	arab				‏-	‏+	٪	
+ast	latn	,	.					
+az	arab		,		-	+	٪	
+az	arabext	,			-	+	~	
+az	latn	,	.					
+az-Cyrl	latn	,	.					
+ba	adlm		 					
+ba	ahom		 					
+ba	bali		 					
+ba	beng		 					
+ba	bhks		 					
+ba	brah		 					
+ba	cakm		 					
+ba	cham		 					
+ba	deva		 					
+ba	diak		 					
+ba	fullwide		 					
+ba	gara		 					
+ba	gong		 					
+ba	gonm		 					
+ba	gujr		 					
+ba	gukh		 					
+ba	guru		 					
+ba	hanidec		 					
+ba	hmng		 					
+ba	hmnp		 					
+ba	java		 					
+ba	kali		 					
+ba	kawi		 					
+ba	khmr		 					
+ba	knda		 					
+ba	krai		 					
+ba	lana		 					
+ba	lanatham		 					
+ba	laoo		 					
+ba	latn		 					
+ba	lepc		 					
+ba	limb		 					
+ba	mathbold		 					
+ba	mathdbl		 					
+ba	mathmono		 					
+ba	mathsanb		 					
+ba	mathsans		 					
+ba	mlym		 					
+ba	modi		 					
+ba	mong		 					
+ba	mroo		 					
+ba	mtei		 					
+ba	mymr		 					
+ba	mymrepka		 					
+ba	mymrpao		 					
+ba	mymrshan		 					
+ba	mymrtlng		 					
+ba	nagm		 					
+ba	newa		 					
+ba	nkoo		 					
+ba	olck		 					
+ba	onao		 					
+ba	orya		 					
+ba	osma		 					
+ba	outlined		 					
+ba	rohg		 					
+ba	saur		 					
+ba	segment		 					
+ba	shrd		 					
+ba	sind		 					
+ba	sinh		 					
+ba	sora		 					
+ba	sund		 					
+ba	sunu		 					
+ba	takr		 					
+ba	talu		 					
+ba	tamldec		 					
+ba	telu		 					
+ba	thai		 					
+ba	tibt		 					
+ba	tirh		 					
+ba	tnsa		 					
+ba	tols		 					
+ba	vaii		 					
+ba	wara		 					
+ba	wcho		 					
+bas	latn	,	 					
+be	latn	,	 	2				
+bew	latn	,	.					
+bg	latn	,	 	2				
+bgn	latn	٫	،				٪	
+blo	latn	,	 					
+bqi	arab						٪	
+bqi	arabext				‎−	+‎		
+bqi	latn				‎−	‎+		
+br	latn	,	 					
+bs	latn	,	.					
+bs-Cyrl	latn	,	.					
+bua	latn	,	 					
+ca	latn	,	.					
+ckb	arab				‏-	‏+	٪	
+ckb	latn					‎+		
+co	latn	,	 					
+cs	latn	,	 					
+cu	latn	,	 					
+cv	latn	,	 					
+da	latn	,	.					
+de	latn	,	.					
+de-AT	latn		 					
+de-CH	latn	.	'					
+de-LI	latn	.	'					
+dje	latn		 					
+dsb	latn	,	.					
+dua	latn	,	 					
+dyo	latn	,	 					
+el	latn	,	.					
+en	latn	.	,		-	+	%	‰
+en-AT	latn	,	.					
+en-BE	latn	,	.					
+en-CH	latn		'					
+en-CZ	latn	,	 					
+en-DE	latn	,	.					
+en-DK	latn	,	.					
+en-EE	latn	,	 					
+en-ES	latn	,	.					
+en-FI	latn	,	 					
+en-FR	latn	,	 					
+en-GE	latn	,	 					
+en-HU	latn	,	 					
+en-ID	latn	,	.					
+en-IT	latn	,	.					
+en-LT	latn	,	 					
+en-LV	latn	,	 					
+en-NL	latn	,	.					
+en-NO	latn	,	 					
+en-PL	latn	,	.					
+en-PT	latn	,	 					
+en-RO	latn	,	.					
+en-SE	latn	,	 					
+en-SI	latn	,	.					
+en-SK	latn	,	 					
+en-UA	latn	,	 					
+en-US-POSIX	latn							0/00
+en-ZA	latn	,	 					
+eo	latn	,	 					
+es	latn	,	.	2				
+es-419	latn	.	,	1				
+es-AR	latn	,	.					
+es-BO	latn	,	.					
+es-CL	latn	,	.					
+es-CO	latn	,	.					
+es-CR	latn	,	 					
+es-EC	latn	,	.					
+es-PY	latn	,	.					
+es-UY	latn	,	.					
+es-VE	latn	,	.					
+et	latn	,	 	2	−			
+eu	arab				-	+		
+eu	latn	,	.		−			
+ewo	latn	,	 					
+fa	arab						٪	
+fa	arabext				‎−	‎+		
+fa	latn				‎−	‎+		
+ff	latn	,	 					
+ff-Adlm	latn		⹁					
+fi	latn	,	 		−			
+fo	latn	,	.		−			
+fr	arab				‏−	‏+	٪	
+fr	arabext				‎−	‎+		
+fr	latn	,	 					
+fr-CA	latn		 					
+fr-CH	latn		'					
+fr-LU	latn		.					
+fr-MA	latn		.					
+frr	latn	,	.					
+fur	latn	,	.					
+fy	latn	,	.					
+gd	arab						٪	
+gd	arabext				-			
+gez	latn		ወ					
+gl	latn	,	.					
+gn	latn	,	.					
+gsw	latn		'		−			
+ha	arab	.	,		-	+	%	‰
+ha	arabext	.			-	+	%	‰
+ha-NE	arab	.	,		-	+	%	‰
+ha-NE	arabext	.			-	+	%	‰
+he	latn				‎-	‎+		
+hr	latn	,	.		−			
+hsb	latn	,	.					
+ht	latn	,	 		-		%	
+hu	latn	,	 	2				
+hy	latn	,	 	2				
+ia	latn	,	.	2				
+id	latn	,	.					
+ie	latn	,	 	2				
+ig	arab				‏-	‏+	٪‏	
+is	latn	,	.					
+it	latn	,	.	2				
+it-CH	latn	.	'					
+jgo	latn	,	.					
+jv	latn	,	.					
+ka	latn	,	 	2				
+kab	latn	,	 					
+kea	latn	,	 					
+kgp	latn	,	.					
+khq	latn		 					
+kk	latn	,	 					
+kkj	latn	,	.					
+kl	latn	,	.		−			
+km	khmr	,	.					
+ko	arab				‏-	‏+		
+ks	latn		،					
+ksf	latn	,	 					
+ksh	latn	,	 		−			
+ku	latn	,	.					
+ky	latn	,	 					
+la	latn	,	 					
+lb	latn	,	.					
+lij	latn	,	.					
+lld	latn	,	.					
+lmo	latn	,	'					
+ln	latn	,	.					
+lo	latn	,	.					
+lt	latn	,	 		−			
+ltg	latn	,	 					
+lu	latn	,	.					
+lv	latn	,	 	2				
+mfe	latn		 					
+mgh	latn	,	.					
+mk	latn	,	.					
+mn	mong	,	 					
+ms	arabext	.						
+ms-Arab-BN	latn	,	.					
+ms-BN	latn	,	.					
+ms-ID	latn	,	.					
+mua	latn	,	.					
+nds	latn	,	.					
+nl	latn	,	.					
+nmg	latn	,	 					
+nnh	latn	,	.					
+no	arab		 		؜−			
+no	arabext	,	 		‎−‎			
+no	latn	,	 		−			
+nqo	latn		،					
+nqo	nkoo		،					
+nr	latn	,	 					
+oc	latn	,	 					
+oc-ES	adlm	.	,	2				
+oc-ES	bali	.	,	2				
+oc-ES	beng	.	,	2				
+oc-ES	brah	.	,	2				
+oc-ES	cakm	.	,	2				
+oc-ES	cham	.	,	2				
+oc-ES	deva	.	,	2				
+oc-ES	fullwide	.	,	2				
+oc-ES	gong	.	,	2				
+oc-ES	gonm	.	,	2				
+oc-ES	gujr	.	,	2				
+oc-ES	guru	.	,	2				
+oc-ES	hanidec	.	,	2				
+oc-ES	hmnp	.	,	2				
+oc-ES	java	.	,	2				
+oc-ES	kali	.	,	2				
+oc-ES	khmr	.	,	2				
+oc-ES	knda	.	,	2				
+oc-ES	lana	.	,	2				
+oc-ES	lanatham	.	,	2				
+oc-ES	laoo	.	,	2				
+oc-ES	latn	.	,	2				
+oc-ES	lepc	.	,	2				
+oc-ES	limb	.	,	2				
+oc-ES	mlym	.	,	2				
+oc-ES	mong	.	,	2				
+oc-ES	mtei	.	,	2				
+oc-ES	mymr	.	,	2				
+oc-ES	mymrshan	.	,	2				
+oc-ES	nkoo	.	,	2				
+oc-ES	olck	.	,	2				
+oc-ES	orya	.	,	2				
+oc-ES	osma	.	,	2				
+oc-ES	rohg	.	,	2				
+oc-ES	saur	.	,	2				
+oc-ES	shrd	.	,	2				
+oc-ES	sora	.	,	2				
+oc-ES	sund	.	,	2				
+oc-ES	takr	.	,	2				
+oc-ES	talu	.	,	2				
+oc-ES	tamldec	.	,	2				
+oc-ES	telu	.	,	2				
+oc-ES	thai	.	,	2				
+oc-ES	tibt	.	,	2				
+oc-ES	vaii	.	,	2				
+os	latn	,	 					
+pa	arab	.	,		-	+	%	‰
+pa	arabext		,		-	+		
+pa-Arab	latn				‎-	‎+		
+pl	latn	,	 	2				
+pms	latn	,	.					
+prg	latn	,	 					
+ps	latn	,	.		‎−	‎+		
+pt	latn	,	.					
+pt-PT	latn		 	2				
+qu-BO	latn	,	.					
+rif	latn	,	 					
+rm	latn	,	 					
+rn	latn	,	.					
+ro	latn	,	.					
+root	arab	٫	٬	1	؜-	؜+	٪؜	؉
+root	arabext	٫	٬	1	‎-‎	‎+‎	٪	؉
+root	latn	.	,	1	-	+	%	‰
+ru	latn	,	 					
+rw	latn	,	.					
+sah	latn	,	 					
+sc	latn	,	.					
+scn	latn	,	.					
+sd	arab	.						
+sd	arabext	.	،					
+sd	deva		،					
+sd-Deva	arabext	.						
+se	latn	,	 		−			
+seh	latn	,	.					
+ses	latn		 					
+sg	latn	,	.					
+shi	latn	,	 					
+shi-Latn	latn	,	 					
+sk	latn	,	 					
+sl	latn	,	.	2	−			
+smn	latn	,	 					
+sq	latn	,	 	2				
+sr	latn	,	.					
+sr-Latn	latn	,	.					
+ss	latn	,	 					
+su	latn	,	.					
+sv	arab		 		؜−			؉‏
+sv	arabext	,	 		‎−‎			
+sv	latn	,	 		−			
+sw-CD	latn	,	.					
+szl	latn	,	 					
+tg	latn	,	 					
+tk	latn	,	 					
+tn	latn		'					
+to	arab				‏-	‏+		
+tok	latn	,	 					
+tr	latn	,	.					
+ts	latn	,	 					
+tt	latn	,	 					
+twq	latn		 					
+tyv	latn		 					
+tzm	latn	,	 					
+uk	latn	,	 					
+ur	arab	،	,			+		
+ur	arabext						%	‰
+ur	latn				‎-	‎+		
+uz	arabext				-	+		
+uz	latn	,	 					
+uz-Arab	latn	,	.		‎−	‎+		
+uz-Cyrl	arab				-	+		
+uz-Cyrl	arabext				-	+		
+uz-Cyrl	latn	,	 					
+ve	latn	,	 					
+vec	latn	,	 					
+vi	latn	,	.					
+vmw	latn	,	.					
+wae	latn	,	'					
+wal	latn		'					
+wo	latn	,	.					
+xh	latn		 					
+yav	latn	,	 					
+yrl	latn	,	.					
+zgh	latn	,	 					
+zh-Hant	arab				-			
+zh-Hant	arabext					+‎		

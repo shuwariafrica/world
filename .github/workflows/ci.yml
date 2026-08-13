@@ -64,6 +64,20 @@ jobs:
       - name: Verify Size Budgets
         run: sbt --server world-jvm/budgets
 
+      # The plugin compiles against sbt's own Scala, so it belongs to no library aggregate. It runs
+      # on the release JDK alone: the cell guard is numeric, so a JDK_RELEASE that no cell carries
+      # fails the run rather than silently skipping the only place the plugin is tested.
+      - name: Test sbt plugin
+        if: matrix.java == fromJSON(env.JDK_RELEASE)
+        run: sbt --server "sbt-world/testOnly * -- "
+
+      # The scripted fixture is where generated code exists: it compiles against the published
+      # library and carries the golden differential, the compile-time gate and the literal canary,
+      # each of which asserts it took a measurement.
+      - name: Execute Scripted tests
+        if: matrix.java == fromJSON(env.JDK_RELEASE)
+        run: sbt --server "sbt-world/scripted"
+
       - name: Package
         run: sbt --server "world-jvm/package"
 

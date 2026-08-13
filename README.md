@@ -110,6 +110,18 @@ Date(2026, 7, 23).display(DateStyle.Full)             // Thursday, July 23, 2026
 Currency.KES(BigDecimal("-1250")).display(CurrencyStyle.Symbol, Sign.Accounting)
 ```
 
+**Your locales and your messages, generated.** English and a neutral root ship with the
+library; every other locale is generated for the set your build declares, from the same
+curated data, with no runtime loading anywhere. Declared messages come with them: typed
+methods, the target language's own plural branches, and translators working in PO files.
+
+```scala
+worldLocales := Seq("en", "sw", "ar-EG", "pl")        // in build.sbt
+
+Messages(Cultures.sw).cartItems(3)                    // "Bidhaa 3"
+Cultures.negotiate("sw-KE;q=0.9, en")                 // total: an unmatched header lands on the default
+```
+
 ---
 
 ## What the types guarantee
@@ -136,7 +148,12 @@ Currency.KES(BigDecimal("-1250")).display(CurrencyStyle.Symbol, Sign.Accounting)
 
 Civil time and calendars, places and locales, money and commercial arithmetic, quantities
 and tariffs, identifiers and schemes, addresses and geography, parties, and presentation all
-ship with their full API.
+ship with their full API, as does the `sbt-world` build plugin that generates cultures and
+messages for the locales an application declares.
+
+Binary-compatibility reporting is wired with this release as its baseline: MiMa and
+TASTy-MiMa report against it from the next one onward, and neither gates a build before
+1.0.0.
 
 The [documentation site](https://dev.shuwari.africa/world/docs) carries the guides, the
 module map, and the dependency graph.

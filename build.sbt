@@ -14,9 +14,8 @@ apacheLicensed
 Shuwari.organisationSettings
 formattingSettings
 
-// Every matrix row presents the same source files to its own copy of the rewriting tasks, and two
-// rows rewriting one file at once truncated it during the pass-II run. The tag is attached to the
-// tasks from the outside and the limit lets only one of them write at a time.
+// Every matrix row presents the same source files to its own copy of the rewriting tasks;
+// causing issues with two rows rewriting one file at once. We attach a tag and limit.
 val rewrite = Tags.Tag("rewrite")
 
 Global / concurrentRestrictions += Tags.limit(rewrite, 1)
@@ -124,9 +123,6 @@ val `world-address` =
 val `world-party` =
   projectMatrix
     .in(file("modules/party"))
-    // The consumer-declared schemes the identifier suites verify the scheme concept through are the
-    // same declarations the party seam must accept, so the party suites read them rather than
-    // restating them.
     .dependsOn(`world-core`, world, `world-id` % "compile->compile;test->test", `world-address`)
     .settings(description := "Names, organisations, and the parties a document addresses.")
     .settings(compilerSettings)
@@ -170,6 +166,32 @@ val `world-data` =
     .settings(Compat.settings)
     .settings(Data.curation)
     .jvmPlatform(Seq(Libraries.scala3))
+
+val `sbt-world` =
+  projectMatrix
+    .in(file("modules/sbt-world"))
+    .enablePlugins(SbtPlugin)
+    .settings(description := "Culture, zone, and message code generation for builds that consume world.")
+    .settings(compilerSettings)
+    .settings(rewriteSettings)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .settings(scriptedSettings)
+    .settings(
+      Compile / sourceGenerators += Def.task {
+        val target = (Compile / sourceManaged).value / "world" / "sbt" / "BuildInfo.scala"
+        IO.write(
+          target,
+          s"""package world.sbt
+             |
+             |private[sbt] object BuildInfo:
+             |  inline val version = "${version.value}"
+             |""".stripMargin
+        )
+        Seq(target)
+      }.taskValue
+    )
+    .jvmPlatform(Seq(_root_.world.sbt.build.MetaBuildInfo.sbtScalaVersion))
 
 val `world-site` =
   project
@@ -286,6 +308,32 @@ def formattingSettings = List(
 def unitTestSettings: List[Setting[?]] = List(
   libraryDependencies += Libraries.munit % Test,
   testFrameworks += new TestFramework("munit.Framework")
+)
+
+// A scripted fixture resolves the plugin and the library artefacts from the local repository, so every artefact its
+// generated code compiles against is published there first. The plugin itself does not depend on the library - it
+// writes code that does - so `scriptedDependencies` cannot reach these through the project graph.
+def scriptedSettings: List[Setting[?]] = List(
+  scriptedBufferLog := false,
+  scriptedLaunchOpts ++= List(
+    "-Xmx2G",
+    "-Xss4M",
+    s"-Dplugin.version=${(LocalRootProject / Keys.version).value}",
+    s"-Dworld.version=${(LocalRootProject / Keys.version).value}",
+    s"-Dsbt.boot.directory=${file(sys.props("user.home")) / ".sbt" / "boot"}"
+  ),
+  scriptedDependencies := {
+    scriptedDependencies.value
+    (`world-core`.jvm(Libraries.scala3) / publishLocal).value
+    (world.jvm(Libraries.scala3) / publishLocal).value
+    (`world-money`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-quantity`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-id`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-address`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-party`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-text`.jvm(Libraries.scala3) / publishLocal).value
+    (`world-data`.jvm(Libraries.scala3) / publishLocal).value
+  }
 )
 
 def manifestSettings = packageOptions += Package.ManifestAttributes(
