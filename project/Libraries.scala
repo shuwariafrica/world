@@ -2,7 +2,7 @@ import sbt.Keys.version
 import sbt.{Compile, Def, IO, *}
 
 object Libraries extends AutoPlugin:
-  val scala3 = "3.9.0-RC5"
+  val scala3 = "3.9.0-RC6"
   val munit = "org.scalameta" %% "munit" % "1.3.5"
 
   // The ecosystem substrate world sits above: the typed-error base, the scalar wire-text contract,
