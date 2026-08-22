@@ -7,9 +7,9 @@ object Libraries extends AutoPlugin:
 
   // The ecosystem substrate world sits above: the typed-error base, the scalar wire-text contract,
   // the locale-free codec vocabulary, and the null-elimination utilities.
-  val boilerplate = "africa.shuwari" %% "boilerplate" % "0.14.0"
+  val boilerplate = "africa.shuwari" %% "boilerplate" % "0.15.0"
 
-  val `boilerplate-testkit` = "africa.shuwari" %% "boilerplate-testkit" % "0.14.0"
+  val `boilerplate-testkit` = "africa.shuwari" %% "boilerplate-testkit" % "0.15.0"
 
   val `tasty-mima` = "1.4.1"
 
