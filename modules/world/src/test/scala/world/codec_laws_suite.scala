@@ -61,6 +61,30 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
     month <- Gen.choose(1, 12)
   yield YearMonth.of(year, month).toOption.get
 
+  // Generated at the fraction's edges as well as at random: the wire form trims trailing zeros
+  // and drops the point entirely at a whole second, so zero exercises both rules at once and
+  // 999999999 exercises neither.
+  private val moments: Gen[Moment] =
+    val nanos = Gen.oneOf(Gen.const(0), Gen.const(999999999), Gen.choose(0, 999999999))
+    Gen.oneOf
+      (
+        Gen.const(Moment.of(0, 0)),
+        for
+          seconds <- Gen.choose(-253402300800L, 253402300799L)
+          nano <- nanos
+        yield Moment.of(seconds, nano.toLong)
+      )
+
+  private val offsets: Gen[Offset] =
+    Gen.choose(-1439, 1439).map(minutes => Offset.of(minutes).toOption.get)
+
+  private val stamps: Gen[Stamp] = for
+    date <- dates
+    time <- times
+    nano <- Gen.oneOf(Gen.const(0), Gen.choose(0, 999999999))
+    offset <- offsets
+  yield Stamp.of(DateTime(date, time), nano, offset).toOption.get
+
   private val locales: Gen[Locale] =
     val languages = Gen.oneOf(Language.all)
     val scripts = Gen.oneOf(Script.all)
@@ -79,6 +103,9 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
   given Arbitrary[YearMonth] = Arbitrary(yearMonths)
   given Arbitrary[Locale] = Arbitrary(locales)
   given Arbitrary[Interval] = Arbitrary(intervals)
+  given Arbitrary[Moment] = Arbitrary(moments)
+  given Arbitrary[Offset] = Arbitrary(offsets)
+  given Arbitrary[Stamp] = Arbitrary(stamps)
 
   valueCodecLaws[Date]("Date")
   valueCodecLaws[Time]("Time")
@@ -86,6 +113,13 @@ class CodecLawsSuite extends ScalaCheckSuite, ValueCodecLaws:
   valueCodecLaws[YearMonth]("YearMonth")
   valueCodecLaws[Locale]("Locale")
   valueCodecLaws[Interval]("Interval")
+  valueCodecLaws[Moment]("Moment")
+  valueCodecLaws[Offset]("Offset")
+  valueCodecLaws[Stamp]("Stamp")
+
+  valueCodecRenderWithin[Moment]("Moment")(c => (c >= '0' && c <= '9') || c == '-' || c == '.')
+  valueCodecRenderWithin[Stamp]("Stamp")
+    (c => (c >= '0' && c <= '9') || c == '-' || c == ':' || c == '.' || c == 'T' || c == 'Z' || c == '+')
 
   valueCodecNormalisation[Locale]
     ("Locale", Gen.oneOf("sw-KE", "SW-ke", "en", "ar-Arab-EG", "es-419", "de-DE-1996", "x-duka-pos", "!!", "zz"))

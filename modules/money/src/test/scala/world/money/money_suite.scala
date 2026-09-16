@@ -698,6 +698,20 @@ class MoneySuite extends munit.FunSuite:
   test("cash: a territory's row never governs a foreign currency") {
     assertEquals(Currency.KES(BigDecimal("9.98")).cash(Territory.FI).amount, BigDecimal("9.98"))
   }
+  test("cash: a caller-held rule applies directly, under its own mode or an imposed one") {
+    val rule = Cash(Currency.KES, 2, 50, Rounding.HalfUp, Cash.Provenance.Practice, Cash.Provenance.Practice)
+    assert
+      (
+        Currency.KES(BigDecimal("123.30")).cash(rule).map(_.amount) == Right(BigDecimal("123.50"))
+          && Currency.KES(BigDecimal("123.30")).cash(rule, Rounding.Down).map(_.amount) == Right(BigDecimal("123.00")))
+  }
+  test("cash: a rule governing another currency is a typed refusal") {
+    val swiss = Cash(Currency.CHF, 2, 5, Rounding.HalfUp, Cash.Provenance.Denomination, Cash.Provenance.Unstated)
+    assert
+      (
+        Currency.KES(BigDecimal("123.30")).cash(swiss) == Left(Cash.Foreign(Currency.CHF))
+          && Currency.KES(BigDecimal("123.30")).cash(swiss, Rounding.Down) == Left(Cash.Foreign(Currency.CHF)))
+  }
 
   test("tax: a withheld base is refused at assembly") {
     val wht = Tax.withheld("WHT", Percent(5))
@@ -762,5 +776,23 @@ class MoneySuite extends munit.FunSuite:
       (
         Delivery.parse("XXX Mombasa").isLeft && Delivery.parse("CIF").isLeft
           && Delivery.of(Incoterm.EXW, "  ").isLeft)
+  }
+
+  // The pins are stated here rather than read from the registry the generator reads: a pin moves
+  // only through a reviewed change, and this assertion is that review's gate.
+  test("vintages: the linked datasets ship the pins their sources are registered at") {
+    assertEquals
+      (
+        MoneyVintages.all,
+        Vector
+          (
+            Vintage("territories", "cldr", "release-48-2"),
+            Vintage("currencies", "six-iso-4217-list-one", "2026-01-01"),
+            Vintage("currencies-historic", "six-iso-4217-list-three", "2026-01-01"),
+            Vintage("currency-usage", "cldr", "release-48-2"),
+            Vintage("cash-practice", "world-cash-rounding-survey", "2026-08-05"),
+            Vintage("euro-conversion", "ec-regulation-2866-98", "31998R2866")
+          )
+      )
   }
 end MoneySuite

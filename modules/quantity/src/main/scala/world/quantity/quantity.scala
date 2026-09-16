@@ -74,6 +74,10 @@ object Measure:
   val Kilometre: Measure[Length] = make("km", Ratio(1000))
 
   val SquareMetre: Measure[Area] = make("m2", Ratio.One)
+  // Exact by international definition: NIST SP 811 B.8 marks 9.290 304 E-02 exact. The acre has
+  // no such row - SP 811 lists only the survey-foot acre, and unmarked - so it is absent rather
+  // than carried at a remembered value.
+  val SquareFoot: Measure[Area] = make("ft2", Ratio.make(9290304L, 100000000L))
   val Hectare: Measure[Area] = make("ha", Ratio(10000))
 
   val CubicMetre: Measure[Volume] = make("m3", Ratio(1000))
@@ -93,6 +97,11 @@ object Measure:
   val Gross: Measure[Count] = make("gr", Ratio(144))
 
   val Second: Measure[Duration] = make("s", Ratio.One)
+  // Exact SI submultiples of the base, so a span between two machine timestamps prices through
+  // this algebra rather than a second one.
+  val Millisecond: Measure[Duration] = make("ms", Ratio.make(1, 1000))
+  val Microsecond: Measure[Duration] = make("\u00B5s", Ratio.make(1, 1000000))
+  val Nanosecond: Measure[Duration] = make("ns", Ratio.make(1, 1000000000))
   val Minute: Measure[Duration] = make("min", Ratio(60))
   val Hour: Measure[Duration] = make("h", Ratio(3600))
   val Day: Measure[Duration] = make("d", Ratio(86400))
@@ -140,6 +149,7 @@ object Measure:
       Millimetre -> "MMT",
       Kilometre -> "KMT",
       SquareMetre -> "MTK",
+      SquareFoot -> "FTK",
       Pound -> "LBR",
       Ounce -> "ONZ",
       Inch -> "INH",
@@ -153,6 +163,9 @@ object Measure:
       Dozen -> "DZN",
       Gross -> "GRO",
       Second -> "SEC",
+      Millisecond -> "C26",
+      Microsecond -> "B98",
+      Nanosecond -> "C47",
       Minute -> "MIN",
       Hour -> "HUR",
       Day -> "DAY",
@@ -201,7 +214,6 @@ final case class Quantity[K <: Kind](amount: Ratio, measure: Measure[K])
 
 /** Arithmetic, conversion, and comparison for [[Quantity]]. */
 object Quantity:
-  /** The same quantity under another measure, exactly. */
   def in[K <: Kind](q: Quantity[K], m: Measure[K]): Quantity[K] = q.in(m)
 
   def add[K <: Kind](q: Quantity[K], o: Quantity[K]): Quantity[K] = q + o
@@ -214,14 +226,8 @@ object Quantity:
   /** Same magnitude, regardless of measure: `Dozen(1)` and `Each(12)`. */
   def equivalent[K <: Kind](q: Quantity[K], o: Quantity[K]): Boolean = q =~ o
 
-  /** This quantity under another kind, through the product's own declared
-    * conversion.
-    */
   def via[K <: Kind, B <: Kind](q: Quantity[K], c: Conversion[K, B]): Quantity[B] = q.via(c)
 
-  /** The amount rounded to `scale` decimal places by `mode`, keeping the
-    * measure.
-    */
   def rounded[K <: Kind](q: Quantity[K], scale: Int, mode: Rounding): Quantity[K] =
     q.rounded(scale, mode)
 
@@ -335,9 +341,6 @@ object Price:
   def per[C <: Currency & Singleton, K <: Kind](m: Money[C], measure: Measure[K]): Price[C, K] =
     Price(m, measure)
 
-  /** The price of a quantity, rounded to the currency's minor unit at this
-    * boundary.
-    */
   def total[C <: Currency & Singleton, K <: Kind](p: Price[C, K], q: Quantity[K], mode: Rounding)(using ValueOf[C]): Money[C] =
     p.total(q, mode)
 
@@ -345,16 +348,17 @@ object Price:
   def total[C <: Currency & Singleton, K <: Kind](p: Price[C, K], q: Quantity[K], scale: Int, mode: Rounding): Money[C] = p.total
     (q, scale, mode)
 
-  /** The quantity a money amount buys at this price. */
   def quantity[C <: Currency & Singleton, K <: Kind](p: Price[C, K], m: Money[C], scale: Int, mode: Rounding): Either[Undefined,
                                                                                                                       Quantity[K]] =
     p.quantity(m, scale, mode)
 
-  /** The same price under another measure, at an explicit scale. */
   def in[C <: Currency & Singleton, K <: Kind](p: Price[C, K], m: Measure[K], scale: Int, mode: Rounding): Price[C, K] = p.in
     (m, scale, mode)
 
   extension [C <: Currency & Singleton, K <: Kind](p: Price[C, K])
+    /** The line total, rounded by `mode` to the currency's own minor unit;
+      * the scale-bearing twin names a different one.
+      */
     @targetName("ext_total")
     def total(q: Quantity[K], mode: Rounding)(using c: ValueOf[C]): Money[C] =
       p.total(q, c.value.digits.getOrElse(0), mode)
@@ -435,3 +439,55 @@ extension (i: Instant)
   def until(other: Instant): Quantity[Duration] =
     Measure.Second(Ratio(other.seconds - i.seconds))
 end extension
+
+/** Duration arithmetic over machine timestamps, for [[world.Moment Moment]]. */
+extension (m: Moment)
+  /** Advances a moment by an exact duration at its own nanosecond
+    * denomination, refusing a sub-nanosecond remainder as the coarser types
+    * refuse a sub-second one.
+    */
+  @targetName("momentPlus")
+  def plus(q: Quantity[Duration]): Either[Moment.Invalid, Moment] =
+    q.in(Measure.Nanosecond).amount.whole match
+      case None    => Left(Moment.Invalid(s"${m.value} + a sub-nanosecond duration"))
+      case Some(n) =>
+        val total = BigInt(m.seconds) * 1000000000L + m.nano + n
+        val remainder = total % 1000000000L
+        val seconds = if remainder < 0 then total / 1000000000L - 1 else total / 1000000000L
+        val nano = if remainder < 0 then remainder + 1000000000L else remainder
+        if seconds.isValidLong then Right(Moment.of(seconds.toLong, nano.toLong)) else Left(Moment.Invalid(m.value))
+
+  /** The exact elapsed duration to `other`, to the nanosecond, as a quantity
+    * the price algebra consumes.
+    */
+  @targetName("momentUntil")
+  def until(other: Moment): Quantity[Duration] =
+    val nanos = (BigInt(other.seconds) - BigInt(m.seconds)) * 1000000000L + (other.nano - m.nano)
+    Measure.Second(Ratio(nanos) * Ratio.make(1, 1000000000))
+end extension
+
+/** The civil length of a window, for [[world.Window Window]] over
+  * [[world.DateTime DateTime]].
+  */
+extension (w: Window[DateTime])
+  /** The hire period, the shift length - as the quantity the price algebra
+    * consumes.
+    */
+  @targetName("civilWindowLength")
+  def length: Quantity[Duration] = w.start.until(w.end)
+
+/** The elapsed length of a window, for [[world.Window Window]] over
+  * [[world.Instant Instant]].
+  */
+extension (w: Window[Instant])
+  /** The span's elapsed length at whole seconds. */
+  @targetName("instantWindowLength")
+  def length: Quantity[Duration] = w.start.until(w.end)
+
+/** The exact length of a window, for [[world.Window Window]] over
+  * [[world.Moment Moment]].
+  */
+extension (w: Window[Moment])
+  /** The span's exact length, to the nanosecond. */
+  @targetName("momentWindowLength")
+  def length: Quantity[Duration] = w.start.until(w.end)

@@ -43,8 +43,8 @@ object Money:
     given Classified[Value] = Classified.of(Classification.None)
 
   /** Weights that admit no allocation: empty, negative, or summing to nothing. */
-  sealed abstract class Unallocatable private[money] () extends WorldError("unallocatable weights") derives CanEqual
-  case object Unallocatable extends Unallocatable()
+  case object Unallocatable extends WorldError("unallocatable weights")
+  type Unallocatable = Unallocatable.type
 
   def zero[C <: Currency & Singleton]: Money[C] = BigDecimal(0)
 
@@ -77,47 +77,48 @@ object Money:
   def rounded[C <: Currency & Singleton](m: Money[C], scale: Int, mode: Rounding): Money[C] =
     rounder(m, scale, mode)
 
-  /** Rounds to the cash increment the territory's recorded practice sets for
-    * this currency.
-    */
   def cash[C <: Currency & Singleton](m: Money[C], t: Territory)(using ValueOf[C]): Money[C] =
     m.cash(t)
 
   @targetName("cashWithMode")
   def cash[C <: Currency & Singleton](m: Money[C], t: Territory, mode: Rounding)(using ValueOf[C]): Money[C] = m.cash(t, mode)
 
+  @targetName("cashByRule")
+  def cash[C <: Currency & Singleton](m: Money[C], rule: Cash)(using ValueOf[C]): Either[Cash.Foreign, Money[C]] = m.cash(rule)
+
+  @targetName("cashByRuleWithMode")
+  def cash[C <: Currency & Singleton](m: Money[C], rule: Cash, mode: Rounding)(using ValueOf[C]): Either[Cash.Foreign, Money[C]] =
+    m.cash(rule, mode)
+
   def divided[C <: Currency & Singleton](m: Money[C], k: BigDecimal, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
     m.divided(k, scale, mode)
 
-  /** Splits the exact amount by integer weights at its own scale. */
-  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Int]): Either[Unallocatable, Vector[Money[C]]] = m.allocate(weights)
+  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Int]): Either[Unallocatable, Vector[Money[C]]] = m.allocate
+    (weights)
 
-  /** Allocation by exact ratio weights. */
   @targetName("allocateByRatios")
-  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Ratio]): Either[Unallocatable, Vector[Money[C]]] = m.allocate(weights)
+  def allocate[C <: Currency & Singleton](m: Money[C], weights: Seq[Ratio]): Either[Unallocatable, Vector[Money[C]]] = m.allocate
+    (weights)
 
   def split[C <: Currency & Singleton](m: Money[C], parts: Int): Either[Unallocatable, Vector[Money[C]]] = m.split(parts)
 
   def convert[C <: Currency & Singleton, T <: Currency & Singleton](m: Money[C], rate: Rate[C, T]): Money[T] = m.convert(rate)
 
-  /** Scales by an exact ratio, rounded at the currency's scale. */
   def scaled[C <: Currency & Singleton](m: Money[C], r: Ratio, mode: Rounding)(using ValueOf[C]): Money[C] = m.scaled(r, mode)
 
   @targetName("scaledAtScale")
   def scaled[C <: Currency & Singleton](m: Money[C], r: Ratio, scale: Int, mode: Rounding): Money[C] = m.scaled(r, scale, mode)
 
-  /** The selling price at a markup over this cost. */
   def markup[C <: Currency & Singleton](m: Money[C], p: Percent): Money[C] = m.markup(p)
 
-  /** The selling price at a margin, rounded at the currency's scale. */
-  def margin[C <: Currency & Singleton](m: Money[C], p: Percent, mode: Rounding)(using ValueOf[C]): Either[Undefined, Money[C]] = m.margin
-    (p, mode)
+  def margin[C <: Currency & Singleton](m: Money[C], p: Percent, mode: Rounding)(using ValueOf[C]): Either[Undefined, Money[C]] =
+    m.margin
+      (p, mode)
 
   @targetName("marginAtScale")
   def margin[C <: Currency & Singleton](m: Money[C], p: Percent, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
     m.margin(p, scale, mode)
 
-  /** The level payment amortising this principal on the reducing balance. */
   def annuity[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, mode: Rounding)(using ValueOf[C]): Either[Undefined,
                                                                                                                            Money[C]] =
     m.annuity(rate, periods, mode)
@@ -126,7 +127,6 @@ object Money:
   def annuity[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, scale: Int, mode: Rounding): Either[Undefined, Money[C]] =
     m.annuity(rate, periods, scale, mode)
 
-  /** The printed schedule behind the annuity. */
   def amortisation[C <: Currency & Singleton](m: Money[C], rate: Ratio, periods: Int, mode: Rounding)(using ValueOf[C]): Either[
     Undefined,
     Vector[Instalment[C]]] =
@@ -189,6 +189,24 @@ object Money:
           val step = BigDecimal(rule.increment, rule.digits)
           rounder(m / step, 0, mode) * step
         case _ => c.value.digits.fold(m)(d => rounder(m, d, mode))
+
+    /** Cash rounding under a rule the CALLER holds - the seam for a practice the
+      * shipped register does not record, as the same operation with the row a
+      * value. A rule governing another currency is refused, because an explicit
+      * row is the caller's assertion that it applies; the territory read, whose
+      * fallback honestly answers "no recorded practice", has no such assertion
+      * to check.
+      */
+    @targetName("ext_cashByRule")
+    def cash(rule: Cash)(using ValueOf[C]): Either[Cash.Foreign, Money[C]] = m.cash(rule, rule.mode)
+
+    /** The caller-held rule with the midpoint mode imposed at the call site. */
+    @targetName("ext_cashByRuleWithMode")
+    def cash(rule: Cash, mode: Rounding)(using c: ValueOf[C]): Either[Cash.Foreign, Money[C]] =
+      if rule.currency != c.value then Left(Cash.Foreign(rule.currency))
+      else
+        val step = BigDecimal(rule.increment, rule.digits)
+        Right(rounder(m / step, 0, mode) * step)
 
     /** The amount in minor units, when exactly representable at the currency's
       * scale.
@@ -351,13 +369,12 @@ object Money:
     end if
   end shares
 
-  /** The deterministic rendering a ledger key, an audit hash, or a
-    * deduplication compares: trailing zeros stripped, then padded to the
-    * currency's minor unit where it has one, so anything finer survives.
-    */
   def canonical(v: Value): Value = v.canonical
 
   extension (v: Value)
+    /** The one spelling of this amount: plain decimal, and padded to the
+      * currency's minor-unit scale where it has one.
+      */
     @targetName("ext_canonical")
     def canonical: Value =
       val stripped = BigDecimal(Decimal.render(v.amount))
@@ -403,6 +420,11 @@ object Cash:
     */
   enum Provenance derives CanEqual:
     case Statute, Directive, Agreement, Denomination, Practice, Unstated
+
+  /** A caller-held rule applied to an amount of a currency it does not govern,
+    * carrying the currency the rule is for.
+    */
+  final case class Foreign(currency: Currency) extends WorldError("cash rule governs another currency") derives CanEqual
 
   /** The recorded practice for a territory, `None` where none is recorded
     * rather than a guess. Germany records nothing, and the minor-unit fallback

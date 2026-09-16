@@ -56,13 +56,10 @@ object Interval:
         yield interval
       case _ => Left(Invalid(value))
 
-  /** Whether the day falls within the interval, edges inclusive. */
   def contains(i: Interval, d: Date): Boolean = i.contains(d)
 
-  /** Whether the two intervals share any day. */
   def overlaps(i: Interval, other: Interval): Boolean = i.overlaps(other)
 
-  /** The shared days, where any. */
   def intersection(i: Interval, other: Interval): Option[Interval] = i.intersection(other)
 
   // In-package construction from bounds a caller has already proven ordered - the fiscal walk's
@@ -87,6 +84,9 @@ object Interval:
     @targetName("ext_contains")
     def contains(d: Date): Boolean = i.start.days <= d.days && d.days <= i.end.days
 
+    /** Whether the two share any day; both bounds count, so intervals that
+      * meet on a single day overlap.
+      */
     @targetName("ext_overlaps")
     def overlaps(other: Interval): Boolean =
       i.start.days <= other.end.days && other.start.days <= i.end.days
@@ -105,3 +105,88 @@ object Interval:
   given Ordering[Interval] = Ordering.by(i => (i.start.days, i.end.days))
   given ValueCodec.Aux[Interval, Invalid] = ValueCodec(parse, i => Interval.value(i))
 end Interval
+
+/** A half-open span over a timeline value, `[start, end)` - the booking from
+  * check-in to check-out, the shift, the trading day, the meter-reading period,
+  * the trace span. Half-open is what lets adjacent spans tile a timeline without
+  * sharing a moment; the inclusive civil reading is [[Interval]].
+  *
+  * One shape serves every ordered timeline - [[DateTime]], [[Instant]],
+  * [[Moment]], and a consumer's own - and a window is never empty. A civil
+  * window and a timeline window convert bound by bound through the zone
+  * vocabulary, so the daylight-saving seam stays the caller's explicit choice
+  * rather than something a window operation decides. Instances via
+  * [[Window$ Window]].
+  */
+final case class Window[A] private (start: A, end: A)
+
+/** Validated construction and the coverage algebra for [[Window]]. */
+object Window:
+  /** Carries the rejected bounds. */
+  final case class Invalid[A](start: A, end: A) extends WorldError("empty or reversed window") derives CanEqual
+
+  /** A window from `start` up to but excluding `end`; an empty or reversed pair
+    * is refused.
+    */
+  def of[A: Ordering](start: A, end: A): Either[Invalid[A], Window[A]] =
+    if Ordering[A].lt(start, end) then Right(new Window(start, end)) else Left(Invalid(start, end))
+
+  def contains[A: Ordering](w: Window[A], a: A): Boolean = w.contains(a)
+
+  def overlaps[A: Ordering](w: Window[A], other: Window[A]): Boolean = w.overlaps(other)
+
+  def abuts[A: Ordering](w: Window[A], other: Window[A]): Boolean = w.abuts(other)
+
+  def intersection[A: Ordering](w: Window[A], other: Window[A]): Option[Window[A]] = w.intersection(other)
+
+  def union[A: Ordering](w: Window[A], other: Window[A]): Option[Window[A]] = w.union(other)
+
+  def gap[A: Ordering](w: Window[A], other: Window[A]): Option[Window[A]] = w.gap(other)
+
+  // In-package construction from bounds a caller has already proven ordered - the trading day's
+  // opening always precedes the next day's.
+  private[world] def make[A](start: A, end: A): Window[A] = new Window(start, end)
+
+  extension [A](w: Window[A])(using ord: Ordering[A])
+    /** Whether the moment falls in the window: the start counts, the end does
+      * not.
+      */
+    @targetName("ext_contains")
+    def contains(a: A): Boolean = ord.lteq(w.start, a) && ord.lt(a, w.end)
+
+    /** Whether the two share any moment - the double-booking test. */
+    @targetName("ext_overlaps")
+    def overlaps(other: Window[A]): Boolean = ord.lt(w.start, other.end) && ord.lt(other.start, w.end)
+
+    /** Whether one ends exactly where the other starts - consecutive shifts. */
+    @targetName("ext_abuts")
+    def abuts(other: Window[A]): Boolean = ord.equiv(w.end, other.start) || ord.equiv(other.end, w.start)
+
+    /** The shared moments, where any. */
+    @targetName("ext_intersection")
+    def intersection(other: Window[A]): Option[Window[A]] =
+      val s = ord.max(w.start, other.start)
+      val e = ord.min(w.end, other.end)
+      Option.when(ord.lt(s, e))(new Window(s, e))
+
+    /** One window covering both, where they overlap or abut. Disjoint windows
+      * have no union, and a caller wanting the hull regardless takes the bounds
+      * itself.
+      */
+    @targetName("ext_union")
+    def union(other: Window[A]): Option[Window[A]] =
+      Option.when(w.overlaps(other) || w.abuts(other))(new Window(ord.min(w.start, other.start), ord.max(w.end, other.end)))
+
+    /** The uncovered moments between two disjoint windows - the free slot on the
+      * board. Symmetric: the gap does not depend on which window is asked.
+      */
+    @targetName("ext_gap")
+    def gap(other: Window[A]): Option[Window[A]] =
+      if w.overlaps(other) || w.abuts(other) then None
+      else if ord.lt(w.end, other.start) then Some(new Window(w.end, other.start))
+      else Some(new Window(other.end, w.start))
+  end extension
+
+  given [A] => CanEqual[Window[A], Window[A]] = CanEqual.derived
+  given [A: Ordering] => Ordering[Window[A]] = Ordering.by(w => (w.start, w.end))
+end Window

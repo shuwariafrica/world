@@ -67,10 +67,6 @@ class PhoneSuite extends munit.FunSuite:
   test("phone: shared-plan territories answer true for every number") {
     assertEquals(Phone.parse("+1 (202) 555-0142").map(_.mobile), Right(true))
   }
-  test("phone: advisory data carries its vintage") {
-    assertEquals(Phone.vintage, "libphonenumber v9.0.35")
-  }
-
   test("phone: range-shaped strings parse at the possible tier") {
     assertEquals(Phone.parse("0912 345 678", Territory.KE).map(_.value), Right("+254912345678"))
   }

@@ -41,16 +41,13 @@ object Charges:
   sealed abstract class Invalid(message: String) extends WorldError(message) derives CanEqual
   object Invalid:
     final case class Order(bound: BigDecimal) extends Invalid("bounds must ascend above the floor")
-    sealed abstract class Open private[Charges] () extends Invalid("only the last row may be open") derives CanEqual
-    case object Open extends Open()
+    case object Open extends Invalid("only the last row may be open")
 
   /** The amount lies outside the table: below its floor, or past its cap. */
   sealed abstract class Outside(message: String) extends WorldError(message) derives CanEqual
   object Outside:
-    sealed abstract class Below private[Charges] () extends Outside("below the table's floor") derives CanEqual
-    case object Below extends Below()
-    sealed abstract class Above private[Charges] () extends Outside("beyond the table's cap") derives CanEqual
-    case object Above extends Above()
+    case object Below extends Outside("below the table's floor")
+    case object Above extends Outside("beyond the table's cap")
 
   /** A bounded row. */
   def upTo[C <: Currency & Singleton](bound: BigDecimal, charge: Money[C]): Row[C] =
@@ -74,7 +71,6 @@ object Charges:
     }
     misplaced.toLeft(()).flatMap(_ => order).map(_ => new Charges(floor, rows))
 
-  /** The charge for an amount: the containing row's, upper bounds inclusive. */
   def charge[C <: Currency & Singleton](c: Charges[C], m: Money[C]): Either[Outside, Money[C]] =
     c.charge(m)
 

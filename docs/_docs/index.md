@@ -56,8 +56,8 @@ every exact-numeric seam with a message pointing at the decimal form.
 // Measure.Kilogram(1) + Measure.Litre(1) does not compile
 ```
 
-**Data is versioned, not ambient.** Each dataset records the upstream release it was
-taken from, so an artefact can state which vintage of each source it holds. See
+**Data is versioned, not ambient.** Each dataset records the upstream release it was taken
+from, and every module enumerates the vintages it carries at runtime. See
 [the data that ships](reference/data.md).
 
 ## Where to go next
@@ -72,7 +72,9 @@ taken from, so an artefact can state which vintage of each source it holds. See
 | capturing or printing postal addresses | [Addresses and coordinates](addresses.md) |
 | modelling customers, suppliers, or counterparties | [Names, organisations, and parties](parties.md) |
 | showing any of it to a person | [Presenting values to people](presentation.md) |
-| deciding what to redact or retain | [Personal data](personal-data.md) |
+| deciding what to redact | [Personal data](personal-data.md) |
+| meeting a retention, response, or breach obligation | [Statutory obligations](retention.md) |
+| handing values to a JDK API | [The JDK boundary](jdk.md) |
 | changing `world` itself | [Contributing](contributing.md) |
 
 ## Status

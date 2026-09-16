@@ -134,6 +134,17 @@ Currency.KES(1500).per(Hour)
   .total(Instant.seconds(0).until(Instant.seconds(5400)), Rounding.HalfUp).amount
 ```
 
+A span with two bounds measures itself. `Window.length` is the hire period, the shift, the
+meter-reading period, at the resolution its bounds carry:
+
+```scala mdoc
+Window
+  .of(DateTime.parse("2026-07-24T17:00:00").toOption.get, DateTime.parse("2026-07-27T09:00:00").toOption.get)
+  .map(_.length.in(Hour).amount)
+
+Window.of(Moment.of(1, 0), Moment.of(1, 5)).map(_.length.in(Nanosecond).amount)
+```
+
 Adding a duration to a civil date-time carries the day, and refuses a sub-second remainder
 rather than rounding it silently - that decision is yours to make before the boundary:
 
@@ -141,6 +152,22 @@ rather than rounding it silently - that decision is yours to make before the bou
 DateTime.parse("2026-07-26T23:30:00").toOption.get.plus(Hour(1)).map(_.value)
 
 DateTime.parse("2026-07-26T14:30:00").toOption.get.plus(Second(Ratio(1, 2))).isLeft
+```
+
+A machine timestamp measures in the same kind, down to the nanosecond, so a span between
+two `Moment` values prices and converts through this algebra rather than a second one:
+
+```scala mdoc
+Moment.of(1, 500000000).until(Moment.of(3, 250000000)).in(Millisecond).amount
+
+Moment.of(1, 999999999).plus(Nanosecond(1))
+```
+
+Each of the sub-second measures carries its UN/CEFACT Recommendation 20 code, so a metered
+line reaches an invoice without a lookup table of your own:
+
+```scala mdoc
+Vector(Millisecond, Microsecond, Nanosecond).map(_.code)
 ```
 
 ## Converting between kinds
@@ -168,6 +195,15 @@ Metre(3) * Metre(2)
 (SquareMetre(6) * Metre(2)) =~ Litre(12000)
 
 Hectare(1) =~ SquareMetre(10000)
+```
+
+Floor area on a listing or a lease is quoted in square feet across much of the market. The
+factor is exact by international definition, so a converted area is not an approximation:
+
+```scala mdoc
+SquareFoot(1000).in(SquareMetre).amount
+
+SquareFoot(1) =~ Foot(1) * Foot(1)
 ```
 
 ## Block tariffs

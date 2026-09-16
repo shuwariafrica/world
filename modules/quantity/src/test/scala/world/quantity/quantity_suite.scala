@@ -247,6 +247,21 @@ class QuantitySuite extends munit.FunSuite:
   test("datetime: sub-second addition is the caller's rounding decision") {
     assert(slot.plus(Second(Ratio(1, 2))).isLeft)
   }
+  test("window: a civil window measures its own length") {
+    assertEquals
+      (
+        Window
+          .of(DateTime.parse("2026-07-24T17:00:00").toOption.get, DateTime.parse("2026-07-27T09:00:00").toOption.get)
+          .map(_.length.in(Hour).amount),
+        Right(Ratio(64))
+      )
+  }
+  test("window: an instant window measures in whole seconds, a moment window to the nanosecond") {
+    assert
+      (
+        Window.of(Instant.seconds(10), Instant.seconds(70)).map(_.length.in(Minute).amount) == Right(Ratio(1))
+          && Window.of(Moment.of(1, 0), Moment.of(1, 5)).map(_.length.in(Measure.Nanosecond).amount) == Right(Ratio(5)))
+  }
 
   test("quantity: consumer-minted kind") {
     assertEquals(Measure[Sacks]("sack50", 50)(2).base, Ratio(100))
@@ -441,8 +456,8 @@ class QuantitySuite extends munit.FunSuite:
           (Measure.Kilogram,
            Breaks.open(Breaks.Charge.PerUnit(Currency.KES(90))),
            Breaks.upTo(Ratio(5), Breaks.Charge.Flat(Currency.KES(500)))) match
-          case Left(_: Breaks.Invalid.Open) => true
-          case _                            => false)
+          case Left(Breaks.Invalid.Open) => true
+          case _                         => false)
   }
   test("breaks: the open row prices the unbounded tail") {
     val card = Breaks
@@ -453,5 +468,31 @@ class QuantitySuite extends munit.FunSuite:
       .toOption
       .get
     assertEquals(card.charge(Measure.Kilogram(40), Rounding.HalfUp), Right(Currency.KES(BigDecimal("3600.00"))))
+  }
+
+  test("duration: sub-second measures convert exactly and carry their codes") {
+    assert
+      (
+        Measure.Millisecond(1500).in(Measure.Second).amount == Ratio.make(3, 2)
+          && Measure.Nanosecond(1).in(Measure.Microsecond).amount == Ratio.make(1, 1000)
+          && Measure.Millisecond.code == Some("C26")
+          && Measure.Microsecond.code == Some("B98")
+          && Measure.Nanosecond.code == Some("C47"))
+  }
+  test("measure: the square foot converts exactly and squares with the foot") {
+    assert
+      (
+        Measure.SquareFoot(1000).in(Measure.SquareMetre).amount == Ratio.make(9290304L, 100000L)
+          && Measure.SquareFoot(1).in(Measure.SquareMetre).amount
+          == Measure.Foot(1).in(Measure.Metre).amount * Measure.Foot(1).in(Measure.Metre).amount
+          && Measure.SquareFoot.code == Some("FTK"))
+  }
+  test("moment: spans price through the algebra and advance at the nanosecond") {
+    assert
+      (
+        Moment.of(1, 500000000).until(Moment.of(3, 250000000)).in(Measure.Millisecond).amount == Ratio(1750)
+          && Moment.of(1, 0).plus(Measure.Microsecond(1)) == Right(Moment.of(1, 1000))
+          && Moment.of(0, 0).plus(Measure.Nanosecond(Ratio.make(1, 2))).isLeft
+          && Moment.of(1, 999999999).plus(Measure.Nanosecond(1)) == Right(Moment.of(2, 0)))
   }
 end QuantitySuite

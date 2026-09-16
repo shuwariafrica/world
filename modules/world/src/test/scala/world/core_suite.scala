@@ -23,6 +23,159 @@ class CoreSuite extends munit.FunSuite:
   private val dob = Date(2008, 7, 26)
   private val july = Date(2026, 7, 26)
   private val seamSupported = Vector(Locale(Language.en), Locale(Language.sw, Territory.KE))
+  private val midnight = Time.of(0, 0).toOption.get
+  private val noon = Time.of(12, 0).toOption.get
+  private val today = Date(2026, 8, 21)
+
+  // A deployment's own rows, cited: world ships none of any of the four kinds, because statutory
+  // tables change by legislation on no schedule.
+  private val retention = Statutory.Retention.Table[Record, Entity]
+    (
+      Vector
+        (
+          // Companies Act 2006 s.388(4): three years for a private company, six for a public one.
+          Statutory.Retention.Rule
+            (
+              Territory.GB,
+              Record.Accounting,
+              Some(Entity.Private),
+              Statutory.Retention.Term.Period(Months(36)),
+              Statutory.Statute("Companies Act 2006", "s.388(4)(a)"),
+              Date(2008, 4, 6)
+            ),
+          Statutory.Retention.Rule
+            (
+              Territory.GB,
+              Record.Accounting,
+              Some(Entity.Public),
+              Statutory.Retention.Term.Period(Months(72)),
+              Statutory.Statute("Companies Act 2006", "s.388(4)(b)"),
+              Date(2008, 4, 6)
+            ),
+          // Kenya TPA 2015 s.23(1)(c), five years, extended by s.23(3) until proceedings complete.
+          Statutory.Retention.Rule
+            (
+              Territory.KE,
+              Record.Tax,
+              None,
+              Statutory.Retention.Term.Later(Months(60), "all proceedings completed"),
+              Statutory.Statute("Tax Procedures Act 2015", "s.23(1)(c), s.23(3)"),
+              Date(2016, 1, 19)
+            ),
+          // An amendment pair: the later rule governs from its own effective date and not before.
+          Statutory.Retention.Rule
+            (Territory.KE,
+             Record.Audit,
+             None,
+             Statutory.Retention.Term.Period(Months(12)),
+             Statutory.Statute("exemplar", "first"),
+             Date(2020, 1, 1)),
+          Statutory.Retention.Rule
+            (Territory.KE,
+             Record.Audit,
+             None,
+             Statutory.Retention.Term.Period(Months(24)),
+             Statutory.Statute("exemplar", "amended"),
+             Date(2024, 1, 1))
+        ),
+      Vector
+        (
+          // Kenya's Data Protection (General) Regulations 2021 reg. 26(1): a serving copy in Kenya,
+          // for every record.
+          Statutory.Retention.Residency
+            (Territory.KE,
+             None,
+             Statutory.Retention.Mode.ServingCopy,
+             Statutory.Statute("Data Protection (General) Regulations 2021", "reg. 26(1)")),
+          // Companies Act 2006 s.388(2): accounts kept abroad must be sent to and kept in the UK.
+          Statutory.Retention.Residency
+            (Territory.GB,
+             Some(Set(Record.Accounting)),
+             Statutory.Retention.Mode.ServingCopy,
+             Statutory.Statute("Companies Act 2006", "s.388(2)"))
+        )
+    )
+
+  // GDPR art. 12(3): one month, extendable by two further months, no condition moving the clock.
+  // Kenya's reg. 12(3) gives fourteen days for an erasure and reg. 11(6) seven for a refusal
+  // notice. The UK's art. 12A makes the relevant time the latest of receipt, identity and fee.
+  private val responses = Statutory.Response.Table
+    (
+      Vector
+        (
+          Statutory.Response.Rule
+            (
+              Territory.DE,
+              Statutory.Response.Kind.Access,
+              Statutory.Limit.Months(Months(1)),
+              Set.empty,
+              waits = false,
+              pausable = false,
+              Some(Statutory.Response.Extension.Fixed(Statutory.Limit.Months(Months(2)))),
+              None,
+              Statutory.Statute("Regulation (EU) 2016/679", "art. 12(3)"),
+              Date(2018, 5, 25)
+            ),
+          Statutory.Response.Rule
+            (
+              Territory.KE,
+              Statutory.Response.Kind.Erasure,
+              Statutory.Limit.Days(Days(14)),
+              Set.empty,
+              waits = false,
+              pausable = false,
+              None,
+              Some(Statutory.Limit.Days(Days(7))),
+              Statutory.Statute("Data Protection (General) Regulations 2021", "reg. 12(3), reg. 11(6)"),
+              Date(2022, 1, 14)
+            ),
+          Statutory.Response.Rule
+            (
+              Territory.GB,
+              Statutory.Response.Kind.Access,
+              Statutory.Limit.Months(Months(1)),
+              Set(Statutory.Response.Condition.Identity, Statutory.Response.Condition.Fee),
+              waits = true,
+              pausable = true,
+              Some(Statutory.Response.Extension.Fixed(Statutory.Limit.Months(Months(2)))),
+              None,
+              Statutory.Statute("UK GDPR", "art. 12A"),
+              Date(2025, 6, 19)
+            )
+        ))
+
+  // GDPR art. 33(1)-(2) and 34(1): 72 hours to the authority unless the breach is unlikely to
+  // result in a risk, the processor clock unnumbered, the subjects told at a high risk. Kenya's
+  // s.43(1)-(3): 72 hours to the Commissioner and 48 from processor to controller.
+  private val breaches = Statutory.Breach.Table
+    (
+      Vector
+        (
+          Statutory.Breach.Rule
+            (
+              Territory.DE,
+              None,
+              Some(Statutory.Limit.Hours(72)),
+              Statutory.Breach.Risk.Likely,
+              Statutory.Breach.Risk.High,
+              Statutory.Statute("Regulation (EU) 2016/679", "art. 33, art. 34"),
+              Date(2018, 5, 25)
+            ),
+          Statutory.Breach.Rule
+            (
+              Territory.KE,
+              Some(Statutory.Limit.Hours(48)),
+              Some(Statutory.Limit.Hours(72)),
+              Statutory.Breach.Risk.Likely,
+              Statutory.Breach.Risk.Likely,
+              Statutory.Statute("Data Protection Act 2019", "s.43"),
+              Date(2019, 11, 25)
+            )
+        ))
+
+  private def civil(value: String): DateTime = DateTime.parse(value).toOption.get
+  private val stay = Window.of(civil("2026-08-21T14:00:00"), civil("2026-08-23T11:00:00")).toOption.get
+  private val nextStay = Window.of(civil("2026-08-23T11:00:00"), civil("2026-08-25T11:00:00")).toOption.get
 
   test("territory: alpha2 round trip") {
     assertEquals(Territory.from("ke").map(_.alpha2), Right("KE"))
@@ -247,6 +400,15 @@ class CoreSuite extends munit.FunSuite:
   }
   test("time: signed components refuse") {
     assert(Time.parse("+4:00").isLeft && Time.parse("14:-5").isLeft)
+  }
+  test("time: every component is exactly two digits, the seconds optional") {
+    assert
+      (
+        Time.parse("14:30").map(_.value) == Right("14:30:00")
+          && Time.parse("24:00:00").map(_.value) == Right("24:00:00")
+          && Time.parse("1:30").isLeft
+          && Time.parse("14:30:5").isLeft
+          && Time.parse("014:30:05").isLeft)
   }
   test("yearmonth: unicode digits refuse") {
     assert(YearMonth.parse("٢٠٠٢-03").isLeft && YearMonth.parse("+200-03").isLeft)
@@ -485,8 +647,309 @@ class CoreSuite extends munit.FunSuite:
   test("locale: non-ascii subtags refuse") {
     assert(Locale.parse("en-\u0664\u0661\u0669").isLeft && Currency.of("BONG\u0410", 0).isLeft)
   }
+
+  test("utc: the epoch reads as the epoch day, both ways") {
+    assert
+      (
+        Instant.seconds(0).utc == Right(DateTime(Date(1970, 1, 1), midnight))
+          && DateTime(Date(1970, 1, 1), midnight).utc == Instant.seconds(0))
+  }
+  test("utc: a civil moment round trips and negatives read before the epoch") {
+    assert
+      (
+        DateTime(Date(2026, 8, 21), noon).utc == Instant.seconds(1787313600L)
+          && Instant.seconds(1787313600L).utc.map(_.value) == Right("2026-08-21T12:00:00")
+          && Instant.seconds(-1).utc.map(_.value) == Right("1969-12-31T23:59:59"))
+  }
+  test("utc: beyond the calendar is the calendar's typed refusal") {
+    assert(Instant.seconds(Long.MaxValue).utc.isLeft)
+  }
+
+  test("moment: normalised construction and the lossless widening") {
+    assert
+      (
+        Moment.of(5, -1) == Moment.of(4, 999999999)
+          && Moment(Instant.seconds(1787313600L)).instant == Instant.seconds(1787313600L)
+          && Moment(Instant.seconds(7)).value == "7")
+  }
+  test("moment: the wire pair round trips with trimmed fractions") {
+    assert
+      (
+        Moment.parse("1723456789.5").map(_.value) == Right("1723456789.5")
+          && Moment.parse("-0.5") == Right(Moment.of(-1, 500000000))
+          && Moment.parse("-0.5").map(_.value) == Right("-0.5")
+          && Moment.parse("1.123456789").map(_.nano) == Right(123456789))
+  }
+  test("moment: the wire grammar refuses shapes outside the secfrac form") {
+    assert
+      (
+        Moment.parse("1.").isLeft && Moment.parse("1.1234567890").isLeft && Moment.parse("1e3").isLeft
+          && Moment.parse("\u0661.5").isLeft)
+  }
+  test("moment: ingestion forms floor and the accessors reconstruct") {
+    assert
+      (
+        Moment.nanos(-1) == Moment.of(-1, 999999999)
+          && Moment.micros(1500000) == Moment.of(1, 500000000)
+          && Moment.millis(1500).nanos == Some(1500000000L)
+          && Moment.of(1, 5).millis == 1000L)
+  }
+  test("moment: ordering runs by seconds then nanos") {
+    assert
+      (
+        Ordering[Moment].lt(Moment.of(1, 999999999), Moment.of(2, 0))
+          && summon[Classified[Moment]].classification == Classification.None)
+  }
+
+  test("retention: the entity-kinded rule resolves where the statute distinguishes") {
+    assert
+      (
+        retention.rule(Territory.GB, Record.Accounting, Entity.Private, today).map(_.term)
+          == Some(Statutory.Retention.Term.Period(Months(36)))
+          && retention.rule(Territory.GB, Record.Accounting, Entity.Public, today).map(_.term)
+          == Some(Statutory.Retention.Term.Period(Months(72))))
+  }
+  test("retention: a general rule serves every entity kind, with its later-of term") {
+    assertEquals
+      (
+        retention.rule(Territory.KE, Record.Tax, Entity.Individual, today).map(_.term),
+        Some(Statutory.Retention.Term.Later(Months(60), "all proceedings completed"))
+      )
+  }
+  test("retention: the latest rule in force on the day governs, an amendment from its date") {
+    assert
+      (
+        retention.rule(Territory.KE, Record.Audit, Entity.Private, Date(2022, 6, 1)).map(_.term)
+          == Some(Statutory.Retention.Term.Period(Months(12)))
+          && retention.rule(Territory.KE, Record.Audit, Entity.Private, today).map(_.term)
+          == Some(Statutory.Retention.Term.Period(Months(24)))
+          && retention.rule(Territory.KE, Record.Audit, Entity.Private, Date(2019, 1, 1)) == None)
+  }
+  test("retention: no rule is a typed absence, never a default") {
+    assert
+      (
+        retention.rule(Territory.US, Record.Tax, Entity.Public, today) == None
+          && retention.rule(Territory.GB, Record.Tax, Entity.Public, today) == None)
+  }
+  test("retention: residency binds to all records or to the classes the statute names") {
+    assert
+      (
+        retention.residency(Territory.KE, Record.Audit).map(_.mode) == Some(Statutory.Retention.Mode.ServingCopy)
+          && retention.residency(Territory.GB, Record.Accounting).map(_.mode) == Some(Statutory.Retention.Mode.ServingCopy)
+          && retention.residency(Territory.GB, Record.Tax) == None)
+  }
+
+  test("response: the rule in force keys on territory and request kind, with its conditions") {
+    assert
+      (
+        responses.rule(Territory.GB, Statutory.Response.Kind.Access, today).exists(r => r.waits && r.conditions.size == 2)
+          && responses.rule(Territory.DE, Statutory.Response.Kind.Access, today).map(_.conditions) == Some(Set.empty)
+          && responses.rule(Territory.KE, Statutory.Response.Kind.Erasure, today).flatMap(_.refusal)
+          == Some(Statutory.Limit.Days(Days(7))))
+  }
+  test("response: the extension and the initial limit are read from the rule in force") {
+    assert
+      (
+        responses.rule(Territory.DE, Statutory.Response.Kind.Access, today).map(_.initial)
+          == Some(Statutory.Limit.Months(Months(1)))
+          && responses.rule(Territory.DE, Statutory.Response.Kind.Access, today).flatMap(_.extension)
+          == Some(Statutory.Response.Extension.Fixed(Statutory.Limit.Months(Months(2))))
+          && responses.rule(Territory.KE, Statutory.Response.Kind.Erasure, today).flatMap(_.extension) == None)
+  }
+  test("response: absence is typed, and a rule not yet in force is excluded") {
+    assert
+      (
+        responses.rule(Territory.KE, Statutory.Response.Kind.Access, today) == None
+          && responses.rule(Territory.GB, Statutory.Response.Kind.Access, Date(2018, 5, 25)) == None)
+  }
+  test("breach: the clocks and thresholds resolve per territory, the unnumbered clock absent") {
+    assert
+      (
+        breaches.rule(Territory.DE, today).exists(r => r.processor == None && r.authority == Some(Statutory.Limit.Hours(72)))
+          && breaches.rule(Territory.KE, today).flatMap(_.processor) == Some(Statutory.Limit.Hours(48))
+          && breaches.rule(Territory.US, today) == None)
+  }
+  test("breach: the subject communication threshold is the rule's own, not the authority's") {
+    assert
+      (
+        breaches.rule(Territory.DE, today).map(_.subjectAt) == Some(Statutory.Breach.Risk.High)
+          && breaches.rule(Territory.KE, today).map(_.subjectAt) == Some(Statutory.Breach.Risk.Likely))
+  }
+  test("breach: a rule not yet in force is excluded") {
+    assertEquals(breaches.rule(Territory.KE, Date(2019, 1, 1)), None)
+  }
+  test("statutory: a same-day amendment supersedes the row it amends, in every family") {
+    val amended = Statutory.Breach.Table
+      (
+        breaches.rules :+ Statutory.Breach.Rule
+          (
+            Territory.KE,
+            Some(Statutory.Limit.Hours(24)),
+            Some(Statutory.Limit.Hours(72)),
+            Statutory.Breach.Risk.Likely,
+            Statutory.Breach.Risk.High,
+            Statutory.Statute("Data Protection Act 2019", "s.43 as amended"),
+            Date(2019, 11, 25)
+          ))
+    val revised = Statutory.Retention.Table[Record, Entity]
+      (
+        retention.rules :+ Statutory.Retention.Rule
+          (
+            Territory.KE,
+            Record.Tax,
+            None,
+            Statutory.Retention.Term.Period(Months(84)),
+            Statutory.Statute("Tax Procedures Act 2015", "s.23(1)(c) as amended"),
+            Date(2016, 1, 19)
+          ),
+        retention.residencies
+      )
+    assert
+      (
+        amended.rule(Territory.KE, today).flatMap(_.processor) == Some(Statutory.Limit.Hours(24))
+          && revised.rule(Territory.KE, Record.Tax, Entity.Individual, today).map(_.term)
+          == Some(Statutory.Retention.Term.Period(Months(84))))
+  }
+
+  test("window: half-open containment, and an empty or reversed pair refused") {
+    assert
+      (
+        stay.contains(civil("2026-08-21T14:00:00")) && !stay.contains(civil("2026-08-23T11:00:00"))
+          && Window.of(civil("2026-08-21T14:00:00"), civil("2026-08-21T14:00:00"))
+          == Left(Window.Invalid(civil("2026-08-21T14:00:00"), civil("2026-08-21T14:00:00")))
+          && Window.of(civil("2026-08-23T11:00:00"), civil("2026-08-21T14:00:00")).isLeft)
+  }
+  test("window: consecutive stays abut without overlapping, and unite") {
+    assert
+      (
+        stay.abuts(nextStay) && !stay.overlaps(nextStay) && stay.intersection(nextStay) == None
+          && stay.union(nextStay).map(w => (w.start.value, w.end.value))
+          == Some(("2026-08-21T14:00:00", "2026-08-25T11:00:00")))
+  }
+  test("window: the double booking shares its moments") {
+    val late = Window.of(civil("2026-08-22T00:00:00"), civil("2026-08-24T00:00:00")).toOption.get
+    assert(stay.overlaps(late) && stay.intersection(late).map(_.end.value) == Some("2026-08-23T11:00:00"))
+  }
+  test("window: disjoint windows have a symmetric gap and no union") {
+    val far = Window.of(civil("2026-08-26T00:00:00"), civil("2026-08-27T00:00:00")).toOption.get
+    assert
+      (
+        stay.gap(far).map(w => (w.start.value, w.end.value))
+          == Some(("2026-08-23T11:00:00", "2026-08-26T00:00:00"))
+          && far.gap(stay) == stay.gap(far)
+          && stay.union(far) == None
+          && stay.gap(nextStay) == None)
+  }
+  test("window: one shape over instants and moments, ordered by its bounds") {
+    assert
+      (
+        Window.of(Instant.seconds(10), Instant.seconds(20)).toOption.exists(_.contains(Instant.seconds(15)))
+          && Window.of(Moment.of(1, 5), Moment.of(1, 6)).toOption.exists(_.contains(Moment.of(1, 5)))
+          && Ordering[Window[DateTime]].lt(stay, nextStay))
+  }
+
+  test("trading: a moment before the cutover belongs to the previous trading day") {
+    val nightAudit = Trading(Time.of(4, 0).toOption.get)
+    assert
+      (
+        nightAudit.day(DateTime(Date(2026, 8, 21), Time.of(1, 30).toOption.get)) == Right(Date(2026, 8, 20))
+          && nightAudit.day(DateTime(Date(2026, 8, 21), Time.of(4, 0).toOption.get)) == Right(Date(2026, 8, 21))
+          && nightAudit.opens(Date(2026, 8, 21)) == DateTime(Date(2026, 8, 21), Time.of(4, 0).toOption.get))
+  }
+  test("trading: a midnight cutover is the civil day, and the calendar floor refuses") {
+    assert
+      (
+        Trading(midnight).day(DateTime(Date(2026, 8, 21), midnight)) == Right(Date(2026, 8, 21))
+          && Trading(Time.of(4, 0).toOption.get)
+            .day(DateTime(Date(1, 1, 1), Time.of(1, 0).toOption.get))
+            .isLeft)
+  }
+  test("trading: the trading day is a window from one opening to the next") {
+    assert
+      (
+        Trading(Time.of(4, 0).toOption.get).window(Date(2026, 8, 21)).map(w => (w.start.value, w.end.value))
+          == Right(("2026-08-21T04:00:00", "2026-08-22T04:00:00"))
+          && Trading(Time.of(4, 0).toOption.get).window(Date(9999, 12, 31)).isLeft)
+  }
+
+  test("offset: the wire pair, with Z canonical at zero and the day-bounded range") {
+    assert
+      (
+        Offset.parse("+03:00").map(_.minutes) == Right(180)
+          && Offset.parse("-00:30").map(_.value) == Right("-00:30")
+          && Offset.parse("Z").map(_.value) == Right("Z")
+          && Offset.parse("-00:00") == Right(Offset.utc)
+          && Offset.parse("+24:00").isLeft
+          && Offset.parse("+3:00").isLeft
+          && Offset.of(1440).isLeft
+          && Offset.of(-1439).isRight)
+  }
+  test("stamp: a wire timestamp reads onto the timeline with its fraction and offset") {
+    assert
+      (
+        Stamp.parse("2026-08-21T12:00:00.123+03:00").map(_.instant) == Right(Instant.seconds(1787302800L))
+          && Stamp.parse("2026-08-21T12:00:00.123+03:00").map(_.moment)
+          == Right(Moment.of(1787302800L, 123000000))
+          && Stamp.parse("2026-08-21t09:00:00z").map(_.instant) == Right(Instant.seconds(1787302800L)))
+  }
+  test("stamp: the writer's offset survives the round trip") {
+    assert
+      (
+        Stamp.parse("2026-08-21T12:00:00.123+03:00").map(_.value) == Right("2026-08-21T12:00:00.123+03:00")
+          && Stamp.parse("2026-01-01T01:00:00-03:00").map(_.value) == Right("2026-01-01T01:00:00-03:00")
+          && Stamp.parse("2026-01-01T01:00:00-03:00").map(_.instant.utc.map(_.value))
+          == Right(Right("2026-01-01T04:00:00")))
+  }
+  test("stamp: the timeline writes back at an offset, both resolutions") {
+    assert
+      (
+        Instant.seconds(1787302800L).at(Offset.parse("+03:00").toOption.get).map(_.value)
+          == Right("2026-08-21T12:00:00+03:00")
+          && Moment.of(1787302800L, 5).at(Offset.utc).map(_.value)
+          == Right("2026-08-21T09:00:00.000000005Z"))
+  }
+  test("stamp: a 24:00 civil time normalises and the grammar refuses what RFC 3339 refuses") {
+    assert
+      (
+        Stamp.of(DateTime(Date(2026, 8, 21), Time.of(24, 0, 0).toOption.get), Offset.utc).map(_.value)
+          == Right("2026-08-22T00:00:00Z")
+          && Stamp.parse("2026-08-21T12:00:60Z").isLeft
+          && Stamp.parse("2026-08-21 12:00:00Z").isLeft
+          && Stamp.parse("2026-08-21T12:00Z").isLeft
+          && Stamp.parse("2026-08-21T12:00:00.1234567890Z").isLeft
+          && Stamp.parse("2026-08-21T12:00:00").isLeft)
+  }
+
+  // The pins are stated here rather than read from the registry the generator reads: a pin moves
+  // only through a reviewed change, and this assertion is that review's gate.
+  test("vintages: the linked datasets ship the pins their sources are registered at") {
+    assertEquals
+      (
+        Vintages.all,
+        Vector
+          (
+            Vintage("territories", "cldr", "release-48-2"),
+            Vintage("regions", "cldr", "release-48-2"),
+            Vintage("week", "cldr", "release-48-2"),
+            Vintage("likely-subtags", "cldr", "release-48-2"),
+            Vintage("language-scripts", "cldr", "release-48-2"),
+            Vintage("languages", "iana-language-subtag-registry", "2026-08-08"),
+            Vintage("scripts", "iso-15924", "2026-07-26"),
+            Vintage("currencies", "six-iso-4217-list-one", "2026-01-01"),
+            Vintage("currencies-historic", "six-iso-4217-list-three", "2026-01-01")
+          )
+      )
+  }
 end CoreSuite
 
 object CoreSuite:
   // A consumer type standing in for the special-category data world itself ships none of.
   final case class Diagnosis(code: String)
+
+// The consumer vocabularies the retention table is typed over: a deployment's own record
+// classes, and the entity kinds its statutes distinguish.
+enum Record derives CanEqual:
+  case Tax, Accounting, Audit
+
+enum Entity derives CanEqual:
+  case Private, Public, Individual

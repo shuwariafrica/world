@@ -34,9 +34,18 @@ subsection:
   - title: Personal data
     page: personal-data.md
 
+  - title: Statutory obligations
+    page: retention.md
+
+  - title: The JDK boundary
+    page: jdk.md
+
   - title: Reference
     index: reference/index.md
     directory: reference
+    subsection:
+      - title: The data that ships
+        page: reference/data.md
 
   - title: Contributing
     page: contributing.md

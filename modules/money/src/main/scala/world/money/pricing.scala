@@ -51,7 +51,6 @@ object Percent:
   def margin[C <: Currency & Singleton](cost: Money[C], price: Money[C], scale: Int, mode: Rounding): Either[Undefined, Percent] =
     quotient(price.amount - cost.amount, price.amount, scale, mode)
 
-  /** Exact application, read as commerce does: `Percent(16).of(total)`. */
   def of[C <: Currency & Singleton](p: Percent, m: Money[C]): Money[C] = p.of(m)
 
   private def quotient(difference: BigDecimal, base: BigDecimal, scale: Int, mode: Rounding): Either[Undefined, Percent] =
@@ -68,8 +67,13 @@ object Percent:
       * every magnitude.
       */
     def value: BigDecimal = BigDecimal(Decimal.render(p * 100))
+
+    /** This percentage of an amount, exactly; the caller decides where the
+      * result is rounded.
+      */
     @targetName("ext_of")
     def of[C <: Currency & Singleton](m: Money[C]): Money[C] = Money.apply[C](m.amount * p)
+  end extension
 
   given CanEqual[Percent, Percent] = CanEqual.derived
   given Ordering[Percent] = Ordering.BigDecimal.on(identity)
@@ -185,11 +189,9 @@ object Tax:
     val held = list.flatMap(_.over.filter(_.withheld)).headOption.map(o => Invalid.Withheld(o.label))
     duplicate.orElse(unlisted).orElse(held).toLeft(new Tax(list))
 
-  /** Prices tax-exclusively, where `amount` is the net. */
   def exclusive[C <: Currency & Singleton](t: Tax, amount: Money[C], mode: Rounding)(using ValueOf[C]): Taxed[C] =
     t.exclusive(amount, mode)
 
-  /** Prices tax-inclusively, where `amount` is the gross. */
   def inclusive[C <: Currency & Singleton](t: Tax, amount: Money[C], mode: Rounding)(using ValueOf[C]): Either[Undefined, Taxed[C]] =
     t.inclusive(amount, mode)
 
@@ -279,15 +281,12 @@ object Taxed:
   /** One component's charged amount, by its declared label. */
   def apply[C <: Currency & Singleton](t: Taxed[C], label: String): Option[Money[C]] = t(label)
 
-  /** Splits the recorded document by weights, per component. */
   def allocate[C <: Currency & Singleton](t: Taxed[C], weights: Seq[Ratio]): Either[Money.Unallocatable, Vector[Taxed[C]]] =
     t.allocate(weights)
 
-  /** Equal parts of the recorded document. */
   def split[C <: Currency & Singleton](t: Taxed[C], parts: Int): Either[Money.Unallocatable, Vector[Taxed[C]]] = t.split(parts)
 
   extension [C <: Currency & Singleton](t: Taxed[C])
-    /** The tax total across components. */
     def tax: Money[C] = t.components.foldLeft(Money.zero[C])(_ + _._2)
     def gross: Money[C] = t.net + t.tax
 

@@ -73,12 +73,8 @@ object Ratio:
   @targetName("divideByInt")
   def divide(a: Ratio, k: Int): Either[Undefined, Ratio] = a / k
 
-  /** The exact integer power, which compounding needs since `(1 + i)^n` stays
-    * rational. `Undefined` only for a negative power of zero.
-    */
   def pow(r: Ratio, n: Int): Either[Undefined, Ratio] = r.pow(n)
 
-  /** The decimal expansion at the given scale and mode. */
   def decimal(r: Ratio, scale: Int, mode: Rounding): BigDecimal = r.decimal(scale, mode)
 
   def lessThan(a: Ratio, b: Ratio): Boolean = a < b
@@ -99,6 +95,9 @@ object Ratio:
       if o._1.signum == 0 then Left(Undefined) else Right(make(r._1 * o._2, r._2 * o._1))
     @targetName("ext_divideInt") def /(k: Int): Either[Undefined, Ratio] = r / Ratio(k)
 
+    /** Exact integer power; a negative exponent inverts first, so zero to a
+      * negative power is `Undefined`.
+      */
     @targetName("ext_pow")
     def pow(n: Int): Either[Undefined, Ratio] =
       if n >= 0 then Right(make(r._1.pow(n), r._2.pow(n)))
@@ -107,6 +106,9 @@ object Ratio:
     def inverse: Either[Undefined, Ratio] =
       if r._1.signum == 0 then Left(Undefined) else Right(make(r._2, r._1))
 
+    /** The exact value read out as a decimal - the boundary where a ratio
+      * stops being exact, so both the scale and the mode are named here.
+      */
     @targetName("ext_decimal")
     def decimal(scale: Int, mode: Rounding): BigDecimal =
       BigDecimal

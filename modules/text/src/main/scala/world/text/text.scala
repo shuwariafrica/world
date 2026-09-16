@@ -65,7 +65,7 @@ enum DateStyle derives CanEqual:
 enum TimeStyle derives CanEqual:
   case Medium, Short
 
-/** Conjunction used when presenting a list. */
+/** Whether a list reads as "a, b and c" or as "a, b or c". */
 enum ListStyle derives CanEqual:
   case And, Or
 
@@ -269,10 +269,8 @@ object Culture:
   /** English, shipped so presentation works with no generated cultures at all. */
   val en: Culture = Culture(Locale(Language.en), builtin.enData)
 
-  /** Parses a decimal under a culture's own symbols. */
   def parse(c: Culture, raw: String): Either[Invalid, BigDecimal] = c.parse(raw)
 
-  /** The list assembled under the culture's own patterns. */
   def list(c: Culture, items: Seq[String]): String = c.list(items)
 
   @targetName("listStyled")
@@ -312,6 +310,9 @@ object Culture:
     def plural(n: BigDecimal): Plural = c.data.cardinal(Plural.Operands.of(n))
     def ordinal(n: Long): Plural = c.data.ordinalRule(n)
 
+    /** The items joined under the culture's own conjunction pattern; the
+      * styled twin selects its disjunction instead.
+      */
     @targetName("ext_list")
     def list(items: Seq[String]): String = fmt.list(c.data.listAnd, items)
 
@@ -596,9 +597,8 @@ private object fmt:
     scan(0, "")
   end tokens
 
-  /** A combiner pattern's literal text: the placeholders are substituted rather than rendered, so
-    * its quoting is resolved here instead of by the field walker.
-    */
+  // A combiner pattern's placeholders are substituted, not rendered, so its quoting resolves here
+  // and never reaches the field walker.
   private def unquote(pattern: String): String = tokens(pattern)(identity)
 
   // Dates render under the culture's own CALENDAR: the labels come from `Calendar.at` over the

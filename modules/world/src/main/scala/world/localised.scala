@@ -30,15 +30,10 @@ final case class Localised[A] private (values: Map[Locale, A])
 object Localised:
   def apply[A](entries: (Locale, A)*): Localised[A] = new Localised(entries.toMap)
 
-  /** The holding with `locale` bound to `value`. */
   def updated[A](l: Localised[A], locale: Locale, value: A): Localised[A] = l.updated(locale, value)
 
-  /** Resolves by truncation: the exact tag, then progressively shorter prefixes
-    * of it.
-    */
   def resolve[A](l: Localised[A], locale: Locale): Option[A] = l.resolve(locale)
 
-  /** Total resolution against an application default. */
   @targetName("resolveOrDefault")
   def resolve[A](l: Localised[A], locale: Locale, default: A): A = l.resolve(locale, default)
 
@@ -47,6 +42,9 @@ object Localised:
     def updated(locale: Locale, value: A): Localised[A] =
       new Localised(l.values.updated(locale, value))
 
+    /** Resolves by truncation: the exact tag first, then progressively shorter
+      * prefixes of it.
+      */
     // CLDR parent overrides join at the data pipeline; the chain itself is pure truncation.
     @targetName("ext_resolve")
     def resolve(locale: Locale): Option[A] =

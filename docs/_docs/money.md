@@ -97,6 +97,20 @@ Cash.of(Territory.KE)
 Currency.KES(BigDecimal("9.98")).cash(Territory.FI).amount
 ```
 
+A till in a territory whose practice `world` does not record supplies the row itself, and
+the same operation takes it as a value. Here the assertion is explicit, so a rule for
+another currency is refused rather than quietly falling back:
+
+```scala mdoc
+val kenyanTill = Cash(Currency.KES, 2, 50, Rounding.HalfUp, Cash.Provenance.Practice, Cash.Provenance.Practice)
+
+Currency.KES(BigDecimal("123.30")).cash(kenyanTill).map(_.amount)
+
+Currency.KES(BigDecimal("123.30")).cash(kenyanTill, Rounding.Down).map(_.amount)
+
+Currency.TZS(BigDecimal("123.30")).cash(kenyanTill)
+```
+
 ## Splitting without losing a cent
 
 Allocation always sums back to the whole. The remainder goes to the largest fractional

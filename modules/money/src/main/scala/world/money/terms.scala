@@ -55,14 +55,11 @@ object Terms:
   def eom(days: Int): Either[Invalid, Terms] =
     if days < 0 then Left(Invalid.Days(days)) else Right(Terms(days, true, None))
 
-  /** The early-settlement discount. */
   def discount(t: Terms, rate: Percent, within: Int): Either[Invalid, Terms] =
     t.discount(rate, within)
 
-  /** The calendar due date. */
   def due(t: Terms, invoiced: Date): Either[Date.Invalid, Date] = t.due(invoiced)
 
-  /** Whether a payment date falls inside the early-settlement window. */
   def discounted(t: Terms, invoiced: Date, paid: Date): Boolean = t.discounted(invoiced, paid)
 
   extension (t: Terms)
@@ -87,6 +84,9 @@ object Terms:
     def due(invoiced: Date): Either[Date.Invalid, Date] =
       (if t.eom then invoiced.yearMonth.last else invoiced).plus(Days(t.days))
 
+    /** Whether payment on `paid` earns the early-settlement discount: false
+      * where the terms carry none, and the last day of the window counts.
+      */
     @targetName("ext_discounted")
     def discounted(invoiced: Date, paid: Date): Boolean =
       t.discount.exists(d => invoiced.until(paid) >= 0 && invoiced.until(paid) <= d.within)
