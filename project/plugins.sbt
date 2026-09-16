@@ -1,7 +1,7 @@
 resolvers += "central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/")
 
-addSbtPlugin("africa.shuwari" % "sbt-version" % "0.9.0")
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.1")
+addSbtPlugin("africa.shuwari" % "sbt-version" % "0.10.0")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
 addSbtPlugin("africa.shuwari.sbt" % "sbt-shuwari" % "0.15.4")
