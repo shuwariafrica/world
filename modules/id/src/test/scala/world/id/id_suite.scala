@@ -423,4 +423,21 @@ class IdSuite extends munit.FunSuite:
   test("classified: an email address is personal data") {
     assertEquals(summon[Classified[Email]].classification, Classification.Personal)
   }
+
+  // The pins are stated here rather than read from the registry the generator reads: a pin moves
+  // only through a reviewed change, and this assertion is that review's gate.
+  test("vintages: the linked datasets ship the pins their sources are registered at") {
+    assertEquals
+      (
+        IdVintages.all,
+        Vector
+          (
+            Vintage("territories", "cldr", "release-48-2"),
+            Vintage("phone", "libphonenumber", "v9.0.35"),
+            Vintage("phone-formats", "libphonenumber", "v9.0.35"),
+            Vintage("phone-mobile", "libphonenumber", "v9.0.35"),
+            Vintage("iban-registry", "iban-registry", "102")
+          )
+      )
+  }
 end IdSuite

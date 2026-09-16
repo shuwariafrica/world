@@ -106,15 +106,15 @@ Phone.parse("+1 (202) 555-0142").map(p => (p.national, p.international))
 Validity stops at the character set, the calling code and the lengths the plan admits. A
 number in a range that is unallocated today still parses, because refusing a real number
 costs a customer while accepting an unreachable one costs one failed call. Whether a
-number is a mobile is therefore advice rather than proof, and it carries the vintage of
-the data it was decided from:
+number is a mobile is therefore advice rather than proof, and the upstream release it was
+decided from is enumerable beside it, for a support trail to record:
 
 ```scala mdoc
 Phone.parse("0712 345 678", Territory.KE).map(_.mobile)
 
 Phone.parse("020 123 4567", Territory.KE).map(_.mobile)
 
-Phone.vintage
+IdVintages.all.filter(_.source == "libphonenumber")
 ```
 
 Where a calling code spans several territories, none is named:

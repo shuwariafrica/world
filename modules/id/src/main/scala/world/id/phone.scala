@@ -48,11 +48,6 @@ object Phone:
     final case class TooShort(raw: String) extends Invalid("shorter than the plan admits")
     final case class TooLong(raw: String) extends Invalid("longer than the plan admits")
 
-  /** The upstream release the numbering data was compiled from, for a support
-    * trail to record beside whatever [[Phone.mobile]] answered.
-    */
-  val vintage: String = tables.vintage
-
   /** Parses a number written in international form, `+` or `00` prefixed. */
   def parse(raw: String): Either[Invalid, Phone] = parsed(raw, None)
 
@@ -173,11 +168,11 @@ object Phone:
         else s"+$code ${rendered(template, digits, widths(format, digits))}"
     end international
 
-    /** Whether the number falls in a mobile range at the data's
-      * [[Phone.vintage]] - what to ask before offering an SMS or mobile-money
-      * rail. Treat it as advice and not proof: ranges move, and where a plan
-      * publishes its mobile and fixed ranges as one, as the North American plan
-      * does, every number answers true.
+    /** Whether the number falls in a mobile range at the numbering data's
+      * vintage ([[IdVintages$ IdVintages]]) - what to ask before offering an SMS or
+      * mobile-money rail. Treat it as advice and not proof: ranges move, and
+      * where a plan publishes its mobile and fixed ranges as one, as the North
+      * American plan does, every number answers true.
       */
     def mobile: Boolean =
       val plan = planOf(p)

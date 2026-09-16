@@ -42,8 +42,7 @@ object Bands:
   object Invalid:
     final case class Order(limit: BigDecimal) extends Invalid("band limits must ascend from zero")
     final case class Rate(value: BigDecimal) extends Invalid("a marginal rate must lie below one hundred percent")
-    sealed abstract class Open private[Bands] () extends Invalid("only the last band may be open") derives CanEqual
-    case object Open extends Open()
+    case object Open extends Invalid("only the last band may be open")
 
   def upTo(limit: BigDecimal, rate: Percent): Band = Band(Some(limit), rate)
   def open(rate: Percent): Band = Band(None, rate)
@@ -62,15 +61,12 @@ object Bands:
     }
     badRate.orElse(openMisplaced).orElse(unordered).toLeft(Bands(list))
 
-  /** The per-band marginal charges over the amount. */
   def banded[C <: Currency & Singleton](b: Bands, amount: Money[C], mode: Rounding)(using ValueOf[C]): Vector[Money[C]] =
     b.banded(amount, mode)
 
-  /** The marginal total. */
   def total[C <: Currency & Singleton](b: Bands, amount: Money[C], mode: Rounding)(using ValueOf[C]): Money[C] =
     b.total(amount, mode)
 
-  /** The exact inverse - the gross whose after-charges remainder is `net`. */
   def gross[C <: Currency & Singleton](b: Bands, net: Money[C], mode: Rounding)(using ValueOf[C]): Money[C] = b.gross(net, mode)
 
   @targetName("grossAtScale")

@@ -34,9 +34,6 @@ object Register:
   def apply[P, K <: Scheme.Kind](rows: (P, Scheme[K])*): Register[P, K] =
     new Register(rows.toVector)
 
-  /** Every scheme applying at the coordinate, in register order. Empty means
-    * this register holds no row for it, never that no scheme exists.
-    */
   def in[P, K <: Scheme.Kind](r: Register[P, K], p: P)(using CanEqual[P, P]): Vector[Scheme[K]] =
     r.in(p)
 
@@ -47,6 +44,7 @@ object Register:
     @targetName("extended")
     def +(row: (P, Scheme[K])): Register[P, K] = new Register(r.rows :+ row)
 
+    /** Every scheme registered for `p`, in the order the rows were added. */
     @targetName("ext_in")
     def in(p: P)(using CanEqual[P, P]): Vector[Scheme[K]] =
       r.rows.collect { case (pp, s) if pp == p => s }

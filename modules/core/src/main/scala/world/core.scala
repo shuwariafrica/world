@@ -40,8 +40,8 @@ enum Rounding derives CanEqual:
   case Up, Down, Ceiling, Floor, HalfUp, HalfDown, HalfEven
 
 /** Division by zero, the one undefined arithmetic operation over world values. */
-sealed abstract class Undefined private[world] () extends WorldError("division by zero") derives CanEqual
-case object Undefined extends Undefined()
+case object Undefined extends WorldError("division by zero")
+type Undefined = Undefined.type
 
 /** Day of the week, Monday-first as ISO 8601 numbers them. */
 enum Weekday derives CanEqual:
@@ -63,13 +63,13 @@ object Week:
   object Number:
     given Ordering[Number] = Ordering.by(n => (n.year, n.week))
 
-  /** The week a date falls in under these rules: week one is the first week
-    * beginning on `first` that holds at least `minimalDays` days of the new
-    * year.
-    */
   def number(w: Week, d: Date): Number = w.number(d)
 
   extension (w: Week)
+    /** The week `d` falls in: week one is the first week beginning on `first`
+      * that holds at least `minimalDays` days of the new year, so the answer's
+      * own year is not always `d.year`.
+      */
     @targetName("ext_number")
     def number(d: Date): Number =
       def weekOne(y: Int): Option[Date] =
@@ -95,15 +95,6 @@ end Week
   */
 enum Overflow derives CanEqual:
   case Constrain, Reject
-
-// The one wire read boilerplate's ASCII vocabulary does not cover: `ASCII.uint` bounds by VALUE
-// (anything up to Int.MaxValue), while a fixed-width civil field is bounded by WIDTH. The
-// time-of-day components arrive from a split with no width guard of their own, so this read is
-// their only one; every other site in world has an independent width guard and uses `ASCII.uint`.
-private[world] object ascii:
-  def int(s: String): Option[Int] =
-    if !ASCII.isDigits(s) || s.length > 9 then None
-    else Some(s.foldLeft(0)((n, ch) => n * 10 + (ch - '0')))
 
 private[world] object rounder:
   def jdk(mode: Rounding): java.math.RoundingMode = mode match
@@ -176,42 +167,35 @@ object Date:
     */
   def parse(value: String): Either[Invalid, Date] = civil.parse(value).left.map(Invalid(_))
 
-  /** Exact day arithmetic. */
   @targetName("plusDaysOf")
   def plus(d: Date, n: Days): Either[Invalid, Date] = d.plus(n)
 
-  /** Seven exact days per week. */
   @targetName("plusWeeksOf")
   def plus(d: Date, n: Weeks): Either[Invalid, Date] = d.plus(n)
 
-  /** Month arithmetic with the day-overflow policy named at the call site. */
   @targetName("plusMonthsWithOverflow")
   inline def plus(d: Date, n: Months, overflow: Overflow): Either[Invalid, Date] = d.plus(n, overflow)
 
-  /** Twelve months per year, under the same policy. */
   @targetName("plusYearsWithOverflow")
   inline def plus(d: Date, n: Years, overflow: Overflow): Either[Invalid, Date] = d.plus(n, overflow)
 
-  /** Signed calendar days from `d` to `other`. */
   def until(d: Date, other: Date): Long = d.until(other)
 
-  /** Completed calendar years (anniversaries) from `d` to `until`. */
   def years(d: Date, until: Date): Long = d.years(until)
 
-  /** The next occurrence of `w`, strictly after `d`. */
   def next(d: Date, w: Weekday): Either[Invalid, Date] = d.next(w)
 
   private[world] def length(y: Int, m: Int): Int = civil.length(y, m)
 
-  /** Total construction from components already known valid (the month bridge's
-    * edges).
-    */
+  // Total: the caller holds components already validated - the month bridge's edges.
   private[world] def fromCivil(y: Int, m: Int, d: Int): Date = civil.fromCivil(y, m, d)
 
-  /** Total construction from an epoch day already known in range (an interval's
-    * unpacked bounds).
-    */
+  // Total: the caller holds a count already in range - an interval's or window's unpacked bounds.
   private[world] def fromDays(value: Int): Date = value
+
+  // For a caller that already holds the count and builds its own failure, so the range test
+  // costs no intermediate Either.
+  private[world] def within(value: Long): Boolean = value >= first && value <= last
 
   private val first: Int = civil.fromCivil(1, 1, 1)
   private val last: Int = civil.fromCivil(9999, 12, 31)
@@ -232,7 +216,6 @@ object Date:
       val civilDate = civil.civilOf(d)
       civil.shown(civilDate.year, civilDate.month, civilDate.day)
 
-    /** The month this date falls in. */
     def yearMonth: YearMonth =
       val civilDate = civil.civilOf(d)
       YearMonth.fromPacked(civilDate.year * 100 + civilDate.month)
@@ -276,6 +259,7 @@ object Date:
     def plus(n: Years, overflow: Overflow): Either[Invalid, Date] =
       d.plus(Months(n.value * 12), overflow)
 
+    /** Calendar days to `other`, negative when `other` precedes this date. */
     @targetName("ext_until")
     def until(other: Date): Long = (other - d).toLong
 
@@ -296,6 +280,9 @@ object Date:
             || (until.month.value == d.month.value && until.day >= anniversaryDay)
         until.year - d.year - (if reached then 0 else 1)
 
+    /** The next `w` strictly after this date, so asking on a Monday for the
+      * next Monday answers seven days on.
+      */
     @targetName("ext_next")
     def next(w: Weekday): Either[Invalid, Date] =
       val ahead = (w.ordinal - d.weekday.ordinal + 7) % 7
@@ -330,14 +317,17 @@ object Time:
 
   def of(hour: Int, minute: Int): Either[Invalid, Time] = of(hour, minute, 0)
 
+  /** Parses the ISO 8601 extended form `14:30:05`, the seconds optional. Every
+    * component is exactly two digits, as the form writes them.
+    */
   def parse(value: String): Either[Invalid, Time] =
     value.split(':') match
-      case Array(h, m)    => fromParts(value, h, m, "0")
+      case Array(h, m)    => fromParts(value, h, m, "00")
       case Array(h, m, s) => fromParts(value, h, m, s)
       case _              => Left(Invalid(value))
 
   private def fromParts(raw: String, h: String, m: String, s: String): Either[Invalid, Time] =
-    (ascii.int(h), ascii.int(m), ascii.int(s)) match
+    (ASCII.uint(h, 2), ASCII.uint(m, 2), ASCII.uint(s, 2)) match
       case (Some(hh), Some(mm), Some(ss)) => of(hh, mm, ss).left.map(_ => Invalid(raw))
       case _                              => Left(Invalid(raw))
 
@@ -404,6 +394,13 @@ object DateTime:
     // `.value` would resolve to this very extension and recurse.
     def value: String = s"${Date.value(dt.date)}T${Time.value(dt.time)}"
 
+    /** The instant this civil date-time denotes read as UTC. Total, since every
+      * civil moment the calendar labels has an epoch second; `instant.utc` is
+      * the inverse.
+      */
+    def utc: Instant = Instant.seconds(Date.days(dt.date).toLong * 86400L + Time.seconds(dt.time))
+  end extension
+
   given CanEqual[DateTime, DateTime] = CanEqual.derived
   given Ordering[DateTime] = Ordering.Long.on(identity)
   given ValueCodec.Aux[DateTime, Invalid] = ValueCodec(parse, dt => DateTime.value(dt))
@@ -419,7 +416,6 @@ enum Basis derives CanEqual:
 
 /** The year-fraction computation for each [[Basis]]. */
 object Basis:
-  /** The exact year fraction from `start` to `end` under `b`. */
   def fraction(b: Basis, start: Date, end: Date): Ratio = b.fraction(start, end)
 
   extension (b: Basis)
@@ -464,7 +460,6 @@ object YearMonth:
           case _                    => Left(Invalid(value))
       case _ => Left(Invalid(value))
 
-  /** Month arithmetic with the range edge typed. */
   def plus(ym: YearMonth, n: Months): Either[Invalid, YearMonth] = ym.plus(n)
 
   private[world] def fromPacked(packed: Int): YearMonth = packed
@@ -496,3 +491,52 @@ object YearMonth:
   given Ordering[YearMonth] = Ordering.Int.on(identity)
   given ValueCodec.Aux[YearMonth, Invalid] = ValueCodec(parse, ym => YearMonth.value(ym))
 end YearMonth
+
+/** The operational day of a business whose day does not close at midnight: a
+  * hotel's closes at night audit, a bar's at last orders, a shift crosses into
+  * the next date. A figure posted at 01:30 therefore belongs to the previous
+  * trading day, and reports that bucket by calendar date are wrong by one for
+  * everything after the close.
+  *
+  * The cutover is a civil time, so the arithmetic is civil: anchoring civil
+  * time to instants is the zone vocabulary's, and the night-audit event and its
+  * policy are the application's. A cutover at midnight is the calendar day
+  * itself. Instances via [[Trading$ Trading]].
+  */
+final case class Trading private (cutover: Time) derives CanEqual
+
+/** Construction and the day arithmetic for [[Trading]]. */
+object Trading:
+  /** A trading day closing at `cutover`; total, since every time of day is a
+    * valid one.
+    */
+  def apply(cutover: Time): Trading = new Trading(cutover)
+
+  def day(t: Trading, at: DateTime): Either[Date.Invalid, Date] = t.day(at)
+
+  def opens(t: Trading, day: Date): DateTime = t.opens(day)
+
+  def window(t: Trading, day: Date): Either[Date.Invalid, Window[DateTime]] = t.window(day)
+
+  extension (t: Trading)
+    /** The trading day a civil moment belongs to: its own date at or after the
+      * cutover, the previous date before it, and the calendar's refusal at its
+      * floor.
+      */
+    @targetName("ext_day")
+    def day(at: DateTime): Either[Date.Invalid, Date] =
+      if Ordering[Time].gteq(at.time, t.cutover) then Right(at.date) else at.date.plus(Days(-1))
+
+    /** The cutover on the trading day's own calendar date. */
+    @targetName("ext_opens")
+    def opens(day: Date): DateTime = DateTime(day, t.cutover)
+
+    /** The trading day as a half-open window of civil time, from its opening to
+      * the next day's, so consecutive trading days tile without sharing a
+      * moment. The calendar's refusal at its ceiling.
+      */
+    @targetName("ext_window")
+    def window(day: Date): Either[Date.Invalid, Window[DateTime]] =
+      day.plus(Days(1)).map(next => Window.make(t.opens(day), t.opens(next)))
+  end extension
+end Trading

@@ -156,6 +156,20 @@ val `world-text` =
     .jsPlatform(Seq(Libraries.scala3))
     .nativePlatform(Seq(Libraries.scala3), nativeSettings)
 
+val `world-jdk` =
+  projectMatrix
+    .in(file("modules/jdk"))
+    .dependsOn(`world-core`, world, `world-quantity`)
+    .settings(description := "Boundary conversions between world's values and the JDK's own vocabulary.")
+    .settings(compilerSettings)
+    .settings(rewriteSettings)
+    .settings(unitTestSettings)
+    .settings(publishSettings)
+    .settings(Compat.settings)
+    .settings(Data.boundary)
+    .settings(libraryDependencies += Libraries.`boilerplate-testkit` % Test)
+    .jvmPlatform(Seq(Libraries.scala3))
+
 val `world-data` =
   projectMatrix
     .in(file("modules/data"))
@@ -208,7 +222,8 @@ val `world-site` =
       `world-id`.jvm(Libraries.scala3),
       `world-address`.jvm(Libraries.scala3),
       `world-party`.jvm(Libraries.scala3),
-      `world-text`.jvm(Libraries.scala3)
+      `world-text`.jvm(Libraries.scala3),
+      `world-jdk`.jvm(Libraries.scala3)
     )
     .settings(
       ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
@@ -219,7 +234,8 @@ val `world-site` =
         `world-id`.jvm(Libraries.scala3),
         `world-address`.jvm(Libraries.scala3),
         `world-party`.jvm(Libraries.scala3),
-        `world-text`.jvm(Libraries.scala3)
+        `world-text`.jvm(Libraries.scala3),
+        `world-jdk`.jvm(Libraries.scala3)
       )
     )
 
@@ -237,6 +253,7 @@ val `world-jvm` =
       `world-address`,
       `world-party`,
       `world-text`,
+      `world-jdk`,
       `world-data`
     )
 
@@ -320,6 +337,7 @@ def scriptedSettings: List[Setting[?]] = List(
     "-Xss4M",
     s"-Dplugin.version=${(LocalRootProject / Keys.version).value}",
     s"-Dworld.version=${(LocalRootProject / Keys.version).value}",
+    s"-Dworld.scala.version=${Libraries.scala3}",
     s"-Dsbt.boot.directory=${file(sys.props("user.home")) / ".sbt" / "boot"}"
   ),
   scriptedDependencies := {

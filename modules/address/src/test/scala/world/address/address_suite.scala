@@ -305,4 +305,18 @@ class AddressSuite extends munit.FunSuite:
         Fence.of(Vector(cbd, jkia)).isLeft
           && Fence.of(Vector(cbd, jkia, Coordinate.of(0, 37).toOption.get, cbd)).toOption.exists(_.vertices.length == 3))
   }
+
+  // The pins are stated here rather than read from the registry the generator reads: a pin moves
+  // only through a reviewed change, and this assertion is that review's gate.
+  test("vintages: the linked datasets ship the pins their sources are registered at") {
+    assertEquals
+      (
+        AddressVintages.all,
+        Vector
+          (
+            Vintage("territories", "cldr", "release-48-2"),
+            Vintage("address-rules", "google-address-data-service", "2026-08-10")
+          )
+      )
+  }
 end AddressSuite

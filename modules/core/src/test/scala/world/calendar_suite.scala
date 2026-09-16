@@ -107,4 +107,12 @@ class CalendarSuite extends munit.FunSuite:
         Anka.of(3026, 7, 23) == Right(Date(2026, 7, 23))
           && Anka.at(Date(2026, 7, 23)) == Parts(3026, 7, 23))
   }
+
+  test("calendar: picker axes read months and month lengths per calendar") {
+    assert
+      (
+        Gregorian.months(2026) == 12 && Gregorian.days(2024, 2) == Some(29) && Gregorian.days(2026, 13) == None
+          && Ethiopic.months(2018) == 13 && Ethiopic.days(2015, 13) == Some(6) && Ethiopic.days(2016, 13) == Some(5)
+          && Buddhist.days(2567, 2) == Some(29))
+  }
 end CalendarSuite

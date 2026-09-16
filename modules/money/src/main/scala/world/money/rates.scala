@@ -39,11 +39,9 @@ object Rate:
   def of(from: Currency, to: Currency)(value: BigDecimal): Either[Invalid, Rate[from.type, to.type]] =
     of[from.type, to.type](value)
 
-  /** The reciprocal rate at an explicit scale and mode. */
   def inverse[F <: Currency & Singleton, T <: Currency & Singleton](r: Rate[F, T], scale: Int, mode: Rounding): Rate[T, F] = r.inverse
     (scale, mode)
 
-  /** Cross-rate composition through a pivot, exact. */
   def andThen[F <: Currency & Singleton, T <: Currency & Singleton, U <: Currency & Singleton](r: Rate[F, T], next: Rate[T, U]): Rate[F,
                                                                                                                                       U] =
     r.andThen(next)

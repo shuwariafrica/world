@@ -68,6 +68,29 @@ hidden configuration, so it never joins a compile or runtime classpath, and only
 generated cultures for the declared locales end up in an artefact. Declaring them is covered
 in [Generating cultures and messages](../build-tooling.md).
 
+## Reading a vintage at runtime
+
+Every module that carries curated data enumerates it, under a name of its own: `Vintages` in
+`world`, and `MoneyVintages`, `IdVintages`, and `AddressVintages` in the modules that carry
+their own registers. Each `all` names the datasets that module's registers are compiled from,
+the upstream source each came from, and the release its rows were taken at.
+
+```scala mdoc:silent
+import world.*
+import world.id.*
+```
+
+```scala mdoc
+Vintages.all
+
+IdVintages.all.filter(_.source == "libphonenumber")
+```
+
+This is what a support trail records beside an answer it may be asked about later. When a
+number a customer says is a mobile answers `false`, the release that decided it is the fact
+that resolves the question, and it is available at the point the answer was given rather
+than reconstructed from a release date afterwards.
+
 ## Keeping data current
 
 Each source is pinned in `data/upstream-pins.json` with the version taken, when it was

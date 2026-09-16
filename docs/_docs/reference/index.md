@@ -4,7 +4,8 @@ title: Modules and coordinates
 
 ## Artefacts
 
-Each runtime module is published for the JVM, Scala.js, and Scala Native.
+Each runtime module is published for the JVM, Scala.js, and Scala Native, except `world-jdk`,
+which converts JDK types and exists only where they do.
 
 | Module | Concern | Depends on |
 |---|---|---|
@@ -16,6 +17,7 @@ Each runtime module is published for the JVM, Scala.js, and Scala Native.
 | `world-address` | structured postal addresses and geographic coordinates | `world`, `world-core` |
 | `world-party` | names, organisations, and the party a document addresses | `world-id`, `world-address`, `world`, `world-core` |
 | `world-text` | locale-correct presentation of every world value, and the `Display` seam a consumer's own types join | `world-party`, `world-address`, `world-id`, `world-quantity`, `world-money`, `world`, `world-core` |
+| `world-jdk` | conversions to and from `java.time`, `java.util.Locale`, and `java.util.Currency`; JVM only | `world-quantity`, `world`, `world-core` |
 
 `world-core` holds no dataset: it is the arithmetic and the vocabulary. The registers that
 need curated data begin at `world`.
@@ -40,7 +42,8 @@ locale, formatting, or time facility.
 
 | You want | Package | Guide |
 |---|---|---|
-| `Date`, `Time`, `DateTime`, `YearMonth`, `Interval`, `Calendar`, `Basis`, `Week` | `world` (from `world-core`) | [Civil time](../time.md) |
+| `Date`, `Time`, `DateTime`, `YearMonth`, `Interval`, `Window`, `Calendar`, `Basis`, `Week`, `Trading` | `world` (from `world-core`) | [Civil time](../time.md) |
+| `Instant`, `Moment`, `Offset`, `Stamp` | `world` (from `world-core`) | [Civil time](../time.md) |
 | `Ratio`, `Rounding`, `Overflow`, `WorldError` | `world` (from `world-core`) | [Civil time](../time.md) |
 | `Territory`, `Region`, `Language`, `Script`, `Locale`, `Currency`, `Localised` | `world` | [Places and locales](../places.md) |
 | `Money`, `Percent`, `Tax`, `Taxed`, `Bands`, `Charges`, `Rate`, `Terms`, `Cash`, `Bag`, `Instalment`, `Incoterm`, `Delivery` | `world.money` | [Money](../money.md) |
@@ -50,6 +53,9 @@ locale, formatting, or time facility.
 | `Name`, `Organisation`, `Party` | `world.party` | [Parties](../parties.md) |
 | `Culture`, `Display`, `Part`, `Plural`, and the style vocabulary | `world.text` | [Presentation](../presentation.md) |
 | `Classification`, `Classified` | `world` (from `world-core`) | [Personal data](../personal-data.md) |
+| `Statutory` | `world` | [Statutory obligations](../retention.md) |
+| `Vintage`, and the `Vintages` register each data-bearing module carries | `world` (from `world-core`); one register per module, in that module's own package | [The data that ships](data.md) |
+| `JDK`, and the `.jdk` and `.toWorld` conversions | `world.jdk` | [The JDK boundary](../jdk.md) |
 
 `Scheme`, `Id`, `Authority`, and `Register` are in `world` from `world-core`: the concept
 an identifier scheme is declared against, and the register that resolves which schemes

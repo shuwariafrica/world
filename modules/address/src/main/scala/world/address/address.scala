@@ -121,7 +121,6 @@ object Coordinate:
   private[address] def make(latitude: BigDecimal, longitude: BigDecimal): Coordinate =
     Coordinate(latitude, longitude)
 
-  /** The great-circle distance between two points, to the whole metre. */
   def distance(c: Coordinate, other: Coordinate): Quantity[Length] = c.distance(other)
 
   given ValueCodec.Aux[Coordinate, Invalid] = ValueCodec(parse, c => c.value)
@@ -195,7 +194,6 @@ object Box:
     end if
   end around
 
-  /** Whether the point falls inside the box, edges inclusive, wrap respected. */
   def contains(b: Box, c: Coordinate): Boolean = b.contains(c)
 
   extension (b: Box)
@@ -233,7 +231,6 @@ object Fence:
     val ring = if vertices.length > 1 && vertices.head == vertices.last then vertices.init else vertices
     if ring.distinct.length < 3 then Left(Invalid(ring.distinct.length)) else Right(Fence(ring))
 
-  /** Whether the point falls inside the ring. */
   def contains(f: Fence, c: Coordinate): Boolean = f.contains(c)
 
   extension (f: Fence)
@@ -316,10 +313,8 @@ object Address:
   def sorting(a: Address, value: String): Address = a.sorting(value)
   def coordinate(a: Address, value: Coordinate): Address = a.coordinate(value)
 
-  /** Every structural problem the given rules find with the address. */
   def issues(a: Address, rules: Rules): Vector[Issue] = a.issues(rules)
 
-  /** The address as the given rules write it. */
   def display(a: Address, rules: Rules): String = a.display(rules)
 
   /** An address with nothing in it but its territory; fill it through the field

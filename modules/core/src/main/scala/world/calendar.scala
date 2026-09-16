@@ -37,6 +37,18 @@ abstract class Calendar(val name: String):
     */
   def at(d: Date): Calendar.Parts
 
+  /** How many months the labelled year carries - a date picker's month axis,
+    * thirteen in the Alexandrian family.
+    */
+  def months(year: Int): Int
+
+  /** How many days the labelled month carries, or `None` for a month the year
+    * has none of - a picker's day axis, without probing [[Calendar.of]] a day
+    * at a time.
+    */
+  def days(year: Int, month: Int): Option[Int]
+end Calendar
+
 /** The labelled-component vocabulary, the failure, and the shipped instances. */
 object Calendar:
   /** One calendar's reading of a day, in that calendar's own semantics; `month`
@@ -55,6 +67,9 @@ object Calendar:
     final def of(year: Int, month: Int, day: Int): Either[Invalid, Date] =
       Date.of(year + epoch, month, day).left.map(_ => Invalid(name, year, month, day))
     final def at(d: Date): Parts = Parts(d.year - epoch, d.month.value, d.day)
+    final def months(year: Int): Int = 12
+    final def days(year: Int, month: Int): Option[Int] =
+      Option.when(month >= 1 && month <= 12)(Date.length(year + epoch, month))
 
   /** The labelling [[Date]] exposes directly, as an instance of this contract. */
   object Gregorian extends Offset("Gregorian", 0)
@@ -92,6 +107,9 @@ object Calendar:
         if month < 1 || month > 13 || day < 1 || day > monthLength(year, month) then Left(Invalid(name, year, month, day))
         else Date.days(fixed(epoch, year, month, day)).left.map(_ => Invalid(name, year, month, day))
       def at(d: Date): Parts = parts(epoch, d.days.toLong)
+      def months(year: Int): Int = 13
+      def days(year: Int, month: Int): Option[Int] =
+        Option.when(month >= 1 && month <= 13)(monthLength(year, month))
   end alexandrian
 
   /** The Coptic labelling, Anno Martyrum. */

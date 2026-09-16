@@ -1,6 +1,8 @@
 val worldVersion = sys.props.getOrElse("world.version", sys.error("world.version is not defined"))
 
-scalaVersion := "3.9.0-RC5"
+val compilerVersion = sys.props.getOrElse("world.scala.version", sys.error("world.scala.version is not defined"))
+
+scalaVersion := compilerVersion
 
 enablePlugins(WorldPlugin)
 

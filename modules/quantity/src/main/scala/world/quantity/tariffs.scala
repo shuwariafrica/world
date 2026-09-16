@@ -44,18 +44,15 @@ object Blocks:
   sealed abstract class Invalid(message: String) extends WorldError(message) derives CanEqual
   object Invalid:
     final case class Order(bound: Ratio) extends Invalid("block bounds must ascend from zero")
-    sealed abstract class Open private[Blocks] () extends Invalid("only the last block may be open") derives CanEqual
-    case object Open extends Open()
+    case object Open extends Invalid("only the last block may be open")
 
   /** The quantity lies outside the table: negative, or past a capped table's
     * last bound.
     */
   sealed abstract class Outside(message: String) extends WorldError(message) derives CanEqual
   object Outside:
-    sealed abstract class Below private[Blocks] () extends Outside("negative quantity") derives CanEqual
-    case object Below extends Below()
-    sealed abstract class Above private[Blocks] () extends Outside("beyond the table's cap") derives CanEqual
-    case object Above extends Above()
+    case object Below extends Outside("negative quantity")
+    case object Above extends Outside("beyond the table's cap")
 
   def upTo[C <: Currency & Singleton](bound: Ratio, price: Money[C]): Row[C] = Row(Some(bound), price)
 
@@ -76,14 +73,10 @@ object Blocks:
     }
     misplaced.toLeft(()).flatMap(_ => order).map(_ => new Blocks(measure, rows))
 
-  /** Per-block charges for a quantity, each rounded at the currency scale by
-    * `mode`.
-    */
   def charges[C <: Currency & Singleton, K <: Kind](b: Blocks[C, K], q: Quantity[K], mode: Rounding)(using ValueOf[C]): Either[
     Outside,
     Vector[Money[C]]] = b.charges(q, mode)
 
-  /** The exact sum over blocks, rounded once at the currency scale. */
   def total[C <: Currency & Singleton, K <: Kind](b: Blocks[C, K], q: Quantity[K], mode: Rounding)(using ValueOf[C]): Either[Outside,
                                                                                                                              Money[C]] =
     b.total(q, mode)
@@ -159,16 +152,13 @@ object Breaks:
   sealed abstract class Invalid(message: String) extends WorldError(message) derives CanEqual
   object Invalid:
     final case class Order(bound: Ratio) extends Invalid("row bounds must ascend from zero")
-    sealed abstract class Open private[Breaks] () extends Invalid("only the last row may be open") derives CanEqual
-    case object Open extends Open()
+    case object Open extends Invalid("only the last row may be open")
 
   /** The quantity lies outside the card: negative, or past its cap. */
   sealed abstract class Outside(message: String) extends WorldError(message) derives CanEqual
   object Outside:
-    sealed abstract class Below private[Breaks] () extends Outside("negative quantity") derives CanEqual
-    case object Below extends Below()
-    sealed abstract class Above private[Breaks] () extends Outside("beyond the card's cap") derives CanEqual
-    case object Above extends Above()
+    case object Below extends Outside("negative quantity")
+    case object Above extends Outside("beyond the card's cap")
 
   def upTo[C <: Currency & Singleton](bound: Ratio, charge: Charge[C]): Row[C] =
     Row(Some(bound), charge)
@@ -190,7 +180,6 @@ object Breaks:
     }
     misplaced.toLeft(()).flatMap(_ => order).map(_ => new Breaks(measure, rows))
 
-  /** The whole quantity priced by its containing row, upper bounds inclusive. */
   def charge[C <: Currency & Singleton, K <: Kind](b: Breaks[C, K], q: Quantity[K], mode: Rounding)(using ValueOf[C]): Either[Outside,
                                                                                                                               Money[C]] =
     b.charge(q, mode)

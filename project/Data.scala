@@ -53,12 +53,17 @@ object Data:
   /** The per-territory structural addressing rules, packed and size-gated. */
   def addressing: List[Setting[?]] = packed(Pack.addressing, addressingBudgets)
 
+  /** The JDK boundary, which compiles no dataset: its budget is the compiled
+    * size alone.
+    */
+  def boundary: List[Setting[?]] = sized(boundaryBudgets)
+
   // Re-base on a measured run plus a tenth of headroom.
   private def registerBudgets = Map(
     "tables.scala" -> 185000L,
     "constants.scala" -> 40000L,
-    "classfiles" -> 655000L,
-    "nir" -> 745000L
+    "classfiles" -> 875000L,
+    "nir" -> 998000L
   )
 
   private def monetaryBudgets = Map(
@@ -80,15 +85,21 @@ object Data:
     "nir" -> 198000L
   )
 
+  private def boundaryBudgets = Map("classfiles" -> 64000L)
+
   private def root = Def.setting((ThisBuild / baseDirectory).value)
 
-  private def packed(generate: (File, File, Logger) => Seq[File], limits: Map[String, Long]): List[Setting[?]] = List(
-    // Verification runs ahead of generation, so a dataset reaches an artefact only once its
-    // provenance and terms are verified.
-    Compile / sourceGenerators += Def.task {
-      Curated.verify(root.value, streams.value.log)
-      generate(root.value, (Compile / sourceManaged).value, streams.value.log)
-    }.taskValue,
+  private def packed(generate: (File, File, Logger) => Seq[File], limits: Map[String, Long]): List[Setting[?]] =
+    List(
+      // Verification runs ahead of generation, so a dataset reaches an artefact only once its
+      // provenance and terms are verified.
+      Compile / sourceGenerators += Def.task {
+        Curated.verify(root.value, streams.value.log)
+        generate(root.value, (Compile / sourceManaged).value, streams.value.log)
+      }.taskValue
+    ) ++ sized(limits)
+
+  private def sized(limits: Map[String, Long]): List[Setting[?]] = List(
     // Depends on the compile that produces them: reading the paths alone measured a stale row
     // silently, and a size gate reporting yesterday's artefact is not a size gate.
     budgets := Def.uncached(

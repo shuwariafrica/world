@@ -90,6 +90,186 @@ DateTime(Date(2026, 7, 26), Time.of(24, 0, 0).toOption.get).value
 DateTime.parse("2026-07-26T14:30:05").map(_.time.value)
 ```
 
+## The UTC timeline
+
+A civil date-time is what a document says; an instant is a point on the UTC timeline that
+every machine agrees on. UTC is the one zone whose rules are empty, so moving between the
+two needs no zone machinery and no data:
+
+```scala mdoc
+DateTime(Date(2026, 8, 21), Time.of(12, 0).toOption.get).utc.seconds
+
+Instant.seconds(1787313600L).utc.map(_.value)
+```
+
+Reading a civil label back out is the only direction that can fail, and it fails for the
+one reason the calendar has: the instant falls outside years 1 to 9999.
+
+```scala mdoc
+Instant.seconds(Long.MaxValue).utc.isLeft
+```
+
+## Machine timestamps
+
+An `Instant` counts whole seconds, which is the resolution documents and protocol seams
+work at. File times, audit rows, trace spans, and interaction timings carry nanoseconds,
+and `Moment` is the same timeline at that resolution. Widening loses nothing; narrowing is
+a floor you write:
+
+```scala mdoc
+Moment(Instant.seconds(1787313600L)).value
+
+Moment.nanos(1787313600123456789L).instant.seconds
+```
+
+Ingestion names the clock's own unit rather than inferring it from the magnitude:
+
+```scala mdoc
+Moment.millis(1500).value
+
+Moment.micros(1500000).nanos
+```
+
+The wire form is the second count with an RFC 3339 fraction, trimmed of trailing zeros, so
+a whole-second moment reads exactly as its instant:
+
+```scala mdoc
+Moment.of(7, 0).value
+
+Moment.parse("-0.5").map(_.value)
+```
+
+## Timestamps as a wire writes them
+
+An API payload, a log line, and a database column state a civil time together with the
+offset it was written at. Folding that to an instant on the way in discards the offset,
+and an invoice issued at 12:00+03:00 then shows 09:00Z to the person who issued it.
+`Stamp` carries all three parts and reads onto the timeline on demand:
+
+```scala mdoc
+val issued = Stamp.parse("2026-08-21T12:00:00.123+03:00")
+
+issued.map(_.value)
+
+issued.map(_.instant.seconds)
+
+issued.map(_.moment)
+```
+
+Writing back names the offset to write at, and does so at either resolution:
+
+```scala mdoc
+Instant.seconds(1787302800L).at(Offset.parse("+03:00").toOption.get).map(_.value)
+
+Moment.of(1787302800L, 5).at(Offset.utc).map(_.value)
+```
+
+An `Offset` is not a zone. It carries no rules and no name, only the displacement, which is
+all a timeline reading needs. `Z` is the canonical spelling of zero, and RFC 3339's
+`-00:00`, which says the writer's offset is unknown, reads as zero:
+
+```scala mdoc
+Offset.parse("-00:00").map(_.value)
+
+Offset.of(1440).isLeft
+```
+
+Second 60 is refused because world's civil time carries no leap second, stated rather than
+quietly folded into the following minute. A space in place of `T`, a missing seconds field,
+and a civil time with no offset at all are refused because RFC 3339 states them:
+
+```scala mdoc
+Stamp.parse("2026-08-21T12:00:60Z").isLeft
+
+Stamp.parse("2026-08-21T12:00:00").isLeft
+```
+
+## Days that do not end at midnight
+
+A hotel's day closes at night audit, a bar's at last orders, a shift crosses the date. A
+figure posted at 01:30 belongs to the previous trading day, so a report bucketed by
+calendar date is wrong by one for everything after the close. `Trading` is the cutover:
+
+```scala mdoc
+val nightAudit = Trading(Time.of(4, 0).toOption.get)
+
+nightAudit.day(DateTime(Date(2026, 8, 21), Time.of(1, 30).toOption.get)).map(_.value)
+
+nightAudit.day(DateTime(Date(2026, 8, 21), Time.of(4, 0).toOption.get)).map(_.value)
+
+nightAudit.opens(Date(2026, 8, 21)).value
+```
+
+A cutover at midnight is the calendar day itself, so a business that keeps ordinary hours
+pays nothing for the vocabulary.
+
+## Two shapes of span
+
+A period stated in a document runs from one day to another and both days are in it: the
+policy year, the statement period, the rate-validity window. That is `Interval`, and
+because both bounds count, it is never empty and its length counts both edges:
+
+```scala mdoc
+val policy = Interval.of(Date(2026, 1, 1), Date(2026, 12, 31)).toOption.get
+
+policy.value
+
+policy.length
+
+policy.contains(Date(2026, 7, 23))
+
+Interval.of(Date(2026, 12, 31), Date(2026, 1, 1))
+```
+
+A period a clock runs against is different: the stay from check-in to check-out, the shift,
+the meter-reading period, the trading day. There the end is the moment the next span starts,
+and counting it twice double-books the room. That is `Window`, half-open over any ordered
+timeline value - `DateTime`, `Instant`, `Moment`, or your own:
+
+```scala mdoc
+val stay = Window
+  .of(DateTime.parse("2026-08-21T14:00:00").toOption.get, DateTime.parse("2026-08-23T11:00:00").toOption.get)
+  .toOption
+  .get
+
+val next = Window
+  .of(DateTime.parse("2026-08-23T11:00:00").toOption.get, DateTime.parse("2026-08-25T11:00:00").toOption.get)
+  .toOption
+  .get
+
+stay.contains(DateTime.parse("2026-08-23T11:00:00").toOption.get)
+
+stay.overlaps(next)
+
+stay.abuts(next)
+
+stay.union(next).map(_.start.value)
+```
+
+Consecutive windows abut without overlapping, which is what lets them tile a timeline.
+Disjoint ones have a gap and no union - a caller who wants the hull regardless takes the
+bounds itself, because that is a different question:
+
+```scala mdoc
+val later = Window
+  .of(DateTime.parse("2026-08-26T00:00:00").toOption.get, DateTime.parse("2026-08-27T00:00:00").toOption.get)
+  .toOption
+  .get
+
+stay.gap(later).map(w => (w.start.value, w.end.value))
+
+stay.union(later)
+```
+
+A trading day is one of these, from its own opening to the next day's:
+
+```scala mdoc
+nightAudit.window(Date(2026, 8, 21)).map(w => (w.start.value, w.end.value))
+```
+
+A window's length is a duration, so it is measured with the quantity algebra rather than
+here - see [Quantities](quantities.md).
+
 ## Interest over a period
 
 A day-count convention turns a date range into an exact fraction of a year, which
