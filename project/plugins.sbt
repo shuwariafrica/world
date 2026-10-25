@@ -9,7 +9,7 @@ addSbtPlugin("africa.shuwari.sbt" % "sbt-shuwari" % "0.15.4")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.13-20260910-501cd90-SNAPSHOT")
 
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.7")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.9")
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.6.1")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.6")
