@@ -12,7 +12,7 @@ addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.13-20260910-501cd90-
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.7")
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.6.1")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.6")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.2.1")
 
 // TASTy-MiMa publishes no sbt 2.x plugin. The build definition is itself Scala 3, so the
 // engine links directly onto the build classpath (see Compat.scala).
