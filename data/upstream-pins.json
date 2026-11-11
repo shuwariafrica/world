@@ -156,7 +156,7 @@
       "check": {
         "method": "regex",
         "url": "https://www.unicode.org/Public/UCD/latest/ReadMe.txt",
-        "pattern": "Version ([0-9]+\\.[0-9]+\\.[0-9]+) of the Unicode Standard"
+        "pattern": "[Vv]ersion ([0-9]+\\.[0-9]+\\.[0-9]+) of the\\s+Unicode"
       },
       "cadence": "annual major release"
     },

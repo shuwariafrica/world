@@ -21,7 +21,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   JDK_RELEASE: 21
   JDK_CURRENT: 25
-  NODE_LTS: 22
   SBT_OPTS: >- # Use all available resources
     -Xmx7G
     -Xms5G
@@ -38,22 +37,22 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       - name: Test
         run: sbt --server "world-jvm/testOnly * -- "
@@ -91,28 +90,28 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
           check-latest: true
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       - name: Test
         run: sbt --server "world-js/testOnly * -- "
@@ -142,22 +141,22 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       # vcvarsall imports the MSVC build environment for the target arch; LLVM_BIN points Scala Native's
       # discovery at MSVCs clang ensuring the correct ABI
@@ -195,22 +194,22 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       - name: Verify Source Formatting
         id: scalafmt
@@ -245,23 +244,23 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
           check-latest: true
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       - name: Compile Documentation Examples
         run: sbt --server "world-site/mdoc"
@@ -272,7 +271,7 @@ jobs:
 
       - name: Upload Pages Artefact
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ steps.build-site.outputs.site_dir }}
 
@@ -292,13 +291,13 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Import Signing Key
-        uses: crazy-max/ghaction-import-gpg@v7
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         with:
           gpg_private_key: ${{ secrets.OSS_PUBLISH_USER_SIGNING_KEY }}
           git_user_signingkey: true
@@ -306,17 +305,17 @@ jobs:
           trust_level: 5
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
           check-latest: true
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       - name: Publish Artefacts
         run: sbt --server publishSigned
@@ -346,15 +345,15 @@ jobs:
       url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Deploy to GitHub Pages
         id: deploy-pages
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
       - name: Mint Release Bot Token
         id: release-bot
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
@@ -380,23 +379,23 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ env.JDK_RELEASE }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_RELEASE }}
           check-latest: true
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Set up Coursier cache
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       # Reports and succeeds: compatibility is never a gate before 1.0.0.
       - name: Report MiMa and TASTy-MiMa Findings
@@ -410,19 +409,19 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Setup Java ${{ env.JDK_CURRENT }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: ${{ env.JDK_CURRENT }}
 
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
 
       - name: Submit Dependency Graph
-        uses: scalacenter/sbt-dependency-submission@v3
+        uses: scalacenter/sbt-dependency-submission@d84eef4c09e633bcf5f113bcad7fd5e9af1baee9 # v3.2.3
