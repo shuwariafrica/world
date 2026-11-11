@@ -22,10 +22,7 @@ worldLocales := Seq("en", "sw", "ar-EG", "pl")
 
 @transient lazy val checkCanary = taskKey[Unit]("Validated literals compile inside their budget")
 
-checkGenerated := {
-  val out = (Compile / runMain).toTask(" shop.Till").value
-  out
-}
+checkGenerated := (Compile / fgRunMain).toTask(" shop.Till").value
 
 checkStable := {
   val generated = (Compile / sourceManaged).value / "world" / "cultures.scala"
