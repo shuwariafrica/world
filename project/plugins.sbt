@@ -3,7 +3,7 @@ resolvers += "central-snapshots".at("https://central.sonatype.com/repository/mav
 addSbtPlugin("africa.shuwari" % "sbt-version" % "0.10.0")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
-addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.4.0")
 addSbtPlugin("africa.shuwari.sbt" % "sbt-shuwari" % "0.16.0")
 
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
